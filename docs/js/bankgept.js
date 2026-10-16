@@ -2,7 +2,7 @@
 const RW = (id, tag, src, instr, start, ans, hint, exp) => ({ id, type: "rewrite", tag, src, instr, start, ans: [].concat(ans), hint, exp });
 const ES = (id, tag, prompt, scenes, keywords, model, hint, exp) => ({ id, type: "essay", tag, prompt, scenes, keywords, model, hint, exp });
 BANKS.push({
-  id: "gept-e", grade: 10,
+  id: "gept-e", grade: 10, tagIsType: true,
   title: "全民英檢 初級",
   range: "GEPT Elementary 閱讀＋寫作（不含聽力、口說）",
   added: "2026-10-17",

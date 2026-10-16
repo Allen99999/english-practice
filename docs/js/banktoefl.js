@@ -1,7 +1,7 @@
 /* ===== TOEFL iBT（2026 新制）練習題庫：原創題，題型、難度照 ETS 2026 規格（Reading／Listening／Writing／Speaking）
    這個檔案：題庫設定＋閱讀；聽力、寫作、口說在 banktoefl2.js；兩份正式模擬卷在 banktoeflmock*.js ===== */
 BANKS.push({
-  id: "toefl", grade: 20,
+  id: "toefl", grade: 20, tagIsType: true,
   title: "TOEFL iBT（2026 新制）",
   range: "Reading・Listening・Writing・Speaking",
   added: "2026-10-17",

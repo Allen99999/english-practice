@@ -165,7 +165,7 @@ function unitsFor(sel) {
   sel.banks.forEach(bid => {
     const b = bankById(bid); if (!b) return;
     b.items.forEach(it => {
-      if (!sel.types.includes(unitType(it)) && !b.fixed) return;
+      if (!sel.types.includes(unitType(it)) && !b.fixed && !b.tagIsType) return;   // 英檢、托福：細項本身就是題型
       if (!sel.tags.includes(it.tag)) return;
       if (it.type === "group") units.push({ type: unitType(it), bank: b.id, tag: it.tag, stage: it.stage, refs: it.qs.map(q => b.id + ":" + q.id) });
       else units.push({ type: it.type, bank: b.id, tag: it.tag, stage: it.stage, refs: [b.id + ":" + it.id] });
@@ -502,8 +502,8 @@ function homeHTML() {
       <button data-act="mode" data-v="exam" aria-pressed="${sel.mode === "exam"}">模擬段考</button>
       <button data-act="mode" data-v="custom" aria-pressed="${sel.mode === "custom"}">自訂練習</button></div>`}
       <div class="muted" style="font-size:13.5px">${gm ? `${esc(gm.bank.title)}・${esc(gm.name)}：${esc((gm.bank.partNotes || [])[gm.pi] || "")}${gm.blind ? "作答時不顯示對錯、沒有提示，聽力每題只播一遍，交卷後才看成績和解析。" : ""}`
-      : sel.mode === "exam" ? (sel.banks.some(id => (bankById(id) || {}).mock) ? "依英檢各部分的題數，從練習題隨機抽題組卷" : "照段考配分抽題：單選 15・字典題 1・題組 3 組・文意字彙 10・翻譯 4；範圍小時自動用重組、配對、挑錯補到約 30 題") : "依下方題型與題數隨機抽題"}</div></div>
-    ${gm ? "" : `<div class="opt-block"><label>題型</label><div class="chips">${TYPE_ORDER.map(t => {
+      : sel.mode === "exam" ? (sel.banks.some(id => (bankById(id) || {}).mock) ? "依英檢各部分的題數，從練習題隨機抽題組卷" : "照段考配分抽題：單選 15・字典題 1・題組 3 組・文意字彙 10・翻譯 4；範圍小時自動用重組、配對、挑錯補到約 30 題") : sel.banks.length && sel.banks.every(id => (bankById(id) || {}).tagIsType) ? "依上方勾選的題型，隨機抽題" : "依下方題型與題數隨機抽題"}</div></div>
+    ${gm || (sel.banks.length && sel.banks.every(id => (bankById(id) || {}).tagIsType)) ? "" : `<div class="opt-block"><label>題型</label><div class="chips">${TYPE_ORDER.map(t => {
       const c = countBy(sel, t); const dis = false; if (!c) return "";
       return `<button class="chip" data-act="type" data-t="${t}" aria-pressed="${sel.types.includes(t) && !dis}" ${dis ? "disabled style=\"opacity:.4\"" : ""}>${TYPE_LABEL[t]}<span class="n">${c}</span></button>`;
     }).join("")}</div></div>`}
@@ -521,7 +521,7 @@ function bankCardHTML(b, sel, gm) {
   const on = sel.banks.includes(b.id);
   const n = b.items.reduce((s, it) => s + (it.type === "group" ? it.qs.length : 1), 0);
   const papers = on && b.mockPapers && sel.mode === "exam" && sel.banks.length === 1;
-  const chips = () => `<div class="opt-block"><label>細項</label><div class="chips">${Object.entries(b.tags).map(([k, v]) => {
+  const chips = () => `<div class="opt-block"><label>${b.tagIsType ? "題型（可複選）" : "細項"}</label><div class="chips">${Object.entries(b.tags).map(([k, v]) => {
       const c = b.items.filter(it => it.tag === k).reduce((s, it) => s + (it.type === "group" ? it.qs.length : 1), 0);
       return `<button class="chip" data-act="tag" data-k="${k}" aria-pressed="${sel.tags.includes(k)}">${esc(v)}<span class="n">${c}</span></button>`;
     }).join("")}</div></div>`;
@@ -535,7 +535,7 @@ function bankCardHTML(b, sel, gm) {
       <div class="muted" style="font-size:13px">${gm ? "正式模擬卷＝照官方題型、題數、時間出的完整考卷" : "隨機組卷＝從練習題庫依題型、細項自由抽題"}</div></div>
       ${gm ? `<div class="opt-block"><label>考哪一部分</label><div class="seg">${gm.bank.exams.map((ex, i) => `<button data-act="gpart" data-v="${i}" aria-pressed="${gm.pi === i}">${esc(ex.name)}</button>`).join("")}</div></div>
       ${b.officialLinks ? `<div class="muted" style="font-size:13px">想做官方真題：${b.officialLinks.map(([t, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline">${esc(t)}</a>`).join("、")}</div>` : ""}` : chips()}`
-      : `${on && b.exams ? `<div class="opt-block"><label>段考範圍快選</label><div class="seg">${b.exams.map((ex, i) => `<button data-act="exam-pick" data-id="${b.id}" data-i="${i}" aria-pressed="${sameSet(Object.keys(b.tags).filter(t => sel.tags.includes(t)), ex.tags)}">${esc(ex.name)}</button>`).join("")}<button data-act="exam-pick" data-id="${b.id}" data-i="all" aria-pressed="${Object.keys(b.tags).every(t => sel.tags.includes(t))}">全冊</button></div></div>` : ""}
+      : `${on && b.exams ? `<div class="opt-block"><label>${b.tagIsType ? "快速選擇" : "段考範圍快選"}</label><div class="seg">${b.exams.map((ex, i) => `<button data-act="exam-pick" data-id="${b.id}" data-i="${i}" aria-pressed="${sameSet(Object.keys(b.tags).filter(t => sel.tags.includes(t)), ex.tags)}">${esc(ex.name)}</button>`).join("")}<button data-act="exam-pick" data-id="${b.id}" data-i="all" aria-pressed="${Object.keys(b.tags).every(t => sel.tags.includes(t))}">${b.tagIsType ? "全部" : "全冊"}</button></div></div>` : ""}
       ${on ? chips() : ""}`}
     </div>`;
 }
