@@ -95,7 +95,7 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
 
 ## 日常維護
 - **改題目／加題庫**：編輯 `docs/js/bank*.js`（出題工具在 `helpers.js`：M 單選、SP 拼字、T 翻譯、R 重組、E 挑錯、X 配對、G 題組、D 字典題；英檢另有 RW 改寫、ES 段落寫作、L 聽力）。
-- **英檢初級**：練習題在 `bankgept.js`＋`bankgept2.js`（題庫 gept-e）；正式考模擬卷在 `bankgeptmock.js`（gept-m1～m3，`fixed` 整卷固定順序、`blind` 聽讀部分不顯示對錯、聽力只播一遍）。
+- **英檢初級**：練習題在 `bankgept.js`＋`bankgept2.js`（題庫 gept-e）；正式考模擬卷在 `bankgeptmock.js`（gept-m1～m3，`hidden` 不列在首頁，而是在「全民英檢 初級」選「模擬段考」時挑卷 1～3；整卷固定順序，初試聽讀不顯示對錯、聽力只播一遍）。
   - 聽力 `L(id, tag, part, script, opts, ans, hint, exp, pic)`：part 1 看圖辨義（選項用念的）、2 問答、3 簡短對話、4 短文聽解（三圖選一）；script 每行一句，`W: ` 女聲、`M: ` 男聲、沒標記是旁白。
     part 1、4 的答案順序固定（不會自動平衡），新增時自己把 A/B/C 分散。
   - part 1、4 的圖：`docs/img/listen/<題庫>-<題號>.png`，依 `pic` 欄位的英文描述用 Higgsfield 畫（Seedream 5.0 Flash，0.5 點／張，黑白線稿、圖中不能有字；
@@ -106,6 +106,7 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
 - 單選題的選項順序會在載入時自動平衡，新增題目請加在每份題庫的最後面，已存在的題目不要改 id 或移動位置（舊紀錄靠 id 對應）。
 - 語音檔名由 `tts-text.js` 的 `ttsName(voice, text)` 決定，瀏覽器和 `build_tts_jobs.mjs` 共用同一份程式，改這支要兩邊一起測。
 - repo 是公開的：不要把 Secrets.gs、代碼或學生資料提交進去。
+- 首頁考試範圍：翰林版國一～國三收在可折疊的群組（依 `range` 含「翰林」判斷）；預設單選，按「複選」才能一次選多冊。
 - 學生身分：沒有帳號，靠「名字＋個人代碼」。第一次作答時自動產生 6 碼代碼（`sync.js` 的 ensureCode），
   後端存在試算表的 `students` 工作表；學生可在「紀錄」頁修改、換裝置時用代碼找回紀錄；老師總覽可查全部代碼。
   改 `docs/js` 或 css 後，把 `index.html` 裡的 `?v=N` 加一，手機才會載入新版。

@@ -466,3 +466,10 @@ details.script summary{cursor:pointer;font-weight:650;color:var(--ink-2)}
 .opt.picked{box-shadow:inset 0 0 0 2px var(--accent)}
 .opt.picked .letter{background:var(--accent);color:var(--accent-ink)}
 .gn.done{background:var(--accent-soft);box-shadow:inset 0 0 0 1.5px var(--accent)}
+
+/* ===== 首頁：折疊的題庫群組 ===== */
+.bank-group > summary{list-style:none;display:flex;align-items:center;gap:14px;cursor:pointer}
+.bank-group > summary::-webkit-details-marker{display:none}
+.bank-group > summary .chev{flex:none;transition:transform .2s;color:var(--ink-3)}
+.bank-group[open] > summary .chev{transform:rotate(90deg)}
+.bank-group-body{display:flex;flex-direction:column;gap:14px;margin-top:14px;padding-left:12px;border-left:2px solid var(--edge)}

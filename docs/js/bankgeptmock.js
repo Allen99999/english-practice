@@ -9,10 +9,7 @@ const GEPT_MOCK_TAGS = {
 function geptMock(n, items) {
   const LR = ["l1", "l2", "l3", "l4", "r1", "r2", "r3"], W = ["w1", "w2", "w3", "w4"];
   const b = {
-    id: "gept-m" + n, grade: 11, fixed: true, blind: LR,
-    section: "英檢正式考（模擬卷）",
-    sectionNote: "照全民英檢初級的正式題型、題數和時間出的完整模擬卷（自編題目）。每份分成「初試：聽力＋閱讀」和「複試：寫作」兩部分，選好要考的部分再按開始。想做官方真題，可以到下面兩個官方網站（GEPT i學網免費，要註冊）。",
-    links: [["GEPT i學網（官方題庫，免費）", "https://www.lttc.ntu.edu.tw/tw/gept_iprep"], ["官網初級練習題", "https://www.gept.org.tw/2022/geptpracticee.htm"]],
+    id: "gept-m" + n, grade: 11, fixed: true, blind: LR, hidden: true,   // 不單獨列在首頁：在「全民英檢 初級」的模擬段考裡選
     title: "全民英檢初級・模擬卷 " + n,
     range: "初試 聽力 30＋閱讀 30・複試 寫作 16",
     added: "2026-10-17",
@@ -26,6 +23,10 @@ function geptMock(n, items) {
   listenImages(b);
   b.items.forEach(it => { if (it.type === "essay" && it.scenes) it.img = `img/${b.id}-${it.id}.png`; });
 }
+
+/* 「全民英檢 初級」選模擬段考時，可以選這三份正式考卷 */
+bank("gept-e").mockPapers = ["gept-m1", "gept-m2", "gept-m3"];
+bank("gept-e").officialLinks = [["GEPT i學網（官方題庫，免費註冊）", "https://www.lttc.ntu.edu.tw/tw/gept_iprep"], ["官網初級練習題", "https://www.gept.org.tw/2022/geptpracticee.htm"]];
 
 /* ================================ 模擬卷 1 ================================ */
 geptMock(1, [

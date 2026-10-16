@@ -88,7 +88,10 @@ function defaultSel() {
   return { banks: [b.id], tags: Object.keys(b.tags), types: TYPE_ORDER.slice(), count: 20, mode: "exam", order: "type" };
 }
 if (!store.sel) store.sel = defaultSel();
-store.sel.banks = store.sel.banks.filter(id => bankById(id));
+store.sel.banks = store.sel.banks.filter(id => bankById(id) && !bankById(id).hidden);
+if (!store.sel.multi && store.sel.banks.length > 1) store.sel.banks = store.sel.banks.slice(-1);
+if (!store.sel.banks.length) store.sel = Object.assign(store.sel, { banks: defaultSel().banks, tags: defaultSel().tags });
+store.ui = store.ui || {};
 if (!store.sel.types.includes("listen") && !store.sel.listenAdded) { store.sel.types.unshift("listen"); store.sel.listenAdded = true; }
 
 /* ================= 文字 → 可點單字 ================= */
@@ -165,11 +168,21 @@ function unitsFor(sel) {
   });
   return units;
 }
+/* 英檢初級的「模擬段考」：預設考正式考卷（gept-m1～m3，整卷固定順序）；選「隨機組卷」才從練習題抽 */
+function geptMock(sel) {
+  if (sel.mode !== "exam" || sel.banks.length !== 1) return null;
+  const b = bankById(sel.banks[0]); if (!b || !b.mockPapers) return null;
+  const n = sel.gMock ?? 1; if (!n) return null;
+  const mb = bankById(b.mockPapers[n - 1]); if (!mb) return null;
+  const part = sel.gPart === "w" ? "w" : "lr";
+  return { bank: mb, n, part, tags: mb.exams[part === "w" ? 1 : 0].tags };
+}
 function isFixedSel(sel) { return sel.banks.length > 0 && sel.banks.every(id => (bankById(id) || {}).fixed); }
 function buildRefs(sel, countOnly) {
   const mix = countOnly ? (x => x) : shuffle;
   let units = unitsFor(sel);
-  if (isFixedSel(sel)) return units.flatMap(u => u.refs);   // 模擬卷：整份照原本順序
+  const gm = geptMock(sel);
+  if (gm) return unitsFor({ banks: [gm.bank.id], tags: gm.tags, types: TYPE_ORDER }).flatMap(u => u.refs);   // 正式考卷：整份照原本順序
   if (sel.mode === "exam") {
     // 有自訂配分（例如英檢）的題庫：照它的配分抽
     const mockBanks = sel.banks.map(bankById).filter(b => b && b.mock);
@@ -428,42 +441,33 @@ function homeHTML() {
     });
     h += `</div>`;
   }
-  h += `<div class="section-h"><h2>考試範圍</h2><span class="muted" style="font-size:13px">${BANKS.length} 個題庫</span></div>`;
-  let lastSec = "";
-  BANKS.slice().sort((x, y) => (x.grade || 0) - (y.grade || 0)).forEach(b => {
-    if (b.section && b.section !== lastSec) { lastSec = b.section; h += `<div class="section-h"><h2>${esc(b.section)}</h2></div>${b.sectionNote ? `<div class="glass card" style="display:flex;flex-direction:column;gap:10px"><div class="muted" style="font-size:14px">${esc(b.sectionNote)}</div>${b.links ? `<div class="row" style="flex-wrap:wrap">${b.links.map(([t, u]) => `<a class="btn" href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>`).join("")}</div>` : ""}</div>` : ""}`; }
-    const on = sel.banks.includes(b.id);
-    const n = b.items.reduce((s, it) => s + (it.type === "group" ? it.qs.length : 1), 0);
-    h += `<div class="glass card bank">
-      <div class="bank-head"><button class="row" data-act="bank" data-id="${b.id}" style="text-align:left;flex:1;min-width:0;gap:14px;flex-wrap:nowrap" aria-pressed="${on}">
-        <span class="check ${on ? "on" : ""}">${on ? I.check : ""}</span>
-        <span style="min-width:0"><span class="bank-title" style="display:block">${esc(b.title)}</span><span class="muted" style="font-size:14px">${esc(b.range)}・${n} 題</span></span></button>
-        <span class="tag date">加入 ${esc(b.added)}</span></div>
-      ${b.note ? `<div class="muted" style="font-size:13.5px">${esc(b.note)}</div>` : ""}
-      ${on && b.exams ? `<div class="opt-block"><label>${b.fixed ? "選擇要考的部分" : "段考範圍快選"}</label><div class="seg">${b.exams.map((ex, i) => `<button data-act="exam-pick" data-id="${b.id}" data-i="${i}" aria-pressed="${sameSet(Object.keys(b.tags).filter(t => sel.tags.includes(t)), ex.tags)}">${esc(ex.name)}</button>`).join("")}${b.fixed ? "" : `<button data-act="exam-pick" data-id="${b.id}" data-i="all" aria-pressed="${Object.keys(b.tags).every(t => sel.tags.includes(t))}">全冊</button>`}</div></div>` : ""}
-      ${on && !b.fixed ? `<div class="opt-block"><label>細項</label><div class="chips">${Object.entries(b.tags).map(([k, v]) => {
-      const c = b.items.filter(it => it.tag === k).reduce((s, it) => s + (it.type === "group" ? it.qs.length : 1), 0);
-      return `<button class="chip" data-act="tag" data-k="${k}" aria-pressed="${sel.tags.includes(k)}">${esc(v)}<span class="n">${c}</span></button>`;
-    }).join("")}</div></div>` : ""}
-    </div>`;
+  const shown = BANKS.filter(b => !b.hidden).sort((x, y) => (x.grade || 0) - (y.grade || 0));
+  const gm = geptMock(sel);
+  h += `<div class="section-h"><h2>考試範圍</h2><div class="row" style="gap:10px;flex-wrap:nowrap"><span class="muted" style="font-size:13px">${shown.length} 個題庫</span>
+    <button class="chip" data-act="multi" aria-pressed="${!!sel.multi}">${sel.multi ? I.check : ""}複選</button></div></div>
+    <div class="muted" style="font-size:13px;margin-top:-8px">${sel.multi ? "複選中：可以同時勾選多個範圍一起練習" : "一次選一個範圍；要合併多個範圍一起練習，請先按右邊的「複選」"}</div>`;
+  const pubOf = b => b.publisher || (/翰林/.test(b.range || "") ? "翰林版" : "");
+  const groups = [["國一～國三（翰林版）", shown.filter(b => pubOf(b) === "翰林版")], ["", shown.filter(b => pubOf(b) !== "翰林版")]];
+  groups.forEach(([name, list]) => {
+    if (!list.length) return;
+    if (!name) { list.forEach(b => h += bankCardHTML(b, sel, gm)); return; }
+    const picked = list.filter(b => sel.banks.includes(b.id));
+    h += `<details class="bank-group" data-group="${esc(name)}" ${store.ui[`open:${name}`] ? "open" : ""}><summary class="glass card"><span style="min-width:0;flex:1"><span class="bank-title" style="display:block">${esc(name)}</span>
+      <span class="muted" style="font-size:14px">${list.map(b => esc(b.title.replace(" 全冊", ""))).join("・")}${picked.length ? `<br>已選：<b style="color:var(--ink)">${picked.map(b => esc(b.title)).join("、")}</b>` : ""}</span></span><span class="chev">${I.chevR}</span></summary>
+      <div class="bank-group-body">${list.map(b => bankCardHTML(b, sel, gm)).join("")}</div></details>`;
   });
-  if (isFixedSel(sel)) {
-    const blindSel = sel.banks.map(bankById).some(b => (b.blind || []).some(t => sel.tags.includes(t)));
-    h += `<div class="glass card" style="display:flex;flex-direction:column;gap:18px"><div class="muted" style="font-size:14px">${blindSel
-      ? "正式考模式：題目照正式考試的順序和題數，計時作答。聽力每題只播一遍；作答時不會顯示對錯、沒有提示，交卷後才看成績和解析。"
-      : "寫作正式考：照正式考試的題型順序，計時 40 分鐘。"}</div>
-    <div class="start-bar"><div class="muted tnum">這次共 <b style="color:var(--ink);font-size:18px">${examN}</b> 題</div>
-    <button class="btn primary big" data-act="start" ${examN ? "" : "disabled"}>${I.play}開始作答</button></div></div>`;
-  } else
   h += `<div class="glass card" style="display:flex;flex-direction:column;gap:18px">
     <div class="opt-block"><label>模式</label><div class="seg">
       <button data-act="mode" data-v="exam" aria-pressed="${sel.mode === "exam"}">模擬段考</button>
       <button data-act="mode" data-v="custom" aria-pressed="${sel.mode === "custom"}">自訂練習</button></div>
-      <div class="muted" style="font-size:13.5px">${sel.mode === "exam" ? "照段考配分抽題：單選 15・字典題 1・題組 3 組・文意字彙 10・翻譯 4；範圍小時自動用重組、配對、挑錯補到約 30 題" : "依下方題型與題數隨機抽題"}</div></div>
-    <div class="opt-block"><label>題型</label><div class="chips">${TYPE_ORDER.map(t => {
+      <div class="muted" style="font-size:13.5px">${gm ? (gm.part === "lr"
+        ? `英檢正式考 卷 ${gm.n}・初試：聽力 30 題＋閱讀 30 題，照正式考試的順序計時 55 分鐘。聽力每題只播一遍；作答時不顯示對錯、沒有提示，交卷後才看成績和解析。`
+        : `英檢正式考 卷 ${gm.n}・複試寫作：單句寫作 15 題＋段落寫作 1 題，計時 40 分鐘。`)
+      : sel.mode === "exam" ? (sel.banks.some(id => (bankById(id) || {}).mock) ? "依英檢各部分的題數，從練習題隨機抽題組卷" : "照段考配分抽題：單選 15・字典題 1・題組 3 組・文意字彙 10・翻譯 4；範圍小時自動用重組、配對、挑錯補到約 30 題") : "依下方題型與題數隨機抽題"}</div></div>
+    ${gm ? "" : `<div class="opt-block"><label>題型</label><div class="chips">${TYPE_ORDER.map(t => {
       const c = countBy(sel, t); const dis = false; if (!c) return "";
       return `<button class="chip" data-act="type" data-t="${t}" aria-pressed="${sel.types.includes(t) && !dis}" ${dis ? "disabled style=\"opacity:.4\"" : ""}>${TYPE_LABEL[t]}<span class="n">${c}</span></button>`;
-    }).join("")}</div></div>
+    }).join("")}</div></div>`}
     ${sel.mode === "custom" ? `<div class="opt-block"><label>題數</label><div class="seg">${[10, 20, 30, 0].map(c => `<button data-act="count" data-v="${c}" aria-pressed="${sel.count === c}">${c || "全部"}</button>`).join("")}</div></div>
     <div class="opt-block"><label>順序</label><div class="seg"><button data-act="order" data-v="type" aria-pressed="${sel.order === "type"}">依題型排列</button><button data-act="order" data-v="random" aria-pressed="${sel.order === "random"}">完全隨機</button></div></div>` : ""}
     <div class="start-bar"><div class="muted tnum">這次共 <b style="color:var(--ink);font-size:18px">${examN}</b> 題</div>
@@ -474,6 +478,29 @@ function homeHTML() {
   }
   return h + `</section>`;
 }
+function bankCardHTML(b, sel, gm) {
+  const on = sel.banks.includes(b.id);
+  const n = b.items.reduce((s, it) => s + (it.type === "group" ? it.qs.length : 1), 0);
+  const papers = on && b.mockPapers && sel.mode === "exam" && sel.banks.length === 1;
+  const chips = () => `<div class="opt-block"><label>細項</label><div class="chips">${Object.entries(b.tags).map(([k, v]) => {
+      const c = b.items.filter(it => it.tag === k).reduce((s, it) => s + (it.type === "group" ? it.qs.length : 1), 0);
+      return `<button class="chip" data-act="tag" data-k="${k}" aria-pressed="${sel.tags.includes(k)}">${esc(v)}<span class="n">${c}</span></button>`;
+    }).join("")}</div></div>`;
+  return `<div class="glass card bank">
+      <div class="bank-head"><button class="row" data-act="bank" data-id="${b.id}" style="text-align:left;flex:1;min-width:0;gap:14px;flex-wrap:nowrap" aria-pressed="${on}">
+        <span class="check ${on ? "on" : ""}">${on ? I.check : ""}</span>
+        <span style="min-width:0"><span class="bank-title" style="display:block">${esc(b.title)}</span><span class="muted" style="font-size:14px">${esc(b.range)}・${n} 題</span></span></button>
+        <span class="tag date">加入 ${esc(b.added)}</span></div>
+      ${b.note ? `<div class="muted" style="font-size:13.5px">${esc(b.note)}</div>` : ""}
+      ${papers ? `<div class="opt-block"><label>模擬段考：選一份考卷</label><div class="seg">${b.mockPapers.map((id, i) => `<button data-act="gmock" data-v="${i + 1}" aria-pressed="${(sel.gMock ?? 1) === i + 1}">正式考 卷 ${i + 1}</button>`).join("")}<button data-act="gmock" data-v="0" aria-pressed="${sel.gMock === 0}">隨機組卷</button></div></div>
+      ${gm ? `<div class="opt-block"><label>考哪一部分</label><div class="seg"><button data-act="gpart" data-v="lr" aria-pressed="${gm.part === "lr"}">初試：聽力＋閱讀</button><button data-act="gpart" data-v="w" aria-pressed="${gm.part === "w"}">複試：寫作</button></div></div>
+      ${b.officialLinks ? `<div class="muted" style="font-size:13px">想做官方真題：${b.officialLinks.map(([t, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline">${esc(t)}</a>`).join("、")}</div>` : ""}` : chips()}`
+      : `${on && b.exams ? `<div class="opt-block"><label>段考範圍快選</label><div class="seg">${b.exams.map((ex, i) => `<button data-act="exam-pick" data-id="${b.id}" data-i="${i}" aria-pressed="${sameSet(Object.keys(b.tags).filter(t => sel.tags.includes(t)), ex.tags)}">${esc(ex.name)}</button>`).join("")}<button data-act="exam-pick" data-id="${b.id}" data-i="all" aria-pressed="${Object.keys(b.tags).every(t => sel.tags.includes(t))}">全冊</button></div></div>` : ""}
+      ${on ? chips() : ""}`}
+    </div>`;
+}
+/* 折疊的題庫群組：記住開合狀態 */
+document.addEventListener("toggle", e => { const g = e.target.closest && e.target.closest(".bank-group"); if (g && e.target === g) { store.ui[`open:${g.dataset.group}`] = g.open; save(); } }, true);
 function sameSet(a, b) { return a.length === b.length && a.every(x => b.includes(x)); }
 function buildRefsCount(sel) { return buildRefs(sel, true).length; }
 
@@ -999,10 +1026,13 @@ document.addEventListener("click", e => {
     case "bank": {
       const i = sel.banks.indexOf(d.id), nb = bankById(d.id);
       if (i >= 0) sel.banks.splice(i, 1);
-      else if (nb.fixed) { sel.banks = [d.id]; sel.tags = nb.exams[0].tags.slice(); }   // 模擬卷一次只考一份，預設先考聽讀
-      else { sel.banks = sel.banks.filter(id => !bankById(id).fixed); sel.banks.push(d.id); Object.keys(nb.tags).forEach(t => { if (!sel.tags.includes(t)) sel.tags.push(t); }); }
+      else if (!sel.multi) { sel.banks = [d.id]; sel.tags = Object.keys(nb.tags); }   // 單選：換成這一冊
+      else { sel.banks.push(d.id); Object.keys(nb.tags).forEach(t => { if (!sel.tags.includes(t)) sel.tags.push(t); }); }
       save(); rerenderKeep(); break;
     }
+    case "multi": sel.multi = !sel.multi; if (!sel.multi && sel.banks.length > 1) { sel.banks = sel.banks.slice(-1); toast("已改回單選，只保留最後選的範圍"); } save(); rerenderKeep(); break;
+    case "gmock": sel.gMock = +d.v; save(); rerenderKeep(); break;
+    case "gpart": sel.gPart = d.v; save(); rerenderKeep(); break;
     case "exam-pick": {
       const b = bankById(d.id); const own = Object.keys(b.tags);
       sel.tags = sel.tags.filter(t => !own.includes(t)).concat(d.i === "all" ? own : b.exams[+d.i].tags);
@@ -1022,10 +1052,11 @@ document.addEventListener("click", e => {
       const titles = sel.banks.map(id => bankById(id).title).join("＋");
       // 英檢模擬考：照正式考試時間倒數（閱讀 35 分、寫作 40 分）
       let limit = 0;
-      const fixed = isFixedSel(sel);
-      if (sel.mode === "exam" || fixed) sel.banks.map(bankById).forEach(b => (b.timeLimits || []).forEach(([tags, min]) => { if (tags.some(t => sel.tags.includes(t))) limit += min * 60; }));
-      const blind = fixed && sel.banks.map(bankById).some(b => (b.blind || []).some(t => sel.tags.includes(t)));
-      const opts = { kind: "exam", limit, blind, title: `${titles}・${fixed ? (blind ? "正式考・聽力閱讀" : "正式考・寫作") : sel.mode === "exam" ? (limit ? "模擬測驗" : "模擬段考") : "自訂練習"}`, banks: sel.banks.slice() };
+      const gm = geptMock(sel);
+      if (gm) (gm.bank.timeLimits || []).forEach(([tags, min]) => { if (tags.some(t => gm.tags.includes(t))) limit += min * 60; });
+      else if (sel.mode === "exam") sel.banks.map(bankById).forEach(b => (b.timeLimits || []).forEach(([tags, min]) => { if (tags.some(t => sel.tags.includes(t))) limit += min * 60; }));
+      const blind = !!gm && gm.part === "lr";
+      const opts = { kind: "exam", limit, blind, title: gm ? `${titles}・正式考 卷 ${gm.n}・${blind ? "初試（聽力＋閱讀）" : "複試（寫作）"}` : `${titles}・${sel.mode === "exam" ? (limit ? "模擬測驗" : "模擬段考") : "自訂練習"}`, banks: gm ? [gm.bank.id] : sel.banks.slice() };
       // 這個名字在這台裝置還沒有個人代碼 → 先登記（名字被別人用了就請他輸入代碼）
       if (typeof ensureCode === "function" && !store.codes[nm]) { act.disabled = true; ensureCode(nm).then(ok => { act.disabled = false; if (ok) newSession(refs, opts); }); }
       else newSession(refs, opts);
