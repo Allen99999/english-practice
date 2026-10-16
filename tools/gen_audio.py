@@ -34,6 +34,11 @@ async def main():
     jobs = json.load(open(JOBS, encoding="utf-8"))
     sem = asyncio.Semaphore(CONCURRENCY); stats = {"ok": 0, "skip": 0, "fail": 0}
     await asyncio.gather(*(one(j, sem, stats) for j in jobs))
+    # 清掉不在清單裡的舊檔（題目刪掉或改掉之後留下的語音）
+    keep = {j["name"] for j in jobs}; removed = 0
+    for f in os.listdir(OUT):
+        if f.endswith(".mp3") and f[:-4] not in keep: os.remove(os.path.join(OUT, f)); removed += 1
+    if removed: print(f"刪除 {removed} 個用不到的舊語音檔")
     names = sorted(f[:-4] for f in os.listdir(OUT) if f.endswith(".mp3"))
     json.dump(names, open(os.path.join(OUT, "manifest.json"), "w"))
     print(f"新產生 {stats['ok']}、略過 {stats['skip']}、失敗 {stats['fail']}；manifest 共 {len(names)} 個檔案")

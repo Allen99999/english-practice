@@ -580,7 +580,7 @@ function quizHTML() {
     <div class="combo-mini ${S.combo ? "" : "zero"}" id="combomini">×${S.combo}</div></div>`;
   const passage = X.group ? passageHTML(X, i) : "";
   h += `<div class="qlayout ${passage ? "has-passage" : ""}">${passage}<div class="glass card qcard" id="qcard" data-i="${i}">
-    <div class="qhead"><span class="qnum">Q${i + 1}</span>${["trans", "essay", "listen", "cword", "speak"].includes(q.type) || (X.group && X.group.kind === "listening") || q.zhPrompt || S.blind ? "" : `<button class="speak" data-act="read-q" aria-label="念題目" title="念題目">${I.speaker}</button>`}<span class="tag">${typeLabel}</span>${X.group ? "" : X.bank ? `<span class="tag">${esc(tagName(X.bank, q.tag))}</span>` : ""}</div>
+    <div class="qhead"><span class="qnum">Q${i + 1}</span>${["trans", "essay", "listen", "cword", "speak"].includes(q.type) || (X.group && X.group.kind === "listening") || (X.bank && /^toefl/.test(X.bank.id)) || q.zhPrompt || S.blind ? "" : `<button class="speak" data-act="read-q" aria-label="念題目" title="念題目">${I.speaker}</button>`}<span class="tag">${typeLabel}</span>${X.group ? "" : X.bank ? `<span class="tag">${esc(tagName(X.bank, q.tag))}</span>` : ""}</div>
     ${questionBody(X, i, a, false)}
     ${showHint && !a ? `<div class="hintbox">${I.bulb}<div>${esc(q.hint || "這題沒有提示")}</div></div>` : ""}
     ${a ? feedbackHTML(X, a) : ""}
@@ -610,7 +610,7 @@ function passageHTML(X, i) {
   }
   return `<div class="glass card passage"><div class="eyebrow">題組・${{ dialogue: "對話", article: "短文", cloze: "克漏字", notice: "公告" }[g.kind]}</div>
   <h3 class="ptitle" data-ctx>${wrapWords(g.title, m)}</h3>
-  ${S.blind ? "" : `<div class="read-bar"><button class="btn sm" data-act="read-all">${reading ? `${I.stop}<span>停止</span>` : `${I.speaker}<span>朗讀全文</span>`}</button>
+  ${S.blind || (X.bank && /^toefl/.test(X.bank.id)) ? "" : `<div class="read-bar"><button class="btn sm" data-act="read-all">${reading ? `${I.stop}<span>停止</span>` : `${I.speaker}<span>朗讀全文</span>`}</button>
   <div class="seg sm">${[0.7, 0.9, 1.1].map(r => `<button data-act="rate" data-v="${r}" aria-pressed="${(store.settings.rate || 0.9) === r}">${r === 0.7 ? "慢" : r === 0.9 ? "中" : "快"}</button>`).join("")}</div></div>`}
   <div class="ptext ${g.kind}">${body}</div>
   ${g.gloss ? `<div class="gloss">${g.gloss.map(([e, z]) => `<span><b>${esc(e)}</b> ${esc(z)}</span>`).join("")}</div>` : ""}</div>`;

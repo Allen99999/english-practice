@@ -60,7 +60,7 @@ clasp push -f
 node tools/build_tts_jobs.mjs               # 約 2,400 段
 .venv/bin/python tools/gen_audio.py         # 約 5～15 分鐘；可重複執行，只補缺的
 ```
-- 結束時「失敗」應為 0；有失敗就再執行一次
+- 結束時「失敗」應為 0；有失敗就再執行一次（gen_audio.py 也會自動刪掉清單裡已經沒有的舊語音檔）
 - 抽幾個 mp3 確認能播放（`afplay docs/audio/<檔名>.mp3`）
 
 ### 5b. 用 Higgsfield 畫英檢段落寫作的插圖
@@ -107,6 +107,7 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
   - 出題工具（helpers.js）：CT 補字母（`manu{scripts}`）、LG 聽力題組、L(...,"cr",...) 聽一句選回應、BS Build a Sentence、EM Email、AD Academic Discussion、SR／SI 口說。
   - 聽力 script 的說話者：W/M 美國腔、WB/MB 英國腔、WA/MA 澳洲腔、WC/MC 加拿大腔、N 旁白（聲音設定在 config.js 的 `TTS.accents`）。
   - Reading、Listening 是兩階段適應性：題目加 `stage`（router／lower／upper），模擬卷的 `adaptive` 設定切分點（第一階段答對率 ≥ 60% 進 upper）。執行邏輯在 `toefl.js`。
+  - 語音只做聽力和口說（build_tts_jobs.mjs 會跳過托福的閱讀、寫作和 dict7.js 的單字），托福頁面也不顯示「念題目／朗讀全文」。
   - 寫作、口說是自評＋範文；口說可錄音（只存在學生裝置，不上傳）。結果頁會顯示依答對率估算的 1～6 級分。
   - Allen 提供的「新托福模擬小題本」只當格式參考，內容含 ETS 官方題，不可照搬到網站。
 - **網站名稱與分享預覽**：名稱 Apex English；分享預覽圖是 `docs/og.png`（1200×630，用 Chrome headless 從 HTML 截圖產生），index.html 有 og:／twitter: 標籤。
