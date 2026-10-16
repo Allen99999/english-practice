@@ -926,9 +926,7 @@ function histHTML() {
     if (avg.length) h += `<div class="stats"><div class="stat glass"><div class="k">練習次數</div><div class="v">${list.length}</div></div><div class="stat glass"><div class="k">平均答對率</div><div class="v">${Math.round(avg.reduce((s, x) => s + x, 0) / avg.length * 100)}%</div></div><div class="stat glass"><div class="k">最佳 Combo</div><div class="v" style="color:var(--gold)">×${Math.max(...list.map(a => a.maxCombo))}</div></div><div class="stat glass"><div class="k">作答人</div><div class="v">${names.length}</div></div></div>`;
     h += `<div class="glass card hist">${list.map(a => `<div style="display:flex;gap:8px;align-items:center">${histItem(a)}<button class="icon-btn" data-act="del-att" data-id="${a.id}" aria-label="刪除這筆" style="flex:none;background:transparent;box-shadow:none;color:var(--ink-3)">${I.x}</button></div>`).join("")}</div>`;
   }
-  h += `<div class="glass card" style="display:flex;flex-direction:column;gap:10px"><div style="font-weight:700">備份與還原</div>
-  <div class="muted" style="font-size:14px">紀錄存在這台裝置的瀏覽器裡。換裝置或清除瀏覽器資料前，先複製備份碼，之後貼回來就能還原。</div>
-  <div class="row"><button class="btn" data-act="backup">複製備份碼</button><button class="btn ghost" data-act="restore">貼上備份碼還原</button></div></div>
+  h += `
   ${typeof syncHistHTML === "function" ? syncHistHTML() : ""}`;
   return h + `</section>`;
 }
@@ -988,7 +986,10 @@ document.addEventListener("click", e => {
       // 英檢模擬考：照正式考試時間倒數（閱讀 35 分、寫作 40 分）
       let limit = 0;
       if (sel.mode === "exam") sel.banks.map(bankById).forEach(b => (b.timeLimits || []).forEach(([tags, min]) => { if (tags.some(t => sel.tags.includes(t))) limit += min * 60; }));
-      newSession(refs, { kind: "exam", limit, title: `${titles}・${sel.mode === "exam" ? (limit ? "模擬測驗" : "模擬段考") : "自訂練習"}`, banks: sel.banks.slice() });
+      const opts = { kind: "exam", limit, title: `${titles}・${sel.mode === "exam" ? (limit ? "模擬測驗" : "模擬段考") : "自訂練習"}`, banks: sel.banks.slice() };
+      // 這個名字在這台裝置還沒有個人代碼 → 先登記（名字被別人用了就請他輸入代碼）
+      if (typeof ensureCode === "function" && !store.codes[nm]) { act.disabled = true; ensureCode(nm).then(ok => { act.disabled = false; if (ok) newSession(refs, opts); }); }
+      else newSession(refs, opts);
       break;
     }
     case "resume": S = store.sessions.find(x => x.id === d.id); if (S) { if (S.who) store.who = S.who; wordMode = false; showHint = false; go("quiz"); } break;

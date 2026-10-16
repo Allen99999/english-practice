@@ -100,3 +100,6 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
 - 單選題的選項順序會在載入時自動平衡，新增題目請加在每份題庫的最後面，已存在的題目不要改 id 或移動位置（舊紀錄靠 id 對應）。
 - 語音檔名由 `tts-text.js` 的 `ttsName(voice, text)` 決定，瀏覽器和 `build_tts_jobs.mjs` 共用同一份程式，改這支要兩邊一起測。
 - repo 是公開的：不要把 Secrets.gs、代碼或學生資料提交進去。
+- 學生身分：沒有帳號，靠「名字＋個人代碼」。第一次作答時自動產生 6 碼代碼（`sync.js` 的 ensureCode），
+  後端存在試算表的 `students` 工作表；學生可在「紀錄」頁修改、換裝置時用代碼找回紀錄；老師總覽可查全部代碼。
+  改 `docs/js` 或 css 後，把 `index.html` 裡的 `?v=N` 加一，手機才會載入新版。
