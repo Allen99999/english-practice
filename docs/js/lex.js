@@ -1,6 +1,6 @@
 /* ===== 單字查詢 ===== */
 const DICT = {};
-(DICT_RAW + "\n" + (typeof DICT_RAW2 === "string" ? DICT_RAW2 : "") + "\n" + (typeof DICT_RAW3 === "string" ? DICT_RAW3 : "") + "\n" + (typeof DICT_RAW4 === "string" ? DICT_RAW4 : "") + "\n" + (typeof DICT_RAW5 === "string" ? DICT_RAW5 : "") + "\n" + (typeof DICT_RAW6 === "string" ? DICT_RAW6 : "")).trim().split("\n").forEach(l => {
+(DICT_RAW + "\n" + (typeof DICT_RAW2 === "string" ? DICT_RAW2 : "") + "\n" + (typeof DICT_RAW3 === "string" ? DICT_RAW3 : "") + "\n" + (typeof DICT_RAW4 === "string" ? DICT_RAW4 : "") + "\n" + (typeof DICT_RAW5 === "string" ? DICT_RAW5 : "") + "\n" + (typeof DICT_RAW6 === "string" ? DICT_RAW6 : "") + "\n" + (typeof DICT_RAW7 === "string" ? DICT_RAW7 : "")).trim().split("\n").forEach(l => {
   const [w, pos, zh] = l.split("|");
   if (w && !DICT[w]) DICT[w] = { w, pos, zh };
 });

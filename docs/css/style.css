@@ -473,3 +473,95 @@ details.script summary{cursor:pointer;font-weight:650;color:var(--ink-2)}
 .bank-group > summary .chev{flex:none;transition:transform .2s;color:var(--ink-3)}
 .bank-group[open] > summary .chev{transform:rotate(90deg)}
 .bank-group-body{display:flex;flex-direction:column;gap:14px;margin-top:14px;padding-left:12px;border-left:2px solid var(--edge)}
+
+/* =====================================================================
+   Liquid Glass 2：更通透的玻璃、高光、彈性動畫（覆蓋上面的設定）
+   ===================================================================== */
+:root{--spring:cubic-bezier(.34,1.56,.64,1);--ease-out:cubic-bezier(.2,.9,.25,1)}
+.glass{
+  -webkit-backdrop-filter:blur(26px) saturate(1.8) brightness(1.04);backdrop-filter:blur(26px) saturate(1.8) brightness(1.04);
+  box-shadow:0 40px 80px -40px var(--shadow),0 12px 26px -16px var(--shadow),
+    inset 0 1.5px .5px var(--rim),inset 0 -1.5px 1px var(--rim-2),
+    inset 1px 0 0 rgba(255,255,255,calc(var(--sheen) * .45)),inset -1px 0 0 rgba(255,255,255,calc(var(--sheen) * .25)),
+    inset 0 0 32px -8px rgba(255,255,255,calc(var(--sheen) * .7))}
+/* 玻璃上緣的鏡面反光 */
+.glass::after{content:"";position:absolute;left:8%;right:8%;top:0;height:46%;border-radius:inherit;pointer-events:none;z-index:-1;
+  background:radial-gradient(120% 90% at 30% 0%,rgba(255,255,255,calc(var(--sheen) * .55)),transparent 62%);opacity:.9}
+.card.glass{transition:transform .5s var(--spring),box-shadow .35s ease}
+@media (hover:hover){.card.glass.bank:hover,.bank-group>summary:hover{transform:translateY(-2px)}}
+
+/* 品牌大標 */
+.large-title.brand{font-size:clamp(40px,8.5vw,64px);font-weight:800;letter-spacing:-.045em;
+  background:linear-gradient(180deg,var(--ink) 35%,color-mix(in srgb,var(--ink) 55%,transparent));-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:4px}
+
+/* 頁面進場：卡片依序浮上來 */
+.view.enter{animation:none}
+.view.enter > *{animation:riseIn .62s var(--ease-out) both;animation-delay:calc(var(--i,0) * 45ms)}
+@keyframes riseIn{from{opacity:0;transform:translateY(16px) scale(.985);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
+
+/* 按鈕、選項：彈性按壓 */
+.btn,.chip,.seg button,.opt,.tile,.icon-btn,.save-btn,.tabbar button{transition:transform .35s var(--spring),background .25s,box-shadow .25s,color .2s}
+.btn:active,.chip:active,.icon-btn:active,.save-btn:active{transform:scale(.94)}
+.seg button:active,.tile:active{transform:scale(.95)}
+.opt:active{transform:scale(.985)}
+.chip[aria-pressed="true"],.seg button[aria-pressed="true"]{animation:pressPop .4s var(--spring)}
+@keyframes pressPop{0%{transform:scale(.92)}100%{transform:scale(1)}}
+.check{transition:background .25s,box-shadow .25s,transform .4s var(--spring)}
+.check.on{transform:scale(1.06)}
+
+/* 底部選單：滑動的玻璃膠囊 */
+.tabbar{-webkit-backdrop-filter:blur(30px) saturate(2);backdrop-filter:blur(30px) saturate(2)}
+.tabbar .tab-ind{position:absolute;left:6px;top:6px;bottom:6px;border-radius:999px;pointer-events:none;z-index:0;
+  background:linear-gradient(180deg,rgba(255,255,255,calc(var(--sheen) * .9)),var(--accent-soft));
+  box-shadow:inset 0 1px 0 var(--rim),inset 0 0 0 1px var(--edge),0 6px 16px -8px var(--shadow);
+  transition:transform .55s var(--spring),width .45s var(--spring),opacity .2s}
+.tabbar button{position:relative;z-index:1}
+.tabbar button[aria-current="page"]{background:transparent}
+.tabbar button[aria-current="page"] svg{animation:pressPop .45s var(--spring)}
+
+/* 折疊群組 */
+.bank-group > summary{padding-right:16px}
+.bank-group > summary .chev{display:none}
+.fold-btn{flex:none;display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 6px 0 14px;border-radius:999px;font-size:13px;font-weight:650;color:var(--ink-2);
+  background:var(--glass-hi);box-shadow:inset 0 1px 0 var(--rim),inset 0 0 0 1px var(--edge),0 4px 12px -6px var(--shadow)}
+.fold-ic{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);transition:transform .5s var(--spring)}
+.fold-ic svg{width:16px;height:16px}
+.bank-group[open]:not(.closing) .fold-ic{transform:rotate(90deg)}
+.bank-group-body{overflow:hidden}
+
+/* 題目卡片切換 */
+.qcard{animation:riseIn .45s var(--ease-out) both}
+.feedback{animation:riseIn .4s var(--ease-out) both}
+.sheet{animation:sheetIn .5s var(--spring) both}
+@keyframes sheetIn{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:none}}
+.toast{animation:sheetIn .45s var(--spring) both}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* ===== 托福題型 ===== */
+.ptext.ctest{font-family:var(--read);font-size:18.5px;line-height:2.15}
+.ct-word{white-space:nowrap}
+.ct-in{font:inherit;font-family:ui-monospace,Menlo,monospace;font-size:.92em;letter-spacing:.18em;padding:0 2px;margin-left:1px;border:0;border-bottom:2px dashed var(--ink-3);
+  background:var(--accent-soft);border-radius:6px 6px 0 0;color:var(--ink);outline:none;transition:border-color .2s,background .2s}
+.ct-in:focus{border-bottom-color:var(--accent);background:var(--glass-hi)}
+.ct-word.now .ct-in{border-bottom-style:solid}
+.ct-word.ok b{color:var(--good)}
+.ct-word.no b{color:var(--bad);text-decoration:line-through}
+.ct-word.no i{font-style:normal;color:var(--good);font-weight:700;margin-left:4px}
+.spk-row{display:flex;gap:10px}
+.spk{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--glass-hi);box-shadow:inset 0 1px 0 var(--rim),inset 0 0 0 1px var(--edge)}
+.spk svg{width:28px;height:28px}
+.speaking-now .spk{animation:pressPop .6s var(--spring) infinite alternate}
+.posts{display:flex;flex-direction:column;gap:10px}
+.post{padding:12px 14px;border-radius:var(--r-md);background:var(--glass-lo);box-shadow:inset 0 0 0 1px var(--edge);font-size:15.5px;line-height:1.6}
+.post.prof{background:var(--accent-soft)}
+.post-who{font-weight:750;font-size:13.5px;margin-bottom:4px;color:var(--ink-2)}
+.bs-ctx{font-size:17px;padding:10px 14px;border-radius:var(--r-md);background:var(--accent-soft)}
+.bs-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bs-line .slots{flex:1;min-width:200px}
+.bs-fix{font-size:17px;font-weight:650}
+.rec-box{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:var(--r-md);background:var(--glass-lo);box-shadow:inset 0 0 0 1px var(--edge)}
+.rec-box > .btn{align-self:flex-start}
+.rec-dot{width:10px;height:10px;border-radius:50%;background:var(--bad);display:inline-block}
+.btn.danger .rec-dot{background:#fff;animation:pressPop .8s ease-in-out infinite alternate}
+.ct-in::placeholder{color:var(--ink-3);letter-spacing:.18em}

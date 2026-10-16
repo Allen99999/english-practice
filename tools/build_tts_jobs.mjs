@@ -4,7 +4,7 @@ import fs from "node:fs"; import vm from "node:vm"; import path from "node:path"
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const html = fs.readFileSync(path.join(root, "docs/index.html"), "utf8");
 const files = [...html.matchAll(/<script src="(js\/[^"?]+)/g)].map(m => m[1])
-  .filter(f => !/(app|teacher|tts|sync)\.js$/.test(f));
+  .filter(f => !/\/(app|teacher|tts|sync|toefl)\.js$/.test(f));
 const ctx = { TextEncoder, console };
 vm.createContext(ctx);
 vm.runInContext(files.map(f => fs.readFileSync(path.join(root, "docs", f), "utf8")).join("\n") +

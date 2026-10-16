@@ -16,6 +16,7 @@ function geptMock(n, items) {
     note: "",
     exams: [{ name: "初試：聽力＋閱讀（55 分鐘）", tags: LR }, { name: "複試：寫作（40 分鐘）", tags: W }],
     timeLimits: [[["l1", "l2", "l3", "l4"], 20], [["r1", "r2", "r3"], 35], [W, 40]],
+    partNotes: ["聽力 30 題（看圖辨義、問答、簡短對話、短文聽解）＋閱讀 30 題，照正式考試順序計時 55 分鐘。", "單句寫作 15 題（改寫、合併、重組）＋段落寫作 1 題，計時 40 分鐘。"],
     tags: GEPT_MOCK_TAGS,
     items
   };

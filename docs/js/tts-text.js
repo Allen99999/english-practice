@@ -11,8 +11,13 @@ function ttsSpeaker(line) {
 }
 function ttsVoice(who, map) {
   const V = SITE_CONFIG.TTS;
-  if (!who) return V.narrator;
+  if (!who || who === "N") return V.narrator;
   if (map[who]) return map[who];
+  const acc = /^([WM])([BAC])\d?$/.exec(who);   // 托福：WB = 英國女聲、MA = 澳洲男聲…
+  if (acc && V.accents && V.accents[acc[2]]) {
+    const pool = V.accents[acc[2]][acc[1] === "W" ? "female" : "male"], key = "_" + who.slice(0, 2);
+    map[key] = map[key] || 0; return map[who] = pool[map[key]++ % pool.length];
+  }
   const first = who.toLowerCase().split(/\s+/)[0];
   const pool = TTS_FEMALE.has(first) ? "female" : "male";
   map["_" + pool] = (map["_" + pool] || 0);
@@ -23,8 +28,10 @@ function ttsVoice(who, map) {
 /* 題組文章：每一段一個項目（index 對應畫面上的段落） */
 function passageSpeech(g) {
   const map = {};
+  if (g.kind === "ctest") return [];
+  if (g.v2) { map._female = 1; map._male = 1; }
   return g.passage.map(p => {
-    const s = g.kind === "dialogue" ? ttsSpeaker(p) : { who: null, text: p };
+    const s = g.kind === "dialogue" || g.kind === "listening" ? ttsSpeaker(p) : { who: null, text: p };
     return { text: ttsClean(s.text), voice: ttsVoice(s.who, map) };
   });
 }
@@ -32,6 +39,8 @@ function passageSpeech(g) {
 function questionSpeech(q) {
   const map = {}, out = [];
   const add = (line, dialog) => { const s = dialog ? ttsSpeaker(line) : { who: null, text: line }; const t = ttsClean(s.text); if (/[A-Za-z]/.test(t)) out.push({ text: t, voice: ttsVoice(s.who, map) }); };
+  if (q.type === "cword") return out;
+  if (q.type === "speak") { (q.script || []).forEach(l => add(l, true)); return out; }
   if (q.type === "listen") {   // 聽力：照稿念；用 v2 換一組聲音，讓不同題目聽起來不一樣
     if (q.v2) { map._female = 1; map._male = 1; }
     q.script.forEach(l => add(l, true));

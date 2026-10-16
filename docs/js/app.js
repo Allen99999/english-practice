@@ -46,10 +46,13 @@ function save(now) {
 }
 
 /* ================= 題庫索引 ================= */
-const TYPE_LABEL = { listen: "聽力", rewrite: "句子改寫／合併", essay: "段落寫作", mc: "單選題", dict: "字典題", group: "閱讀題組", spell: "文意字彙", trans: "翻譯", scramble: "句子重組", match: "配對", error: "挑錯改正", order: "排序", vocab: "單字練習" };
-const TYPE_ORDER = ["listen", "mc", "dict", "group", "spell", "trans", "scramble", "match", "error", "rewrite", "essay"];
+const TYPE_LABEL = { listen: "聽力", cword: "補字母", speak: "口說", lgroup: "聽力題組", rewrite: "句子改寫／合併", essay: "段落寫作", mc: "單選題", dict: "字典題", group: "閱讀題組", spell: "文意字彙", trans: "翻譯", scramble: "句子重組", match: "配對", error: "挑錯改正", order: "排序", vocab: "單字練習" };
+const TYPE_ORDER = ["cword", "listen", "lgroup", "mc", "dict", "group", "spell", "trans", "scramble", "match", "error", "rewrite", "essay", "speak"];
 const ESSAY_CHECK = ["寫了大約 50 個字以上", "每一個提示（圖或問題）都有寫到", "時態正確（過去的事用過去式）", "句首大寫、句尾有標點", "至少用了一個連接詞（and / but / so / because / when）"];
 const isMC = q => q.type === "mc" || q.type === "dict" || q.type === "listen";
+/* 題組依內容分類：補字母（Complete the Words）、聽力題組、一般閱讀題組 */
+const unitType = it => it.type === "group" ? (it.kind === "ctest" ? "cword" : it.kind === "listening" ? "lgroup" : "group") : it.type;
+const KIND_LABEL = { ctest: "Complete the Words", listening: "聽力題組" };
 const wcount = s => (String(s || "").match(/[A-Za-z]+(?:['’-][A-Za-z]+)*/g) || []).length;
 /* 選項順序平衡：每份題庫的單選正解輪流落在 A/B/C/D，其餘選項以題號為種子固定打散；
    解析裡的 (A)（B 錯）等字母會跟著換。舊紀錄（沒有 optv）仍用原始順序顯示。 */
@@ -92,6 +95,8 @@ store.sel.banks = store.sel.banks.filter(id => bankById(id) && !bankById(id).hid
 if (!store.sel.multi && store.sel.banks.length > 1) store.sel.banks = store.sel.banks.slice(-1);
 if (!store.sel.banks.length) store.sel = Object.assign(store.sel, { banks: defaultSel().banks, tags: defaultSel().tags });
 store.ui = store.ui || {};
+{ const pb = store.sel.banks.length === 1 && bankById(store.sel.banks[0]); if (pb && pb.mockPapers && store.sel.mode === "exam" && store.sel.gMock === 0) store.sel.mode = "custom"; }
+if (store.sel.gPart === "lr") store.sel.gPart = 0; if (store.sel.gPart === "w") store.sel.gPart = 1;
 if (!store.sel.types.includes("listen") && !store.sel.listenAdded) { store.sel.types.unshift("listen"); store.sel.listenAdded = true; }
 
 /* ================= 文字 → 可點單字 ================= */
@@ -160,29 +165,31 @@ function unitsFor(sel) {
   sel.banks.forEach(bid => {
     const b = bankById(bid); if (!b) return;
     b.items.forEach(it => {
-      if (!sel.types.includes(it.type) && !b.fixed) return;
+      if (!sel.types.includes(unitType(it)) && !b.fixed) return;
       if (!sel.tags.includes(it.tag)) return;
-      if (it.type === "group") units.push({ type: "group", bank: b.id, tag: it.tag, refs: it.qs.map(q => b.id + ":" + q.id) });
-      else units.push({ type: it.type, bank: b.id, tag: it.tag, refs: [b.id + ":" + it.id] });
+      if (it.type === "group") units.push({ type: unitType(it), bank: b.id, tag: it.tag, stage: it.stage, refs: it.qs.map(q => b.id + ":" + q.id) });
+      else units.push({ type: it.type, bank: b.id, tag: it.tag, stage: it.stage, refs: [b.id + ":" + it.id] });
     });
   });
   return units;
 }
-/* 英檢初級的「模擬段考」：預設考正式考卷（gept-m1～m3，整卷固定順序）；選「隨機組卷」才從練習題抽 */
+/* 有正式模擬卷的題庫（英檢、托福）：選「正式模擬卷 N」＝模擬段考（整卷固定順序）；「隨機組卷」＝自訂練習 */
+function paperBank(sel) { const b = sel.banks.length === 1 && bankById(sel.banks[0]); return b && b.mockPapers ? b : null; }
 function geptMock(sel) {
-  if (sel.mode !== "exam" || sel.banks.length !== 1) return null;
-  const b = bankById(sel.banks[0]); if (!b || !b.mockPapers) return null;
+  const b = paperBank(sel); if (!b || sel.mode !== "exam") return null;
   const n = sel.gMock ?? 1; if (!n) return null;
   const mb = bankById(b.mockPapers[n - 1]); if (!mb) return null;
-  const part = sel.gPart === "w" ? "w" : "lr";
-  return { bank: mb, n, part, tags: mb.exams[part === "w" ? 1 : 0].tags };
+  const pi = Math.min(+sel.gPart || 0, mb.exams.length - 1), ex = mb.exams[pi];
+  const blind = (mb.blind || []).some(t => ex.tags.includes(t));
+  return { bank: mb, n, pi, part: blind ? "lr" : "w", name: ex.name, tags: ex.tags, blind, adaptive: mb.adaptive };
 }
+function adaptivePlan(gm) { return typeof toeflAdaptivePlan === "function" ? toeflAdaptivePlan(gm) : null; }
 function isFixedSel(sel) { return sel.banks.length > 0 && sel.banks.every(id => (bankById(id) || {}).fixed); }
 function buildRefs(sel, countOnly) {
   const mix = countOnly ? (x => x) : shuffle;
   let units = unitsFor(sel);
   const gm = geptMock(sel);
-  if (gm) return unitsFor({ banks: [gm.bank.id], tags: gm.tags, types: TYPE_ORDER }).flatMap(u => u.refs);   // 正式考卷：整份照原本順序
+  if (gm) return unitsFor({ banks: [gm.bank.id], tags: gm.tags, types: TYPE_ORDER }).filter(u => !u.stage || u.stage === "router").flatMap(u => u.refs);   // 正式考卷：整份照原本順序
   if (sel.mode === "exam") {
     // 有自訂配分（例如英檢）的題庫：照它的配分抽
     const mockBanks = sel.banks.map(bankById).filter(b => b && b.mock);
@@ -214,7 +221,7 @@ function buildRefs(sel, countOnly) {
 
 function newSession(refs, opts = {}) {
   S = {
-    id: uid(), optv: OPTV, limit: opts.limit || 0, blind: !!opts.blind, who: opts.who || store.who || "未署名", kind: opts.kind || "exam", title: opts.title || "", banks: opts.banks || [], saved: Date.now(),
+    id: uid(), optv: OPTV, limit: opts.limit || 0, blind: !!opts.blind, adaptive: opts.adaptive || null, who: opts.who || store.who || "未署名", kind: opts.kind || "exam", title: opts.title || "", banks: opts.banks || [], saved: Date.now(),
     qs: refs, idx: 0, ans: {}, work: {}, words: {}, combo: 0, maxCombo: 0, elapsed: 0, started: Date.now()
   };
   store.sessions.unshift(S);
@@ -280,8 +287,9 @@ function grade(q, resp) {
     case "order": return JSON.stringify(resp) === JSON.stringify(q.ans);
     case "spell": return spellFull(q, resp).toLowerCase() === q.ans.toLowerCase();
     case "trans": case "rewrite": { const n = norm(resp); return transRefs(q).some(r => norm(r) === n); }
-    case "essay": return resp && resp.rate === "ok";
-    case "scramble": { const s = norm(resp.map(i => q.tiles[i]).join(" ")); return [q.ans, ...(q.alt || [])].some(a => norm(a) === s); }
+    case "essay": case "speak": return resp && resp.rate === "ok";
+    case "cword": return norm(resp) === norm(q.ans);
+    case "scramble": { const all = q.tiles.concat(q.extra || []); const s = norm(resp.map(i => all[i]).join(" ")); return [q.ans, ...(q.alt || [])].some(a => norm(a) === s); }
     case "match": return resp.every((r, i) => r === i);
     case "error": return resp.tok === q.wrong && q.fix.some(f => norm(f) === norm(resp.fix));
   }
@@ -294,6 +302,8 @@ function correctText(q) {
     case "spell": return q.ans;
     case "trans": case "rewrite": return q.ans.map(a => expand(a)[0]).filter((v, i, a) => a.indexOf(v) === i).slice(0, 2).join("／");
     case "essay": return "參考範文：" + q.model;
+    case "speak": return q.mode === "repeat" ? q.text : "參考回答：" + (q.model || "");
+    case "cword": return q.ans;
     case "scramble": return q.ans;
     case "match": return q.left.map((l, i) => `${l} → ${q.right[i]}`).join("；");
     case "error": return `${q.sent.split(" ")[q.wrong].replace(/[.,?!]/g, "")} → ${q.fix[0]}`;
@@ -309,7 +319,9 @@ function respText(q, a) {
     case "spell": return spellFull(q, r);
     case "trans": case "rewrite": return r || "（空白）";
     case "essay": return `${r.text || "（空白）"}（${wcount(r.text)} 字・自評${r.rate === "ok" ? "達到要求" : "還需加強"}）`;
-    case "scramble": return r.map(i => q.tiles[i]).join(" ");
+    case "speak": return `自評${r.rate === "ok" ? "達到要求" : "還需加強"}`;
+    case "cword": return r || "（空白）";
+    case "scramble": { const all = q.tiles.concat(q.extra || []); return (q.pre ? q.pre + " " : "") + r.map(i => all[i]).join(" ") + (q.post ? " " + q.post : ""); }
     case "match": return q.left.map((l, i) => `${l} → ${q.right[r[i]] ?? "?"}`).join("；");
     case "error": return `${(q.sent.split(" ")[r.tok] || "").replace(/[.,?!]/g, "")} → ${r.fix || "?"}`;
   }
@@ -408,12 +420,41 @@ function render() {
   else if (view === "vocab") app.innerHTML = vocabHTML();
   else if (view === "teacher") app.innerHTML = teacherHTML();
   if (view === "quiz" && S) linkPhrases(app, S.words); else linkPhrases(app, null);
-  const vw = app.querySelector(".view"); if (vw && animNext) vw.classList.add("enter"); animNext = false;
+  const vw = app.querySelector(".view");
+  if (vw && animNext) { vw.classList.add("enter"); [...vw.children].forEach((c, k) => c.style.setProperty("--i", Math.min(k, 10))); }
+  animNext = false;
   $("#tabbar").hidden = view === "quiz";
   $("#qbar").hidden = view !== "quiz";
   if (view === "quiz") $("#qbar").innerHTML = qbarHTML();
   document.querySelectorAll("#tabbar button").forEach(b => b.setAttribute("aria-current", b.dataset.v === (view === "result" ? resultBack : view) ? "page" : "false"));
+  moveTabIndicator();
 }
+/* 底部選單：玻璃膠囊跟著目前的分頁滑動 */
+function moveTabIndicator() {
+  const bar = $("#tabbar"); if (!bar || bar.hidden) return;
+  let ind = bar.querySelector(".tab-ind"); if (!ind) { ind = document.createElement("span"); ind.className = "tab-ind"; bar.prepend(ind); }
+  const cur = bar.querySelector('button[aria-current="page"]'); if (!cur) { ind.style.opacity = 0; return; }
+  const b = bar.getBoundingClientRect(), c = cur.getBoundingClientRect();
+  ind.style.opacity = 1; ind.style.width = c.width + "px"; ind.style.transform = `translateX(${c.left - b.left - 6}px)`;
+}
+addEventListener("resize", () => moveTabIndicator());
+/* 折疊群組：點一下展開／收合（有高度動畫） */
+document.addEventListener("click", e => {
+  const sm = e.target.closest(".bank-group > summary"); if (!sm) return;
+  e.preventDefault();
+  const g = sm.parentElement, body = g.querySelector(".bank-group-body"), opening = !g.open;
+  const done = () => { store.ui[`open:${g.dataset.group}`] = g.open; save(); };
+  if (reduced() || !body.animate) { g.open = opening; done(); return; }
+  if (opening) {
+    g.open = true; const h = body.scrollHeight;
+    body.animate([{ height: "0px", opacity: 0, transform: "translateY(-6px)" }, { height: h + "px", opacity: 1, transform: "none" }], { duration: 420, easing: "cubic-bezier(.2,.9,.25,1)" });
+    done();
+  } else {
+    const h = body.scrollHeight;
+    const an = body.animate([{ height: h + "px", opacity: 1 }, { height: "0px", opacity: 0 }], { duration: 300, easing: "cubic-bezier(.4,0,.2,1)" });
+    g.classList.add("closing"); an.onfinish = () => { g.open = false; g.classList.remove("closing"); done(); };
+  }
+});
 
 /* ================= 首頁 ================= */
 function countBy(sel, t) { return unitsFor(Object.assign({}, sel, { types: [t] })).reduce((n, u) => n + u.refs.length, 0); }
@@ -424,8 +465,8 @@ function homeHTML() {
   const examN = sel.mode === "exam" ? buildRefsCount(sel) : Math.min(avail, sel.count || avail);
   const last = store.attempts[0];
   let h = `<section class="view">
-  <div class="hero"><div><div class="eyebrow">English Practice</div><h1 class="large-title">英文段考練習</h1>
-  <p class="subtitle">選好範圍就開始。點題目裡不會的單字，交卷後會整理成單字表。</p></div>
+  <div class="hero"><div><div class="eyebrow">國中段考・全民英檢・TOEFL iBT</div><h1 class="large-title brand">Apex English</h1>
+  <p class="subtitle">全方位英語訓練平台。選好範圍就開始，點題目裡不會的單字，交卷後自動整理成單字表。</p></div>
   <button class="icon-btn" data-act="sound" aria-label="音效開關" title="音效">${store.settings.sound ? I.sound : I.mute}</button></div>`;
   h += `<div class="glass card who-card"><div class="opt-block"><label for="who">作答人</label>
     <div class="who-row"><input id="who" class="field" placeholder="輸入你的名字" autocomplete="off" value="${esc(store.who)}" maxlength="20"></div>
@@ -453,16 +494,14 @@ function homeHTML() {
     if (!name) { list.forEach(b => h += bankCardHTML(b, sel, gm)); return; }
     const picked = list.filter(b => sel.banks.includes(b.id));
     h += `<details class="bank-group" data-group="${esc(name)}" ${store.ui[`open:${name}`] ? "open" : ""}><summary class="glass card"><span style="min-width:0;flex:1"><span class="bank-title" style="display:block">${esc(name)}</span>
-      <span class="muted" style="font-size:14px">${list.map(b => esc(b.title.replace(" 全冊", ""))).join("・")}${picked.length ? `<br>已選：<b style="color:var(--ink)">${picked.map(b => esc(b.title)).join("、")}</b>` : ""}</span></span><span class="chev">${I.chevR}</span></summary>
+      <span class="muted" style="font-size:14px">${list.map(b => esc(b.title.replace(" 全冊", ""))).join("・")}${picked.length ? `<br>已選：<b style="color:var(--ink)">${picked.map(b => esc(b.title)).join("、")}</b>` : ""}</span></span><span class="fold-btn" aria-hidden="true"><span class="fold-hint">${store.ui[`open:${name}`] ? "收合" : "展開"}</span><span class="fold-ic">${I.chevR}</span></span></summary>
       <div class="bank-group-body">${list.map(b => bankCardHTML(b, sel, gm)).join("")}</div></details>`;
   });
   h += `<div class="glass card" style="display:flex;flex-direction:column;gap:18px">
-    <div class="opt-block"><label>模式</label><div class="seg">
+    <div class="opt-block">${paperBank(sel) ? `<label>${gm ? "正式模擬卷" : "隨機組卷"}</label>` : `<label>模式</label><div class="seg">
       <button data-act="mode" data-v="exam" aria-pressed="${sel.mode === "exam"}">模擬段考</button>
-      <button data-act="mode" data-v="custom" aria-pressed="${sel.mode === "custom"}">自訂練習</button></div>
-      <div class="muted" style="font-size:13.5px">${gm ? (gm.part === "lr"
-        ? `英檢正式考 卷 ${gm.n}・初試：聽力 30 題＋閱讀 30 題，照正式考試的順序計時 55 分鐘。聽力每題只播一遍；作答時不顯示對錯、沒有提示，交卷後才看成績和解析。`
-        : `英檢正式考 卷 ${gm.n}・複試寫作：單句寫作 15 題＋段落寫作 1 題，計時 40 分鐘。`)
+      <button data-act="mode" data-v="custom" aria-pressed="${sel.mode === "custom"}">自訂練習</button></div>`}
+      <div class="muted" style="font-size:13.5px">${gm ? `${esc(gm.bank.title)}・${esc(gm.name)}：${esc((gm.bank.partNotes || [])[gm.pi] || "")}${gm.blind ? "作答時不顯示對錯、沒有提示，聽力每題只播一遍，交卷後才看成績和解析。" : ""}`
       : sel.mode === "exam" ? (sel.banks.some(id => (bankById(id) || {}).mock) ? "依英檢各部分的題數，從練習題隨機抽題組卷" : "照段考配分抽題：單選 15・字典題 1・題組 3 組・文意字彙 10・翻譯 4；範圍小時自動用重組、配對、挑錯補到約 30 題") : "依下方題型與題數隨機抽題"}</div></div>
     ${gm ? "" : `<div class="opt-block"><label>題型</label><div class="chips">${TYPE_ORDER.map(t => {
       const c = countBy(sel, t); const dis = false; if (!c) return "";
@@ -490,17 +529,18 @@ function bankCardHTML(b, sel, gm) {
       <div class="bank-head"><button class="row" data-act="bank" data-id="${b.id}" style="text-align:left;flex:1;min-width:0;gap:14px;flex-wrap:nowrap" aria-pressed="${on}">
         <span class="check ${on ? "on" : ""}">${on ? I.check : ""}</span>
         <span style="min-width:0"><span class="bank-title" style="display:block">${esc(b.title)}</span><span class="muted" style="font-size:14px">${esc(b.range)}・${n} 題</span></span></button>
-        <span class="tag date">加入 ${esc(b.added)}</span></div>
+</div>
       ${b.note ? `<div class="muted" style="font-size:13.5px">${esc(b.note)}</div>` : ""}
-      ${papers ? `<div class="opt-block"><label>模擬段考：選一份考卷</label><div class="seg">${b.mockPapers.map((id, i) => `<button data-act="gmock" data-v="${i + 1}" aria-pressed="${(sel.gMock ?? 1) === i + 1}">正式考 卷 ${i + 1}</button>`).join("")}<button data-act="gmock" data-v="0" aria-pressed="${sel.gMock === 0}">隨機組卷</button></div></div>
-      ${gm ? `<div class="opt-block"><label>考哪一部分</label><div class="seg"><button data-act="gpart" data-v="lr" aria-pressed="${gm.part === "lr"}">初試：聽力＋閱讀</button><button data-act="gpart" data-v="w" aria-pressed="${gm.part === "w"}">複試：寫作</button></div></div>
+      ${papers ? `<div class="opt-block"><label>選擇考卷</label><div class="seg">${b.mockPapers.map((id, i) => `<button data-act="gmock" data-v="${i + 1}" aria-pressed="${!!gm && gm.n === i + 1}">正式模擬卷 ${i + 1}</button>`).join("")}<button data-act="gmock" data-v="0" aria-pressed="${!gm}">隨機組卷</button></div>
+      <div class="muted" style="font-size:13px">${gm ? "正式模擬卷＝照官方題型、題數、時間出的完整考卷" : "隨機組卷＝從練習題庫依題型、細項自由抽題"}</div></div>
+      ${gm ? `<div class="opt-block"><label>考哪一部分</label><div class="seg">${gm.bank.exams.map((ex, i) => `<button data-act="gpart" data-v="${i}" aria-pressed="${gm.pi === i}">${esc(ex.name)}</button>`).join("")}</div></div>
       ${b.officialLinks ? `<div class="muted" style="font-size:13px">想做官方真題：${b.officialLinks.map(([t, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline">${esc(t)}</a>`).join("、")}</div>` : ""}` : chips()}`
       : `${on && b.exams ? `<div class="opt-block"><label>段考範圍快選</label><div class="seg">${b.exams.map((ex, i) => `<button data-act="exam-pick" data-id="${b.id}" data-i="${i}" aria-pressed="${sameSet(Object.keys(b.tags).filter(t => sel.tags.includes(t)), ex.tags)}">${esc(ex.name)}</button>`).join("")}<button data-act="exam-pick" data-id="${b.id}" data-i="all" aria-pressed="${Object.keys(b.tags).every(t => sel.tags.includes(t))}">全冊</button></div></div>` : ""}
       ${on ? chips() : ""}`}
     </div>`;
 }
 /* 折疊的題庫群組：記住開合狀態 */
-document.addEventListener("toggle", e => { const g = e.target.closest && e.target.closest(".bank-group"); if (g && e.target === g) { store.ui[`open:${g.dataset.group}`] = g.open; save(); } }, true);
+document.addEventListener("toggle", e => { const g = e.target.closest && e.target.closest(".bank-group"); if (g && e.target === g) { const t = g.querySelector(".fold-hint"); if (t) t.textContent = g.open ? "收合" : "展開"; } }, true);
 function sameSet(a, b) { return a.length === b.length && a.every(x => b.includes(x)); }
 function buildRefsCount(sel) { return buildRefs(sel, true).length; }
 
@@ -520,7 +560,7 @@ function startTick() {
   }, 1000);
 }
 function qbarHTML() {
-  const last = S.idx === S.qs.length - 1;
+  const last = S.idx === S.qs.length - 1 && !(typeof adaptPending === "function" && adaptPending());
   return `<button class="nav" data-act="prev" ${S.idx === 0 ? "disabled" : ""} aria-label="上一題">${I.chevL}<span>上一題</span></button>
   ${S.blind ? "" : `<button class="tb ${showHint ? "on" : ""}" data-act="hint">${I.bulb}提示</button>`}
   <button class="tb" data-act="grid">${I.grid}題號</button>
@@ -530,7 +570,7 @@ function qbarHTML() {
 function quizHTML() {
   const i = S.idx, X = getQ(i); const q = X.q; const a = S.blind ? null : S.ans[i];
   const answered = Object.keys(S.ans).length;
-  const typeLabel = X.ftype === "vocab" ? "單字練習" : TYPE_LABEL[X.ftype] + (q.type === "order" ? "・排序" : "");
+  const typeLabel = X.ftype === "vocab" ? "單字練習" : q.label ? q.label : q.ctx ? "Build a Sentence" : X.group && KIND_LABEL[X.group.kind] ? KIND_LABEL[X.group.kind] : TYPE_LABEL[X.ftype] + (q.type === "order" ? "・排序" : "");
   let h = `<section class="view ${wordMode ? "wordmode" : ""}" style="gap:16px">
   <div class="qtop glass pill"><button class="icon-btn" data-act="exit" aria-label="離開">${I.x}</button>
     <button class="save-btn" data-act="save-now" aria-label="存檔">${I.save}<span>存檔</span></button>
@@ -540,7 +580,7 @@ function quizHTML() {
     <div class="combo-mini ${S.combo ? "" : "zero"}" id="combomini">×${S.combo}</div></div>`;
   const passage = X.group ? passageHTML(X, i) : "";
   h += `<div class="qlayout ${passage ? "has-passage" : ""}">${passage}<div class="glass card qcard" id="qcard" data-i="${i}">
-    <div class="qhead"><span class="qnum">Q${i + 1}</span>${q.type === "trans" || q.type === "essay" || q.type === "listen" || q.zhPrompt || S.blind ? "" : `<button class="speak" data-act="read-q" aria-label="念題目" title="念題目">${I.speaker}</button>`}<span class="tag">${typeLabel}</span>${X.group ? "" : X.bank ? `<span class="tag">${esc(tagName(X.bank, q.tag))}</span>` : ""}</div>
+    <div class="qhead"><span class="qnum">Q${i + 1}</span>${["trans", "essay", "listen", "cword", "speak"].includes(q.type) || (X.group && X.group.kind === "listening") || q.zhPrompt || S.blind ? "" : `<button class="speak" data-act="read-q" aria-label="念題目" title="念題目">${I.speaker}</button>`}<span class="tag">${typeLabel}</span>${X.group ? "" : X.bank ? `<span class="tag">${esc(tagName(X.bank, q.tag))}</span>` : ""}</div>
     ${questionBody(X, i, a, false)}
     ${showHint && !a ? `<div class="hintbox">${I.bulb}<div>${esc(q.hint || "這題沒有提示")}</div></div>` : ""}
     ${a ? feedbackHTML(X, a) : ""}
@@ -551,6 +591,8 @@ function quizHTML() {
 function passageHTML(X, i) {
   const g = X.group, m = S.words;
   let body = "";
+  if (g.kind === "ctest") return ctestPassageHTML(X, i);
+  if (g.kind === "listening") return listenGroupHTML(X, i);
   if (g.kind === "cloze") {
     body = g.passage.map(p => `<p data-ctx>${p.split(/(\[\[\d\]\])/).map(seg => {
       const mm = /\[\[(\d)\]\]/.exec(seg); if (!mm) return wrapWords(seg, m);
@@ -581,7 +623,7 @@ function listenHTML(q, i, a, review) {
   const reveal = review || (a && !once);
   let h = q.img ? `<div class="limg ${q.part === 4 ? "tri" : ""}"><img src="${esc(q.img)}" alt="聽力題圖片" onerror="this.parentNode.classList.add('noimg');this.remove()">${q.part === 4 ? "<span>A</span><span>B</span><span>C</span>" : ""}</div>` : "";
   if (!review) h += `<div class="listen-bar"><button class="btn ${used ? "" : "primary"}" data-act="listen-play" ${used ? "disabled" : ""}>${I.speaker}<span>${used ? "已播放" : w.played ? "再聽一次" : "播放題目"}</span></button>
-  <span class="muted" style="font-size:13.5px">${once ? "正式考：每題只播一遍" : { 1: "看圖，聽問題和三個選項", 2: "聽一句話，選出最適合的回應", 3: "聽一段對話和問題", 4: "聽短文和問題，選出符合的圖" }[q.part]}</span></div>`;
+  <span class="muted" style="font-size:13.5px">${once ? "正式考：每題只播一遍" : { 1: "看圖，聽問題和三個選項", 2: "聽一句話，選出最適合的回應", 3: "聽一段對話和問題", 4: "聽短文和問題，選出符合的圖", cr: "Listen and choose the best response. 聽一句話，選出最適合的回應" }[q.part]}</span></div>`;
   if (reveal && !review) h += `<details class="script"><summary>聽力原文</summary>${listenScript(q).map(l => `<div data-ctx>${wrapWords(l, S.words)}</div>`).join("")}</details>`;
   return h;
 }
@@ -638,24 +680,29 @@ function questionBody(X, i, a, review) {
     <div class="muted" style="font-size:13.5px">${q.start ? `已幫你寫好開頭「${esc(q.start)}」，請寫出完整的句子。` : "請寫出完整的句子。"}</div>
     ${locked ? "" : `<div class="row"><button class="btn primary" data-act="submit">確認</button></div>`}`;
   }
+  else if (q.type === "cword") h += ctestCardHTML(X, i, a);
+  else if (q.type === "speak") h += speakHTML(q, i, a);
   else if (q.type === "essay") {
     const sub = locked || st.submitted; const txt = locked ? a.resp.text : (st.val || "");
-    h += `<div class="eyebrow">段落寫作</div><div class="stem" style="font-size:17px">${esc(q.prompt)}</div>
+    h += `<div class="eyebrow">${esc(q.label || "段落寫作")}</div><div class="stem" style="font-size:17px">${esc(q.prompt)}</div>
+    ${q.scenario ? `<div class="boxed" style="font-size:16px">${esc(q.scenario)}${q.bullets ? `<ul style="margin:8px 0 0;padding-left:22px">${q.bullets.map(b => `<li>${esc(b)}</li>`).join("")}</ul>` : ""}</div>` : ""}
+    ${q.posts ? `<div class="posts">${q.posts.map(([who, t], k) => `<div class="post ${k ? "" : "prof"}"><div class="post-who">${esc(who)}</div><div data-ctx>${wrapWords(t, m)}</div></div>`).join("")}</div>` : ""}
     ${q.img ? `<img class="essay-img" src="${esc(q.img)}" alt="看圖寫作的圖片" onerror="this.remove()">` : ""}
     ${q.scenes ? `<div class="scenes">${q.scenes.map((s, k) => `<div class="scene"><span class="sn">${k + 1}</span><span data-ctx>${wrapWords(s, m)}</span></div>`).join("")}</div>` : ""}
     ${q.keywords ? `<div class="row" style="gap:6px"><span class="step-label">可以用的字：</span>${q.keywords.map(k => `<span class="tag">${esc(k)}</span>`).join("")}</div>` : ""}
     <textarea class="field essay" id="essayin" spellcheck="false" placeholder="在這裡寫你的短文…" ${sub ? "readonly" : ""}>${esc(txt)}</textarea>
-    <div class="muted tnum" id="wc" style="font-size:13.5px">${wcount(txt)} 字（建議 50 字以上）</div>
+    <div class="muted tnum" id="wc" style="font-size:13.5px">${wcount(txt)} 字（建議 ${q.minWords || 50} 字以上）</div>
     ${!sub ? `<div class="row"><button class="btn primary" data-act="essay-submit">寫好了，看範文和檢查表</button></div>` : `
     <div class="model"><div class="step-label">參考範文</div><div class="ptext" style="font-size:16px">${esc(q.model)}</div></div>
-    <div class="step-label">自我檢查</div><div class="checklist">${ESSAY_CHECK.map((c, k) => `<label class="ck"><input type="checkbox" id="ck${k}" ${locked ? "disabled" : ""}><span>${esc(c)}</span></label>`).join("")}</div>
+    <div class="step-label">自我檢查</div><div class="checklist">${(q.check || ESSAY_CHECK).map((c, k) => `<label class="ck"><input type="checkbox" id="ck${k}" ${locked ? "disabled" : ""}><span>${esc(c)}</span></label>`).join("")}</div>
     ${locked ? "" : `<div class="row"><button class="btn" data-act="essay-rate" data-v="no">還需加強</button><button class="btn primary" data-act="essay-rate" data-v="ok">我覺得達到要求</button></div>`}`}`;
   }
   else if (q.type === "scramble") {
-    const seq = locked ? a.resp : (st.seq || []);
-    h += `<div class="eyebrow">把字卡排成正確的句子</div>${q.zh ? `<div class="zh">${esc(q.zh)}</div>` : ""}
-    <div class="slots ${seq.length ? "" : "empty"}">${seq.map((t, k) => `<button class="tile" data-act="slot" data-k="${k}" ${locked ? "disabled" : ""}>${esc(q.tiles[t])}</button>`).join("")}</div>
-    ${locked ? "" : `<div class="tiles">${(st.perm || q.tiles.map((_, k) => k)).map(t => `<button class="tile ${seq.includes(t) ? "used" : ""}" data-act="tile" data-k="${t}">${esc(q.tiles[t])}</button>`).join("")}</div>
+    const seq = locked ? a.resp : (st.seq || []), all = q.tiles.concat(q.extra || []);
+    h += `<div class="eyebrow">${q.ctx ? "Build a Sentence：用字卡完成回應的句子" + (q.extra && q.extra.length ? "（有一張字卡用不到）" : "") : "把字卡排成正確的句子"}</div>${q.zh ? `<div class="zh">${esc(q.zh)}</div>` : ""}
+    ${q.ctx ? `<div class="bs-ctx" data-ctx>${wrapWords(q.ctx, m)}</div>` : ""}
+    <div class="bs-line">${q.pre ? `<span class="bs-fix">${esc(q.pre)}</span>` : ""}<div class="slots ${seq.length ? "" : "empty"}">${seq.map((t, k) => `<button class="tile" data-act="slot" data-k="${k}" ${locked ? "disabled" : ""}>${esc(all[t])}</button>`).join("")}</div>${q.post ? `<span class="bs-fix">${esc(q.post)}</span>` : ""}</div>
+    ${locked ? "" : `<div class="tiles">${(st.perm || all.map((_, k) => k)).map(t => `<button class="tile ${seq.includes(t) ? "used" : ""}" data-act="tile" data-k="${t}">${esc(all[t])}</button>`).join("")}</div>
     <div class="row"><button class="btn ghost" data-act="scr-reset">清除</button><button class="btn primary" data-act="submit" ${seq.length === q.tiles.length ? "" : "disabled"}>確認</button></div>`}`;
   }
   else if (q.type === "match") {
@@ -688,6 +735,7 @@ function questionBody(X, i, a, review) {
 }
 function feedbackHTML(X, a) {
   const q = X.q;
+  if (q.type === "speak") return `<div class="feedback ${a.correct ? "ok" : "no"}"><span class="fb-ic">${a.correct ? I.check : I.x}</span><div style="min-width:0"><b>${a.correct ? "完成！自評達到要求" : "完成，自評還需加強"}</b><p>${esc(q.exp || "")}</p></div></div>`;
   if (q.type === "essay") return `<div class="feedback ${a.correct ? "ok" : "no"}"><span class="fb-ic">${a.correct ? I.check : I.x}</span><div style="min-width:0"><b>${a.correct ? "完成！自評達到要求" : "完成，自評還需加強"}</b><p>${esc(q.exp || "")}</p></div></div>`;
   const extra = (q.type === "trans" || q.type === "rewrite") && !a.correct ? diffHTML(q, a.resp) : "";
   const self = (q.type === "trans" || q.type === "rewrite") && !a.correct && !a.self ? `<button class="btn" data-act="selfok" style="margin-top:10px;min-height:38px;font-size:14px">我的寫法也對（自己改成對）</button>` : "";
@@ -740,18 +788,20 @@ function submitCurrent() {
 }
 function rerenderKeep() { const sy = scrollY; render(); scrollTo(0, sy); }
 function gotoQ(n) {
+  if (typeof adaptAdvance === "function" && n > S.idx) adaptAdvance(n);
   if (n < 0 || n >= S.qs.length) return;
   S.idx = n; showHint = false; save(); animNext = true; stopReading();
   render(); window.scrollTo({ top: 0 });
 }
 function prepWork(i) {
   const q = getQ(i).q, w = work(i);
-  if (q.type === "scramble" && !w.perm) { let p; do { p = shuffle(q.tiles.map((_, k) => k)); } while (q.tiles.length > 2 && p.every((v, k) => v === k)); w.perm = p; }
+  if (q.type === "scramble" && !w.perm) { const n = q.tiles.length + (q.extra || []).length; let p; do { p = shuffle([...Array(n).keys()]); } while (n > 2 && p.every((v, k) => v === k)); w.perm = p; }
   if (q.type === "match" && !w.perm) { let p; do { p = shuffle(q.right.map((_, k) => k)); } while (p.some((v, k) => v === k) && Math.random() < .9); w.perm = p; w.pairs = w.pairs || {}; }
 }
 
 /* ---------- 交卷 ---------- */
 function askFinish() {
+  if (typeof adaptPending === "function" && adaptPending()) { gotoQ(S.qs.length); return; }
   const left = S.qs.length - Object.keys(S.ans).length;
   if (!left) return finish();
   sheet(`<h3>還有 ${left} 題沒作答</h3><p class="muted" style="margin:0 0 16px">沒作答的題目會算錯。要現在交卷嗎？</p>
@@ -896,6 +946,7 @@ function resultHTML(id) {
   <div class="stat"><div class="k">最高 Combo</div><div class="v" style="color:var(--gold)">×${att.maxCombo}</div></div>
   <div class="stat"><div class="k">用了提示</div><div class="v">${hintCount}</div></div>
   <div class="stat"><div class="k">生字</div><div class="v">${Object.keys(att.words || {}).length}</div></div></div></div>`;
+  if (typeof toeflBandHTML === "function") h += toeflBandHTML(att);
   // 細項分析
   if (att.kind !== "vocab") {
     const by = {};
@@ -922,15 +973,17 @@ function reviewItem(att, i) {
   if (!X) return `<details class="rv"><summary><span class="st skip">?</span><span class="sum">題目已從題庫移除</span></summary></details>`;
   const q = X.q, a = att.ans[i];
   const st = !a ? "skip" : a.correct ? "ok" : "no";
-  const sumText = q.type === "listen" ? `${tagName(X.bank, q.tag)}・${(q.part === 1 ? listenScript(q)[0] : listenScript(q).slice(-1)[0]) || ""}` : q.zh || q.zhPrompt || q.prompt || (q.src ? [].concat(q.src).join(" ") : "") || (q.blank ? `${X.group.title}・第 ${q.blank} 格` : [].concat(q.stem || q.sent || "").join(" "));
-  const typeL = X.ftype === "vocab" ? "單字" : TYPE_LABEL[X.ftype];
+  const sumText = q.type === "cword" ? `${X.group.title}・第 ${q.blank} 格` : q.type === "speak" ? q.text : q.type === "listen" ? `${tagName(X.bank, q.tag)}・${(q.part === 1 ? listenScript(q)[0] : listenScript(q).slice(-1)[0]) || ""}` : q.zh || q.zhPrompt || q.prompt || (q.src ? [].concat(q.src).join(" ") : "") || (q.blank ? `${X.group.title}・第 ${q.blank} 格` : [].concat(q.stem || q.sent || "").join(" "));
+  const typeL = X.ftype === "vocab" ? "單字" : X.group && KIND_LABEL[X.group.kind] ? KIND_LABEL[X.group.kind] : TYPE_LABEL[X.ftype];
   let body = "";
-  if (X.group) body += `<details class="pfold"><summary><span class="muted">題組：${esc(X.group.title)}（展開文章）</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext ${X.group.kind}" style="margin-top:8px;font-size:15.5px">${X.group.passage.map(p => `<p>${esc(p).replace(/\[\[(\d)\]\]/g, '<span class="cz">$1</span>')}</p>`).join("")}</div></details>`;
+  if (X.group && X.group.kind === "listening") body += `<details class="pfold"><summary><span class="muted">聽力原文：${esc(X.group.title)}</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext dialogue" style="margin-top:8px;font-size:15.5px">${listenGroupScript(X.group).map(l => `<p>${esc(l)}</p>`).join("")}</div></details>`;
+  else if (X.group && X.group.kind === "ctest") body += `<div class="ptext" style="font-size:15.5px">${esc(X.group.passage[0].replace(/\{([^}]*)\}/g, "$1"))}</div>`;
+  else if (X.group) body += `<details class="pfold"><summary><span class="muted">題組：${esc(X.group.title)}（展開文章）</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext ${X.group.kind}" style="margin-top:8px;font-size:15.5px">${X.group.passage.map(p => `<p>${esc(p).replace(/\[\[(\d)\]\]/g, '<span class="cz">$1</span>')}</p>`).join("")}</div></details>`;
   body += `<div>${questionReview(q)}</div>`;
   body += `<dl class="kv"><dt>你的答案</dt><dd class="${a && a.correct ? "ans-ok" : "ans-no"}" style="${a && a.correct ? "" : "text-decoration:none"}">${esc(respText(q, a))}${a && a.self ? "（自評正確）" : ""}${a && a.hint ? ` <span class="tag">用了提示</span>` : ""}</dd>
   <dt>正確答案</dt><dd class="ans-ok">${esc(correctText(q))}</dd>
   ${q.type === "trans" || q.type === "rewrite" ? `<dt>可接受</dt><dd class="muted" style="font-size:14px">${q.ans.map(x => esc(x).replace(/\{([^}]*)\}/g, (m, g) => `[${g.split("|").map(s => s || "∅").join(" / ")}]`)).join("<br>")}</dd>` : ""}
-  <dt>解析</dt><dd>${esc(q.exp)}</dd>
+  ${q.exp ? `<dt>解析</dt><dd>${esc(q.exp)}</dd>` : ""}
   ${q.hint ? `<dt>提示</dt><dd class="muted">${esc(q.hint)}</dd>` : ""}</dl>`;
   if ((q.type === "trans" || q.type === "rewrite") && a && !a.correct) body += diffHTML(q, a.resp);
   return `<details class="rv"><summary><span class="st ${st}">${st === "ok" ? I.check : st === "no" ? I.x : "–"}</span><span class="tag">${i + 1}</span><span class="sum">${esc(sumText)}</span><span class="tag">${typeL}</span><span class="chev">${I.chevR.replace("<svg", '<svg width="16" height="16"')}</span></summary><div class="rv-body">${body}</div></details>`;
@@ -943,8 +996,10 @@ function questionReview(q) {
   if (q.type === "spell") return `${q.zhPrompt ? `<div>${esc(q.zhPrompt)}</div>` : ""}<div>${esc(q.stem).replace("___", `<b>${esc(spellParts(q.ans).first)}____${esc(spellParts(q.ans).last)}</b>`)}</div>`;
   if (q.type === "trans") return `<div style="font-weight:650">${esc(q.zh)}</div>`;
   if (q.type === "rewrite") return `<div class="muted">${esc(q.instr)}</div>${[].concat(q.src).map(s => `<div style="font-weight:650">${esc(s)}</div>`).join("")}`;
-  if (q.type === "essay") return `<div>${esc(q.prompt)}</div>${(q.scenes || []).map((s, k) => `<div class="muted">${k + 1}. ${esc(s)}</div>`).join("")}<div style="margin-top:8px"><b>參考範文：</b>${esc(q.model)}</div>`;
-  if (q.type === "scramble") return `<div style="font-weight:650">${esc(q.zh)}</div><div class="muted">${q.tiles.map(esc).join(" / ")}</div>`;
+  if (q.type === "essay") return `<div>${esc(q.prompt)}</div>${q.scenario ? `<div class="muted">${esc(q.scenario)}</div>` : ""}${(q.bullets || []).map(b => `<div class="muted">• ${esc(b)}</div>`).join("")}${(q.posts || []).map(([w, t]) => `<div class="muted"><b>${esc(w)}：</b>${esc(t)}</div>`).join("")}${(q.scenes || []).map((s, k) => `<div class="muted">${k + 1}. ${esc(s)}</div>`).join("")}<div style="margin-top:8px"><b>參考範文：</b>${esc(q.model)}</div>`;
+  if (q.type === "scramble") return `${q.ctx ? `<div>${esc(q.ctx)}</div>` : ""}<div style="font-weight:650">${esc(q.zh || "")}</div><div class="muted">${q.tiles.concat(q.extra || []).map(esc).join(" / ")}</div>`;
+  if (q.type === "cword") return `<div>${esc(q.pre)}<b>${"_".repeat(q.miss.length)}</b></div>`;
+  if (q.type === "speak") return `${q.scenario ? `<div class="muted">${esc(q.scenario)}</div>` : ""}<div style="font-weight:650">${esc(q.text)}</div>${q.model ? `<div style="margin-top:8px"><b>參考回答：</b>${esc(q.model)}</div>` : ""}`;
   if (q.type === "match") return `<div>${esc(q.stem)}</div>`;
   if (q.type === "error") return `<div style="font-weight:650">${esc(q.sent)}</div>`;
   return "";
@@ -1031,8 +1086,8 @@ document.addEventListener("click", e => {
       save(); rerenderKeep(); break;
     }
     case "multi": sel.multi = !sel.multi; if (!sel.multi && sel.banks.length > 1) { sel.banks = sel.banks.slice(-1); toast("已改回單選，只保留最後選的範圍"); } save(); rerenderKeep(); break;
-    case "gmock": sel.gMock = +d.v; save(); rerenderKeep(); break;
-    case "gpart": sel.gPart = d.v; save(); rerenderKeep(); break;
+    case "gmock": sel.gMock = +d.v; sel.mode = +d.v ? "exam" : "custom"; save(); rerenderKeep(); break;
+    case "gpart": sel.gPart = +d.v; save(); rerenderKeep(); break;
     case "exam-pick": {
       const b = bankById(d.id); const own = Object.keys(b.tags);
       sel.tags = sel.tags.filter(t => !own.includes(t)).concat(d.i === "all" ? own : b.exams[+d.i].tags);
@@ -1055,8 +1110,8 @@ document.addEventListener("click", e => {
       const gm = geptMock(sel);
       if (gm) (gm.bank.timeLimits || []).forEach(([tags, min]) => { if (tags.some(t => gm.tags.includes(t))) limit += min * 60; });
       else if (sel.mode === "exam") sel.banks.map(bankById).forEach(b => (b.timeLimits || []).forEach(([tags, min]) => { if (tags.some(t => sel.tags.includes(t))) limit += min * 60; }));
-      const blind = !!gm && gm.part === "lr";
-      const opts = { kind: "exam", limit, blind, title: gm ? `${titles}・正式考 卷 ${gm.n}・${blind ? "初試（聽力＋閱讀）" : "複試（寫作）"}` : `${titles}・${sel.mode === "exam" ? (limit ? "模擬測驗" : "模擬段考") : "自訂練習"}`, banks: gm ? [gm.bank.id] : sel.banks.slice() };
+      const blind = !!gm && gm.blind;
+      const opts = { kind: "exam", limit, blind, adaptive: gm && gm.adaptive ? adaptivePlan(gm) : null, title: gm ? `${titles}・正式模擬卷 ${gm.n}・${gm.name.replace(/（.*?）/, "")}` : `${titles}・${sel.mode === "exam" ? (limit ? "模擬測驗" : "模擬段考") : "自訂練習"}`, banks: gm ? [gm.bank.id] : sel.banks.slice() };
       // 這個名字在這台裝置還沒有個人代碼 → 先登記（名字被別人用了就請他輸入代碼）
       if (typeof ensureCode === "function" && !store.codes[nm]) { act.disabled = true; ensureCode(nm).then(ok => { act.disabled = false; if (ok) newSession(refs, opts); }); }
       else newSession(refs, opts);
@@ -1166,7 +1221,7 @@ document.addEventListener("input", e => {
   const w = work(S.idx);
   if (e.target.id === "spellin" || e.target.id === "transin") { w.val = e.target.value; save(); }
   if (e.target.id === "errfix") { w.fix = e.target.value; save(); }
-  if (e.target.id === "essayin") { w.val = e.target.value; save(); const c = $("#wc"); if (c) c.textContent = `${wcount(w.val)} 字（建議 50 字以上）`; }
+  if (e.target.id === "essayin") { w.val = e.target.value; save(); const c = $("#wc"); if (c) c.textContent = `${wcount(w.val)} 字（建議 ${getQ(S.idx).q.minWords || 50} 字以上）`; }
 });
 document.addEventListener("keydown", e => {
   if (view !== "quiz" || !S || $("#scrim")) return;

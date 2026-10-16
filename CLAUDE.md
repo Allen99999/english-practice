@@ -1,6 +1,6 @@
-# English Practice 網站：部署與維護說明（給 Claude Code）
+# Apex English 網站：部署與維護說明（給 Claude Code）
 
-這是 Allen 的英文練習網站（國中七上～九下＋全民英檢初級）。純靜態網站放在 `docs/`，用 GitHub Pages 上線；
+這是 Allen 的英文練習網站「Apex English」（國中七上～九下翰林版＋全民英檢初級＋TOEFL iBT 2026 新制）。純靜態網站放在 `docs/`，用 GitHub Pages 上線；
 學生成績透過 Google Apps Script 寫進 Google 試算表；朗讀用 edge-tts 預先產生的 MP3。
 
 使用者是 Allen，請用繁體中文和他溝通。他希望盡量自動化：能用指令完成的就直接做，
@@ -101,6 +101,15 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
   - part 1、4 的圖：`docs/img/listen/<題庫>-<題號>.png`，依 `pic` 欄位的英文描述用 Higgsfield 畫（Seedream 5.0 Flash，0.5 點／張，黑白線稿、圖中不能有字；
     part 4 是三格橫排，網站會自動標 A/B/C）。避免畫小孩游泳、泳衣（會被判成不當內容）。畫好後壓縮（寬 1200、48 色 PNG）。
   - 正式考模擬卷的題目不可以抄官方或出版社的真題（網站是公開的）；官方真題請學生到 GEPT i學網。
+- **有正式模擬卷的題庫（英檢、托福）**：題庫設 `mockPapers`；首頁選這個題庫時，「正式模擬卷 N」＝模擬段考、「隨機組卷」＝自訂練習（不顯示「模式」切換）。
+  模擬卷題庫設 `hidden`、`fixed`、`exams`（可考的部分）、`partNotes`、`timeLimits`、`blind`（不顯示對錯的部分）。
+- **托福（2026 新制）**：練習題在 `banktoefl.js`（閱讀）、`banktoefl2.js`（聽力、寫作、口說）；正式模擬卷在 `banktoeflmock.js`、`banktoeflmock2.js`。
+  - 出題工具（helpers.js）：CT 補字母（`manu{scripts}`）、LG 聽力題組、L(...,"cr",...) 聽一句選回應、BS Build a Sentence、EM Email、AD Academic Discussion、SR／SI 口說。
+  - 聽力 script 的說話者：W/M 美國腔、WB/MB 英國腔、WA/MA 澳洲腔、WC/MC 加拿大腔、N 旁白（聲音設定在 config.js 的 `TTS.accents`）。
+  - Reading、Listening 是兩階段適應性：題目加 `stage`（router／lower／upper），模擬卷的 `adaptive` 設定切分點（第一階段答對率 ≥ 60% 進 upper）。執行邏輯在 `toefl.js`。
+  - 寫作、口說是自評＋範文；口說可錄音（只存在學生裝置，不上傳）。結果頁會顯示依答對率估算的 1～6 級分。
+  - Allen 提供的「新托福模擬小題本」只當格式參考，內容含 ETS 官方題，不可照搬到網站。
+- **網站名稱與分享預覽**：名稱 Apex English；分享預覽圖是 `docs/og.png`（1200×630，用 Chrome headless 從 HTML 截圖產生），index.html 有 og:／twitter: 標籤。
   新題目裡沒收錄的字要加到 `dict*.js`（格式 `word|詞性|中文`）。
 - **改完之後**：`node tools/build_tts_jobs.mjs && .venv/bin/python tools/gen_audio.py`，再 `git add -A && git commit && git push`
 - 單選題的選項順序會在載入時自動平衡，新增題目請加在每份題庫的最後面，已存在的題目不要改 id 或移動位置（舊紀錄靠 id 對應）。

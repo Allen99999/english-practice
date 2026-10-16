@@ -7,6 +7,12 @@ const SITE_CONFIG = {
     word: "en-US-JennyNeural",
     narrator: "en-US-AriaNeural",
     female: ["en-US-AvaNeural", "en-US-EmmaNeural"],
-    male: ["en-US-AndrewNeural", "en-US-BrianNeural"]
+    male: ["en-US-AndrewNeural", "en-US-BrianNeural"],
+    // 托福聽力：WB/MB 英國腔、WA/MA 澳洲腔、WC/MC 加拿大腔（script 裡用 "WB: " 這種標記）
+    accents: {
+      B: { female: ["en-GB-SoniaNeural", "en-GB-LibbyNeural"], male: ["en-GB-RyanNeural", "en-GB-ThomasNeural"] },
+      A: { female: ["en-AU-NatashaNeural"], male: ["en-AU-WilliamMultilingualNeural"] },
+      C: { female: ["en-CA-ClaraNeural"], male: ["en-CA-LiamNeural"] }
+    }
   }
 };

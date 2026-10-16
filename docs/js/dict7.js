@@ -1,0 +1,1042 @@
+/* ===== 字典補充 7：托福（2026 新制）題目用到的字 ===== */
+Object.assign(IRREG, { grew: "grow", threw: "throw", led: "lead", lies: "lie", shown: "show", understood: "understand", fallen: "fall", beaten: "beat", proven: "prove", hidden: "hide", frozen: "freeze", built: "build", brought: "bring", sought: "seek", spread: "spread", resold: "resell", overused: "overuse", cacti: "cactus", theses: "thesis", criteria: "criterion", bacteria: "bacterium", wolves: "wolf", lives: "life", leaves: "leaf", stuck: "stick", held: "hold", bitten: "bite", drawn: "draw", drove: "drive", fed: "feed", taught: "teach", worn: "wear" });
+const DICT_RAW7 = `
+ability|n.|能力
+above|prep.|在…上方
+absorb|v.|吸收
+academic|adj.|學術的
+accelerate|v.|加速
+access|n.|使用權；進入
+accommodation|n.|住宿
+accompany|v.|伴隨
+account|v.|說明；占（account for）
+accurate|adj.|準確的
+acquire|v.|習得；獲得
+act|v.|行動；（機器）出狀況（act up）
+active|adj.|活躍的；主動的
+actually|adv.|事實上
+adapt|v.|適應
+addition|n.|增加（in addition 此外）
+additional|adj.|額外的
+adjust|v.|調整
+admire|v.|欣賞
+advance|n.|前進（in advance 事先）
+advantage|n.|優點
+advertise|v.|做廣告
+advisor|n.|指導老師；顧問
+affect|v.|影響
+air|n.|空氣
+airfare|n.|機票錢
+alert|adj.|警覺的
+altogether|adv.|完全地
+amount|n.|數量
+ancient|adj.|古代的
+announce|v.|宣布
+announcement|n.|公告
+annual|adj.|一年生的；每年的
+anthocyanin|n.|花青素
+antibiotic|n.|抗生素
+anxiety|n.|焦慮
+apologize|v.|道歉
+apparent|adj.|明顯的（apparently 顯然）
+applicant|n.|申請人
+application|n.|申請
+apply|v.|申請；應用
+appreciate|v.|感謝；欣賞
+approach|v.|接近；n. 方法
+approve|v.|核准
+approximate|adj.|大約的
+archaeological|adj.|考古的
+architecture|n.|建築
+archive|n.|檔案庫
+argue|v.|主張；爭論
+argument|n.|論點
+asphalt|n.|柏油
+assign|v.|指派
+assignment|n.|作業
+assistance|n.|協助
+assistant|n.|助理
+associate|v.|聯想；與…有關（be associated with）
+asteroid|n.|小行星
+astronomer|n.|天文學家
+astronomy|n.|天文學
+attempt|v.|嘗試
+attend|v.|參加；出席
+attitude|n.|態度
+attract|v.|吸引
+attribute|v.|歸因於（attribute A to B）
+audience|n.|觀眾
+audio|n.|音訊；錄音
+auditorium|n.|禮堂
+author|n.|作者
+autumn|n.|秋天
+availability|n.|可出席／可工作的時間
+available|adj.|可用的；有空的
+avoid|v.|避免
+awake|adj.|醒著的
+axis|n.|軸
+backup|adj.|備用的
+bacterium|n.|細菌（複數 bacteria）
+badge|n.|名牌；徽章
+ballot|n.|選票
+bamboo|n.|竹子
+ban|v.|禁止
+bar|n.|吧台；（沙拉）吧
+base|v.|以…為基礎（based on）
+basement|n.|地下室
+basic|adj.|基本的
+bathroom|n.|浴室；廁所
+bat|n.|蝙蝠
+beat|v.|打；搗
+behavior|n.|行為
+beneficial|adj.|有益的
+benefit|n.|好處；v. 受益
+besides|prep.|除了…之外
+best-adapted|adj.|最能適應的
+beverage|n.|飲料
+bias|n.|偏向；偏見
+bicycle|n.|腳踏車
+biology|n.|生物學
+biomimicry|n.|仿生學
+birch|n.|樺樹
+bit|n.|一點點（a bit 有點）
+black-and-white|adj.|黑白的
+blade|n.|葉片；刀刃
+blog|n.|部落格
+blood|n.|血液
+bone|n.|骨頭
+booth|n.|攤位
+breath|n.|呼吸
+breathe|v.|呼吸
+brew|v.|沖泡
+brilliant|adj.|鮮豔的；聰明的
+broad|adj.|廣泛的
+brushstroke|n.|筆觸
+budget|n.|預算
+budgeting|n.|編列預算
+bulge|n.|凸起
+bumpy|adj.|凹凸不平的
+bury|v.|埋
+burner|n.|爐頭；本生燈
+burr|n.|有刺的種子（刺果）
+business|n.|商業；生意
+cactus|n.|仙人掌（複數 cacti）
+cafeteria|n.|自助餐廳
+calcium|n.|鈣
+calculator|n.|計算機
+campus|n.|校園
+canopy|n.|樹冠層
+capable|adj.|能夠的
+capacity|n.|能力；容量
+capture|v.|捕捉
+carbonate|n.|碳酸鹽
+cardboard|n.|紙板
+carotenoid|n.|類胡蘿蔔素
+cart|n.|推車
+carve|v.|雕刻；切割出
+cattle|n.|牛（總稱）
+cause|v.|造成；n. 原因
+caution|v.|警告
+cave|n.|洞穴
+center|n.|中心
+centimeter|n.|公分
+central|adj.|中央的
+cent|n.|分（貨幣）
+century|n.|世紀
+certain|adj.|某些；確定的
+certificate|n.|證書
+challenge|n.|挑戰
+channel|n.|通道；頻道
+charge|n.|費用；v. 收費
+charger|n.|充電器
+cheese|n.|起司
+chemistry|n.|化學
+chip|n.|洋芋片；晶片
+chlorophyll|n.|葉綠素
+civilization|n.|文明
+claim|n.|主張
+classical|adj.|古典的
+climate|n.|氣候
+clinic|n.|診所
+closed-toe|adj.|包頭的（鞋）
+close|adj.|接近的（closest 最接近的）
+coffeehouse|n.|咖啡館
+collection|n.|收藏
+collective|adj.|集體的（collectively 整體來說）
+collision|n.|碰撞
+colony|n.|群落；殖民地
+combine|v.|結合
+comfortable|adj.|舒服的
+comment|n.|評語
+committee|n.|委員會
+common|adj.|常見的；共同的（the commons 公共資源）
+communication|n.|溝通；交流
+community|n.|社區；群體
+commute|v.|通勤
+compare|v.|比較
+competition|n.|比賽
+complete|v.|完成；adj. 完整的
+complex|adj.|複雜的
+complicate|v.|使複雜
+concentrate|v.|專心
+concentration|n.|專注力
+concern|n.|擔憂
+concerned|adj.|擔心的
+concrete|n.|混凝土
+conduct|v.|進行
+conference|n.|研討會
+confidence|n.|自信
+confirm|v.|確認
+conflict|n.|衝突（時間衝堂）
+confused|adj.|困惑的
+connect|v.|連結
+connection|n.|關聯
+conserve|v.|節省；保存
+consider|v.|考慮
+considerable|adj.|相當大的（considerably 相當地）
+consistent|adj.|一致的
+consolidate|v.|鞏固
+constant|adj.|持續的
+consume|v.|消耗；飲用
+contact|v.|聯絡
+contagious|adj.|會傳染的
+contain|v.|包含
+continue|v.|繼續
+contrast|n.|對比（by contrast 相較之下）
+control|n.|控制
+conversation|n.|對話
+cooperative|adj.|合作的
+coordinator|n.|協調人員
+coral|n.|珊瑚
+cotton|n.|棉
+counterpart|n.|對應的人或物
+couple|n.|幾個（a couple of）
+cover|v.|涵蓋；支付
+coworker|n.|同事
+coyote|n.|郊狼
+crack|n.|裂縫；v. 裂開
+crater|n.|隕石坑
+creative|adj.|有創意的
+critic|n.|批評者
+crop|n.|農作物
+crust|n.|地殼
+cumulative|adj.|累計的
+cure|n.|治療方法
+curry|n.|咖哩
+customer|n.|顧客
+cycle|n.|週期（life cycle 生命週期）
+daily|adj.|每天的
+damage|n.|損害；v. 損壞
+database|n.|資料庫
+dead|adj.|死的（dead zone 死區）
+deal|n.|優惠；交易
+debate|n.|辯論；爭論
+decade|n.|十年
+decline|n.|減少；v. 下降
+deep|adj.|深的
+deer|n.|鹿
+definite|adj.|明確的（definitely 一定）
+degree|n.|度；學位
+dehydrated|adj.|脫水的
+dehydration|n.|脫水
+dense|adj.|濃密的
+department|n.|系所；部門
+depend|v.|依賴（depend on）
+describe|v.|描述
+desert|n.|沙漠
+despite|prep.|儘管
+destroy|v.|破壞
+detail|n.|細節
+detect|v.|察覺
+determine|v.|決定；查明
+devastate|v.|重創
+develop|v.|發展
+development|n.|發展
+device|n.|裝置
+diet|n.|飲食
+differ|v.|不同
+difficult|adj.|困難的
+digital|adj.|數位的
+dining|n.|用餐（dining hall 學生餐廳）
+direct|v.|指引
+disagree|v.|不同意
+disappear|v.|消失
+discovery|n.|發現
+discuss|v.|討論
+discussion|n.|討論
+disease|n.|疾病
+dislike|v.|不喜歡
+display|v.|展示
+distant|adj.|遙遠的
+distinct|adj.|明顯不同的
+distinctive|adj.|獨特的
+distinguish|v.|區分
+distract|v.|使分心
+distraction|n.|使人分心的事
+diverse|adj.|多樣的
+divide|v.|分開
+document|n.|文件
+documentary|n.|紀錄片
+dolphin|n.|海豚
+domesticate|v.|馴化
+domestication|n.|馴化
+done|adj.|完成的
+double-check|v.|再檢查一次
+downtown|adv.|在市中心
+draft|n.|草稿
+drag|n.|阻力；v. 拖
+drug|n.|藥物
+due|adj.|到期的（due to 由於）
+dust|n.|灰塵
+ecological|adj.|生態的
+economics|n.|經濟學
+economist|n.|經濟學家
+ecosystem|n.|生態系
+edge|n.|邊緣
+educator|n.|教育者
+effect|n.|影響；效應
+effective|adj.|有效的
+efficiency|n.|效率
+effort|n.|努力
+eighty|n.|八十
+elect|v.|選舉
+election|n.|選舉
+electronic|adj.|電子的
+eligible|adj.|有資格的
+emergent|adj.|露出的（emergent layer 突出層）
+empathy|n.|同理心
+employee|n.|員工
+encourage|v.|鼓勵
+energy|n.|能量；精力
+entire|adj.|整個的
+entrance|n.|入口
+environmental|adj.|環境的
+episode|n.|一段時間；一集
+equipment|n.|設備
+eruption|n.|（火山）爆發
+escape|v.|逃出
+especially|adv.|尤其
+essay|n.|短文；論文
+establish|v.|建立
+establishment|n.|場所；機構
+estimate|v.|估計
+evaporate|v.|蒸發
+eventually|adv.|最後
+evidence|n.|證據
+evolution|n.|演化
+evolve|v.|演化
+exact|adj.|精確的
+exchange|n.|交流；交換
+exert|v.|施加
+exhausted|adj.|筋疲力盡的
+exhibit|n.|展覽
+exist|v.|存在
+expand|v.|擴大
+expect|v.|預期
+experience|n.|經驗
+expire|v.|到期失效
+explanation|n.|解釋
+explore|v.|探索
+export|n.|出口品
+extend|v.|延長
+extension|n.|延期
+extinct|adj.|滅絕的
+extinction|n.|滅絕
+extra|adj.|額外的
+extreme|adj.|極端的（extremely 非常）
+fade|v.|褪色
+falcon|n.|隼
+familiar|adj.|熟悉的
+familiarity|n.|熟悉感
+fat|n.|脂肪
+fearful|adj.|害怕的
+fear|v.|擔心；害怕
+fee|n.|費用
+feedback|n.|回饋意見
+fiction|n.|小說（science fiction 科幻）
+fifteenth|adj.|第十五
+figure|n.|數字；v. 想出（figure out）
+film|n.|電影
+finance|n.|金融
+finding|n.|研究結果
+fin|n.|鰭
+first-year|adj.|一年級的
+fitness|n.|健身
+flash|n.|閃光燈
+flexibility|n.|彈性
+flock|n.|（鳥）群
+flow|n.|流動
+flu|n.|流感
+fluent|adj.|流利的
+forager|n.|覓食者
+forecast|n.|預報
+formal|adj.|正式的
+fourteenth|adj.|第十四
+freeze|v.|凍結；（電腦）當機
+frequent|adj.|頻繁的
+friendship|n.|友誼
+frightened|adj.|害怕的
+frog|n.|青蛙
+frustrating|adj.|令人沮喪的
+fulfill|v.|實現；履行
+full-time|adj.|全職的
+fully|adv.|完全地
+function|n.|功能
+funding|n.|資金
+furniture|n.|家具
+gain|v.|獲得
+gather|v.|收集；聚集
+generation|n.|世代
+genetic|adj.|基因的
+geologist|n.|地質學家
+geology|n.|地質學
+glacier|n.|冰河
+global|adj.|全球的
+goggles|n.|護目鏡
+grab|v.|抓；（口語）去買（grab a coffee）
+gradual|adj.|逐漸的（gradually 逐漸地）
+graduate|n.|研究生；v. 畢業
+grain|n.|穀物
+grammar|n.|文法
+grant|n.|補助金
+gravity|n.|重力
+gray|adj.|灰色的
+graze|v.|吃草
+greenhouse|n.|溫室
+grill|v.|烤（grilled cheese 烤起司三明治）
+grip|n.|抓地力
+growth|n.|成長
+guard|v.|看守
+guest|n.|客人；客座
+habitat|n.|棲息地
+handle|n.|把手
+handwritten|adj.|手寫的
+harm|v.|傷害
+harmful|adj.|有害的
+harsh|adj.|嚴厲的
+healthcare|n.|醫療保健
+heart|n.|心臟
+heartbeat|n.|心跳
+helpful|adj.|有幫助的
+hesitant|adj.|猶豫的
+hibernate|v.|冬眠
+hibernation|n.|冬眠
+historian|n.|歷史學家
+historical|adj.|歷史的
+hive|n.|蜂巢
+hook|n.|鉤子
+hostile|adj.|不友善的
+huge|adj.|巨大的
+human|n.|人類
+humpback|n.|座頭鯨（humpback whale）
+illness|n.|疾病
+illustrate|v.|說明；舉例
+image|n.|圖像
+imagine|v.|想像
+immediate|adj.|立即的（immediately 立刻）
+impact|n.|影響
+imperfect|adj.|不完美的
+imply|v.|暗示
+importance|n.|重要性
+impressionist|n.|印象派畫家
+impression|n.|印象
+improve|v.|改善
+inborn|adj.|天生的
+incentive|n.|誘因
+include|v.|包括
+incomplete|adj.|不完整的
+inconvenience|n.|不便
+incorrect|adj.|不正確的
+increase|v.|增加
+increasing|adj.|越來越多的（increasingly 越來越）
+independent|adj.|獨立的
+indicate|v.|表示；指出
+individual|n.|個人；adj. 個別的
+indoors|adv.|在室內
+inexpensive|adj.|便宜的
+infant|n.|嬰兒
+infection|n.|感染
+infer|v.|推論
+influential|adj.|有影響力的
+inform|v.|通知
+innate|adj.|天生的
+input|n.|輸入；接收到的語言
+insect|n.|昆蟲
+inspire|v.|啟發
+install|v.|安裝
+instance|n.|例子（for instance 例如）
+institution|n.|機構
+instruction|n.|教學；指示
+instructor|n.|講師
+instrument|n.|樂器；儀器
+insurance|n.|保險
+interact|v.|互相作用
+interest|n.|興趣；利息
+interlibrary|adj.|圖書館之間的（interlibrary loan 館際互借）
+international|adj.|國際的
+internship|n.|實習
+interview|n.|面試；訪談
+intro|adj.|入門的（introductory）
+introduce|v.|介紹；引進
+introduction|n.|引言；介紹
+invention|n.|發明
+inventor|n.|發明者
+invest|v.|投資
+involve|v.|包含；涉及
+island|n.|島
+issue|v.|發給；n. 問題
+item|n.|項目
+itself|pron.|它本身
+jaw|n.|下巴
+journal|n.|期刊
+keynote|n.|主題演講
+kingdom|n.|界（animal kingdom 動物界）；王國
+knowledge|n.|知識
+lab|n.|實驗室（laboratory）
+lamp|n.|燈
+landscape|n.|地景；風景
+lane|n.|車道
+laptop|n.|筆記型電腦
+largest|adj.|最大的
+layer|n.|層
+leaf|n.|葉子（複數 leaves）
+learner|n.|學習者
+least|adv.|最少（at least 至少）
+lecture|n.|講課；演講
+lead|v.|導致；帶領
+length|n.|長度
+lie|v.|位於
+limb|n.|四肢
+limited|adj.|有限的
+linguistics|n.|語言學
+linguist|n.|語言學家
+link|v.|連結
+literacy|n.|識字能力
+lizard|n.|蜥蜴
+loan|n.|貸款（interlibrary loan 館際互借）
+lobby|n.|大廳
+locate|v.|位於（be located）
+location|n.|地點
+lock|v.|鎖（tidally locked 潮汐鎖定）
+locker|n.|置物櫃
+log|v.|登入（log in）
+logic|n.|邏輯
+long-term|adj.|長期的
+loss|n.|喪失
+lounge|n.|交誼廳
+low-energy|adj.|低能量的
+low-frequency|adj.|低頻的
+lower|adj.|較低的
+magma|n.|岩漿
+maintain|v.|維持
+mammal|n.|哺乳類
+manage|v.|設法做到；管理
+manageable|adj.|可應付的
+manager|n.|經理
+map|n.|地圖
+marine|adj.|海洋的
+mask|v.|掩蓋
+mass|n.|團塊
+match|v.|配合；相符
+material|n.|材料
+measure|v.|測量
+medical|adj.|醫療的
+meeting|n.|會議
+melt|v.|融化
+memorize|v.|背誦
+memory|n.|記憶
+mental|adj.|心理的
+mention|v.|提到
+merchant|n.|商人
+mesquite|n.|牧豆樹
+metal|n.|金屬
+method|n.|方法
+midterm|n.|期中考
+might|aux.|可能
+mild|adj.|輕微的
+million|n.|百萬
+mineral|n.|礦物
+misleading|adj.|誤導的
+misunderstanding|n.|誤會
+mobile|adj.|行動的
+molten|adj.|熔化的
+moment|n.|時刻
+monitor|v.|監督
+mood|n.|心情
+moonlight|n.|月光
+movement|n.|動作；運動
+muddy|adj.|泥濘的
+natural|adj.|自然的
+nature|n.|自然
+necessary|adj.|必要的
+nectar|n.|花蜜
+net|n.|網
+network|n.|網絡
+neuroscience|n.|神經科學
+noon|n.|中午
+novel|adj.|新穎的
+nutrient|n.|養分
+nutrition|n.|營養
+oasis|n.|綠洲
+observe|v.|觀察
+obtain|v.|取得
+occur|v.|發生
+offer|v.|提供
+official|n.|官員
+okay|adj.|好的
+one-page|adj.|一頁的
+opinion|n.|意見
+opportunity|n.|機會
+option|n.|選擇
+orbit|v.|繞行；n. 軌道
+orchestra|n.|管弦樂團
+organize|v.|組織；籌辦
+origin|n.|起源
+originality|n.|創意；原創性
+original|adj.|原本的（originally 原本）
+ourselves|pron.|我們自己
+out-of-place|adj.|不在原處的
+outcome|n.|結果
+outdoors|adv.|在戶外
+overfishing|n.|過度捕撈
+overuse|v.|過度使用
+owner|n.|主人；擁有者
+oxygen|n.|氧氣
+pad|n.|肉墊
+painter|n.|畫家
+papermaking|n.|造紙
+paragraph|n.|段落
+parasite|n.|寄生蟲
+part-time|adj.|兼職的
+participant|n.|參加者
+participation|n.|參與
+particular|adj.|特定的（particularly 特別是）
+passage|n.|文章；段落
+password|n.|密碼
+pasta|n.|義大利麵
+pastry|n.|糕點
+pasture|n.|牧場
+path|n.|路徑
+patience|n.|耐心
+pattern|n.|模式
+pave|v.|鋪路
+per|prep.|每
+peregrine|n.|遊隼（peregrine falcon）
+perhaps|adv.|也許
+period|n.|時期
+personal|adj.|個人的
+pesticide|n.|殺蟲劑
+photograph|n.|照片
+photography|n.|攝影
+photosynthesis|n.|光合作用
+phrase|n.|片語
+physical|adj.|身體的；外形的
+pigment|n.|色素
+pipe|n.|水管
+pitch|n.|音高
+plague|n.|瘟疫
+planet|n.|行星
+plate|n.|板塊；盤子
+plenty|n.|大量（plenty of）
+policy|n.|政策
+political|adj.|政治的
+politics|n.|政治
+pollination|n.|授粉
+pollinator|n.|授粉者
+pollution|n.|汙染
+polyp|n.|珊瑚蟲
+poor|adj.|不良的；貧窮的
+population|n.|族群；人口
+pore|n.|氣孔；毛孔
+position|n.|職位
+positive|adj.|正面的
+possibility|n.|可能性
+possible|adj.|可能的
+postpone|v.|延後
+pottery|n.|陶藝
+powerful|adj.|強大的
+practical|adj.|實際的
+prayer|n.|祈禱
+predator|n.|掠食者
+predict|v.|預測
+prefer|v.|比較喜歡
+prepare|v.|準備
+presentation|n.|報告；簡報
+press|n.|印刷機（printing press）
+pressure|n.|壓力
+pretty|adv.|相當
+previous|adj.|先前的
+print|v.|列印；印刷
+printer|n.|印表機
+private|adj.|私人的
+process|n.|過程；v. 處理
+produce|v.|生產；產生
+product|n.|產品
+production|n.|生產
+productive|adj.|有生產力的
+productivity|n.|生產力
+professor|n.|教授
+program|n.|計畫；課程
+projector|n.|投影機
+promote|v.|推廣
+proofread|v.|校對
+proper|adj.|適當的（properly 正確地）
+proposal|n.|提案
+prove|v.|證明
+provide|v.|提供
+psychology|n.|心理學
+publish|v.|出版；發表
+pulp|n.|紙漿
+purchase|v.|購買
+purpose|n.|目的
+push|v.|推動
+quality|n.|品質
+quarter|n.|四分之一
+quiz|n.|小考
+raccoon|n.|浣熊
+rainforest|n.|雨林
+raise|v.|提高；募集（raise money）
+rare|adj.|罕見的（rarely 很少）
+rate|n.|比率；速率
+realistic|adj.|寫實的
+reasonable|adj.|合理的
+recall|v.|回想
+receive|v.|收到
+recent|adj.|最近的
+recognize|v.|辨認
+recommend|v.|推薦
+recommendation|n.|推薦
+recover|v.|回收；恢復
+redecorate|v.|重新裝潢
+reduce|v.|減少
+reef|n.|礁
+refer|v.|指的是（refer to）
+reflect|v.|反映
+refund|v.|退款
+regard|v.|視為（regard A as B）
+regards|n.|問候（信件結尾）
+region|n.|地區
+register|v.|登記；註冊
+registrar|n.|註冊組
+registration|n.|註冊；報名
+relationship|n.|關係
+relative|n.|親戚；adj. 相對的（relatively 相對地）
+relax|v.|放鬆
+release|v.|釋放；釋出
+reliable|adj.|可靠的
+religious|adj.|宗教的
+rely|v.|依賴（rely on）
+remain|v.|保持；仍然
+remarkable|adj.|驚人的
+remove|v.|移除
+repair|v.|修理；n. 修繕
+repeat|v.|重複
+replace|v.|取代
+replay|v.|重播
+reply|v.|回覆
+reported|adj.|據說的（reportedly 據說）
+representative|adj.|有代表性的
+request|v.|要求；申請
+require|v.|需要；要求
+reschedule|v.|重新安排時間
+research|n.|研究
+researcher|n.|研究人員
+reservation|n.|預約
+reserve|v.|預約
+reset|v.|重設
+residence|n.|住所（residence hall 宿舍）
+resident|n.|住戶；住宿生
+resistance|n.|抗藥性；抵抗力
+resistant|adj.|有抵抗力的
+resell|v.|轉賣
+resource|n.|資源
+response|n.|回應
+restart|v.|重新啟動
+result|n.|結果
+reusable|adj.|可重複使用的
+review|v.|複習；審查
+revise|v.|修改
+revision|n.|修改
+revolution|n.|革命
+rise|v.|上升
+risk|n.|風險
+rock|n.|岩石
+role|n.|角色
+roman|adj.|羅馬的
+roost|v.|棲息
+root|n.|根；根源
+rotate|v.|自轉；旋轉
+rotation|n.|自轉
+roughly|adv.|大約
+route|n.|路線
+row|n.|一排
+ruler|n.|統治者
+rural|adj.|鄉村的
+safety|n.|安全
+salad|n.|沙拉
+sample|n.|樣本
+sandpaper|n.|砂紙
+scan|v.|掃描
+scene|n.|場景
+schedule|n.|時間表
+scholarship|n.|獎學金
+scientific|adj.|科學的
+screen|n.|螢幕
+script|n.|稿子
+second-round|adj.|第二輪的
+section|n.|部分
+security|n.|保全；安全
+seed|n.|種子
+seem|v.|似乎
+select|v.|選出
+selective|adj.|選擇性的（selective pressure 選擇壓力）
+semester|n.|學期
+seminar|n.|研討課
+sense|n.|意義（make sense 有道理）
+serve|v.|供應；服務
+service|n.|服務
+session|n.|一段時間；課程
+seventeenth|adj.|第十七
+seventh|adj.|第七
+several|adj.|幾個
+shade|n.|色調
+sharp|adj.|急劇的；（時間）準時（7:15 sharp）
+sheep|n.|羊
+shelve|v.|上架
+short-term|adj.|短期的
+short-video|adj.|短影音的
+shorten|v.|縮短
+shut|v.|關閉
+shuttle|n.|接駁車
+signal|v.|發出信號
+silk|n.|絲
+similar|adj.|相似的
+simple|adj.|簡單的
+simply|adv.|只是；簡單地
+single|adj.|單一的
+single-use|adj.|一次性的
+site|n.|網站；地點
+situation|n.|情況
+sixteenth|adj.|第十六
+skeleton|n.|骨骼
+skin|n.|皮膚
+slide|n.|投影片
+slight|adj.|輕微的（slightly 稍微）
+slip|v.|悄悄溜進（slip in）
+slow|v.|使變慢；adj. 慢的
+smartphone|n.|智慧型手機
+smooth|adj.|光滑的
+snake|n.|蛇
+soak|v.|浸泡
+society|n.|社會
+sociology|n.|社會學
+solar|adj.|太陽的（solar system 太陽系）
+solution|n.|解決方法
+somewhat|adv.|有點
+songbird|n.|鳴禽
+source|n.|來源；資料來源
+speaker|n.|說話者
+species|n.|物種
+speed|n.|速度
+spell|v.|拼字
+spine|n.|刺
+sprout|v.|發芽
+stable|adj.|穩定的
+stadium|n.|體育場
+staff|n.|員工
+standard|n.|標準
+state|n.|狀態
+statement|n.|陳述
+statistical|adj.|統計的
+statistics|n.|統計學
+stem|n.|莖；題幹
+sticker|n.|貼紙
+sticky|adj.|黏的
+stone|n.|石頭
+storage|n.|儲存
+strain|n.|菌株
+strategy|n.|策略
+strengthen|v.|加強
+stressed|adj.|有壓力的
+striking|adj.|顯著的
+strip|n.|條
+style|n.|風格
+submit|v.|繳交
+subway|n.|地鐵
+successful|adj.|成功的
+suggestion|n.|建議
+suit|v.|適合
+sum|n.|總和
+summarize|v.|摘要
+summary|n.|摘要
+sunlight|n.|陽光
+supervisor|n.|主管
+supply|v.|提供；n. 供應
+support|v.|支持
+supporter|n.|支持者
+suppose|v.|認為（be supposed to 應該）
+surface|n.|表面
+surround|v.|圍繞
+survey|n.|問卷調查
+survive|v.|存活
+suspect|v.|懷疑；猜想
+suspicion|n.|懷疑
+sweat|v.|流汗
+swimmer|n.|游泳者
+syllabus|n.|課程大綱
+system|n.|系統
+tablet|n.|平板電腦
+tax|n.|稅
+teamwork|n.|團隊合作
+tech|adj.|科技的（technical）
+technique|n.|技術
+technology|n.|科技
+tectonic|adj.|構造的（tectonic plate 板塊）
+temperate|adj.|溫帶的
+temporary|adj.|暫時的
+ten-minute|adj.|十分鐘的
+ten-page|adj.|十頁的
+tendency|n.|傾向
+tent|n.|帳篷
+term|n.|學期；用語
+termite|n.|白蟻
+text|n.|文字；文本
+theme|n.|主題
+theory|n.|理論
+thesis|n.|論文（複數 theses）
+thick|adj.|厚的
+though|conj.|雖然
+threat|n.|威脅
+three-day|adj.|三天的
+throw|v.|丟
+thrive|v.|興盛
+through|prep.|透過；穿過
+throughout|prep.|整個…期間
+tidal|adj.|潮汐的（tidally）
+tide|n.|潮汐
+tie|v.|綁；n. 領帶
+tiny|adj.|微小的
+tiredness|n.|疲倦
+tissue|n.|組織；面紙
+tit|n.|山雀（great tit 大山雀）
+toe|n.|腳趾
+total|adj.|總共的
+tour|n.|導覽
+towel|n.|毛巾
+track|v.|追蹤
+trade|n.|貿易
+trader|n.|商人
+traditional|adj.|傳統的
+traffic|n.|交通
+tragedy|n.|悲劇
+trait|n.|特徵
+transcribe|v.|聽寫成文字
+transcript|n.|成績單；逐字稿
+transport|v.|運送
+transportation|n.|交通運輸
+tray|n.|托盤
+treat|v.|治療
+tricky|adj.|棘手的
+tropical|adj.|熱帶的
+trouble|n.|麻煩
+trust|n.|信任
+truth|n.|真相
+tuition|n.|學費
+turbine|n.|渦輪機（wind turbine 風力發電機）
+tutorial|n.|小組課
+twenty-seven|n.|二十七
+type|n.|種類
+u-shaped|adj.|U 形的
+unavailable|adj.|無法使用的
+uncertain|adj.|不確定的
+unclear|adj.|不清楚的
+underground|adv.|在地下
+understand|v.|了解
+underwater|adv.|在水中
+unfortunately|adv.|不幸地；可惜
+unhealthy|adj.|不健康的
+unihemispheric|adj.|單側腦半球的
+union|n.|聯合會（student union 學生會）
+universal|adj.|普遍的
+unlike|prep.|不像
+unnecessary|adj.|不必要的
+unpaid|adj.|未付的
+unregistered|adj.|未登記的
+unused|adj.|未使用的
+unusual|adj.|不尋常的（unusually 異常地）
+upcoming|adj.|即將到來的
+update|n.|最新消息；v. 更新
+urban|adj.|都市的
+urine|n.|尿液
+usage-based|adj.|以使用為基礎的
+user|n.|使用者
+usual|adj.|平常的
+v-shaped|adj.|V 形的
+valley|n.|山谷
+valuable|adj.|有價值的
+variety|n.|多樣；種類
+vary|v.|不同；變化
+vast|adj.|廣大的
+veggie|adj.|蔬菜的（vegetable）
+velcro|n.|魔鬼氈
+ventilation|n.|通風
+version|n.|版本
+view|v.|看待；n. 觀點
+village|n.|村莊
+violent|adj.|猛烈的
+violin|n.|小提琴
+virus|n.|病毒
+visible|adj.|看得見的
+vitamin|n.|維他命
+vocabulary|n.|字彙
+voice|n.|聲音
+volcano|n.|火山
+volunteer|n.|志工；v. 自願
+vulnerable|adj.|脆弱的
+waggle|n.|搖擺（waggle dance 搖擺舞）
+waive|v.|免除
+walk-in|adj.|不用預約的
+wall|n.|牆
+warmth|n.|溫暖
+weaken|v.|削弱
+weak|adj.|弱的
+westward|adv.|向西
+wetland|n.|溼地
+whale|n.|鯨魚
+whale-fin|adj.|鯨鰭的
+wi-fi|n.|無線網路
+wide|adj.|廣的（widely 廣泛地）
+wildflower|n.|野花
+wildlife|n.|野生動物
+willing|adj.|願意的
+wipe|v.|擦拭
+withdraw|v.|退選；撤回
+within|prep.|在…之內
+wolf|n.|狼（複數 wolves）
+wooden|adj.|木製的
+wool|n.|羊毛
+workshop|n.|工作坊
+wrap|n.|捲餅；v. 包
+yawn|v.|打哈欠
+zipper|n.|拉鍊
+zone|n.|區域
+closest|adj.|最接近的（close 的最高級）
+considerably|adv.|相當地
+criterion|n.|標準（複數 criteria）
+criteria|n.|標準（criterion 的複數）
+hide|v.|隱藏
+hidden|adj.|隱藏的
+honeybee|n.|蜜蜂
+remarkably|adv.|驚人地
+renew|v.|更新；續約
+renewable|adj.|可再生的（renewable energy 再生能源）
+simpler|adj.|比較簡單的
+simplest|adj.|最簡單的
+stickier|adj.|比較黏的
+wider|adj.|比較廣的
+european|adj.|歐洲的
+spanish|n.|西班牙語
+islamic|adj.|伊斯蘭的
+mediterranean|n.|地中海
+café|n.|咖啡廳
+`;
