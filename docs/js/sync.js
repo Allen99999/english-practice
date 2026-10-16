@@ -17,7 +17,7 @@ async function flushOutbox() {
     }
     toast("成績已同步到老師那邊");
   } catch (e) { }
-  flushing = false; if (view === "home") rerenderKeep();
+  flushing = false; if (view === "home" || view === "hist") rerenderKeep();
 }
 function onAttemptSaved(att) {
   if (!SYNC_ON) return;
@@ -28,6 +28,13 @@ function syncHomeHTML() {
   if (!SYNC_ON) return "";
   const n = store.outbox.length;
   return `<div class="muted" style="font-size:13px">${n ? `還有 ${n} 筆成績等待上傳 <button class="chip" data-act="sync-now">重新上傳</button>` : "交卷後成績會自動同步給老師"}</div>`;
+}
+function syncHistHTML() {
+  if (!SYNC_ON) return "";
+  const n = store.outbox.length;
+  return `<div class="glass card" style="display:flex;flex-direction:column;gap:10px"><div style="font-weight:700">成績同步</div>
+  <div class="muted" style="font-size:14px">${n ? `還有 ${n} 筆成績等待上傳（網路恢復後會自動重試）` : "交卷後成績會自動同步給老師，不用另外傳。"}</div>
+  ${n ? `<div class="row"><button class="btn primary" data-act="sync-now">重新上傳</button></div>` : ""}</div>`;
 }
 function syncTeacherHTML() {
   if (!SYNC_ON) return "";
@@ -53,6 +60,7 @@ document.addEventListener("click", e => {
   const act = e.target.closest("[data-act]"); if (!act) return;
   if (act.dataset.act === "sync-now") flushOutbox();
   if (act.dataset.act === "sync-pull") pullRemote();
+  if (act.dataset.act === "tab" && act.dataset.v === "teacher" && store.teacherCode) setTimeout(pullRemote, 0);
 });
 addEventListener("online", flushOutbox);
 setTimeout(flushOutbox, 1500);

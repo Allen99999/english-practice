@@ -56,12 +56,12 @@ function teacherHTML() {
   if (!names.includes(store.tWho)) store.tWho = names[0] || "";
   const imp = store.imported && store.imported.attempts && store.imported.attempts.length;
   let h = `<section class="view"><div class="hero"><div><div class="eyebrow">Teacher</div><h1 class="large-title">老師總覽</h1>
-  <p class="subtitle">貼上學生傳來的成績碼，就能看到每個人的分數、弱點和最常錯的題目。</p></div>
-  <div class="row"><button class="btn primary" data-act="t-import">貼上成績碼</button>${imp ? `<button class="btn ghost" data-act="t-clear">清除匯入</button>` : ""}</div></div>
+  <p class="subtitle">學生交卷後成績會自動同步。輸入老師代碼載入全班成績，就能看到每個人的分數、弱點和最常錯的題目。</p></div>
+  ${imp ? `<div class="row"><button class="btn ghost" data-act="t-clear">清除已載入的成績</button></div>` : ""}</div>
   <div class="row muted" style="font-size:13.5px;gap:10px"><button class="chip" data-act="t-local" aria-pressed="${store.tIncludeLocal !== false}">包含這台裝置的紀錄</button>
-  ${imp ? `<span>已匯入 ${store.imported.attempts.length} 筆・最後匯入 ${fmtDate(store.imported.at)}</span>` : ""}</div>
+  </div>
   ${typeof syncTeacherHTML === "function" ? syncTeacherHTML() : ""}`;
-  if (!atts.length) return h + `<div class="glass card empty"><b>還沒有資料</b>請學生到「紀錄」頁按「給老師的成績碼」，把那段文字傳給你，再貼到這裡。</div></section>`;
+  if (!atts.length) return h + `<div class="glass card empty"><b>還沒有資料</b>在上方輸入老師代碼，按「載入全班成績」。學生交卷後成績會自動同步到這裡。</div></section>`;
 
   /* 全班摘要表 */
   const rows = names.map(n => {
@@ -214,7 +214,7 @@ document.addEventListener("click", async e => {
     }
     case "t-clear":
       if (d.confirm) { store.imported = null; save(true); render(); toast("已清除匯入資料"); }
-      else { act.dataset.confirm = "1"; act.textContent = "再按一次確認清除"; setTimeout(() => { if (act.isConnected) { delete act.dataset.confirm; act.textContent = "清除匯入"; } }, 2500); }
+      else { act.dataset.confirm = "1"; act.textContent = "再按一次確認清除"; setTimeout(() => { if (act.isConnected) { delete act.dataset.confirm; act.textContent = "清除已載入的成績"; } }, 2500); }
       break;
     case "t-retry": {
       const refs = Object.values(allAttempts().filter(a => (a.who || "未署名") === d.n && a.kind !== "vocab").reduce((m, a) => { a.qs.forEach((r, i) => { if (typeof r === "string" && !(a.ans[i] && a.ans[i].correct)) m[r] = r; }); return m; }, {})).slice(0, 30);

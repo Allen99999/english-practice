@@ -3,7 +3,7 @@
 import fs from "node:fs"; import vm from "node:vm"; import path from "node:path"; import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const html = fs.readFileSync(path.join(root, "docs/index.html"), "utf8");
-const files = [...html.matchAll(/<script src="(js\/[^"]+)"/g)].map(m => m[1])
+const files = [...html.matchAll(/<script src="(js\/[^"?]+)/g)].map(m => m[1])
   .filter(f => !/(app|teacher|tts|sync)\.js$/.test(f));
 const ctx = { TextEncoder, console };
 vm.createContext(ctx);

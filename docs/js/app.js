@@ -929,9 +929,7 @@ function histHTML() {
   h += `<div class="glass card" style="display:flex;flex-direction:column;gap:10px"><div style="font-weight:700">備份與還原</div>
   <div class="muted" style="font-size:14px">紀錄存在這台裝置的瀏覽器裡。換裝置或清除瀏覽器資料前，先複製備份碼，之後貼回來就能還原。</div>
   <div class="row"><button class="btn" data-act="backup">複製備份碼</button><button class="btn ghost" data-act="restore">貼上備份碼還原</button></div></div>
-  <div class="glass card" style="display:flex;flex-direction:column;gap:10px"><div style="font-weight:700">傳成績給老師</div>
-  <div class="muted" style="font-size:14px">${store.histWho ? `會產生「${esc(store.histWho)}」一個人的成績碼。` : "目前是「全部」，會包含這台裝置所有人的成績；只想傳一個人，先點上方的名字。"}複製後傳給老師，老師在「總覽」頁貼上就能看到。</div>
-  <div class="row"><button class="btn primary" data-act="share-code">產生給老師的成績碼</button></div></div>`;
+  ${typeof syncHistHTML === "function" ? syncHistHTML() : ""}`;
   return h + `</section>`;
 }
 
