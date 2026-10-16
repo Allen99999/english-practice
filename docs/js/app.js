@@ -46,9 +46,10 @@ function save(now) {
 }
 
 /* ================= 題庫索引 ================= */
-const TYPE_LABEL = { rewrite: "句子改寫／合併", essay: "段落寫作", mc: "單選題", dict: "字典題", group: "閱讀題組", spell: "文意字彙", trans: "翻譯", scramble: "句子重組", match: "配對", error: "挑錯改正", order: "排序", vocab: "單字練習" };
-const TYPE_ORDER = ["mc", "dict", "group", "spell", "trans", "scramble", "match", "error", "rewrite", "essay"];
+const TYPE_LABEL = { listen: "聽力", rewrite: "句子改寫／合併", essay: "段落寫作", mc: "單選題", dict: "字典題", group: "閱讀題組", spell: "文意字彙", trans: "翻譯", scramble: "句子重組", match: "配對", error: "挑錯改正", order: "排序", vocab: "單字練習" };
+const TYPE_ORDER = ["listen", "mc", "dict", "group", "spell", "trans", "scramble", "match", "error", "rewrite", "essay"];
 const ESSAY_CHECK = ["寫了大約 50 個字以上", "每一個提示（圖或問題）都有寫到", "時態正確（過去的事用過去式）", "句首大寫、句尾有標點", "至少用了一個連接詞（and / but / so / because / when）"];
+const isMC = q => q.type === "mc" || q.type === "dict" || q.type === "listen";
 const wcount = s => (String(s || "").match(/[A-Za-z]+(?:['’-][A-Za-z]+)*/g) || []).length;
 /* 選項順序平衡：每份題庫的單選正解輪流落在 A/B/C/D，其餘選項以題號為種子固定打散；
    解析裡的 (A)（B 錯）等字母會跟著換。舊紀錄（沒有 optv）仍用原始順序顯示。 */
@@ -57,7 +58,7 @@ function seeded(str) { let h = 2166136261; for (const c of str) { h ^= c.charCod
 BANKS.forEach(b => {
   let k = 0;
   b.items.forEach(it => (it.type === "group" ? it.qs : [it]).forEach(q => {
-    if (!(q.type === "mc" || q.type === "dict") || q.fixedOrder) return;
+    if (!isMC(q) || q.fixedOrder) return;
     const n = q.opts.length, rnd = seeded(b.id + ":" + q.id), target = (k++) % n;
     const others = [...Array(n).keys()].filter(i => i !== q.ans);
     for (let i = others.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [others[i], others[j]] = [others[j], others[i]]; }
@@ -83,11 +84,12 @@ let wordMode = false, showHint = false;
 let tick = null, animNext = true;
 
 function defaultSel() {
-  const b = BANKS[BANKS.length - 1];
+  const b = BANKS.filter(x => !x.fixed).slice(-1)[0];
   return { banks: [b.id], tags: Object.keys(b.tags), types: TYPE_ORDER.slice(), count: 20, mode: "exam", order: "type" };
 }
 if (!store.sel) store.sel = defaultSel();
 store.sel.banks = store.sel.banks.filter(id => bankById(id));
+if (!store.sel.types.includes("listen") && !store.sel.listenAdded) { store.sel.types.unshift("listen"); store.sel.listenAdded = true; }
 
 /* ================= 文字 → 可點單字 ================= */
 function wrapWords(str, marked, uline) {
@@ -155,7 +157,7 @@ function unitsFor(sel) {
   sel.banks.forEach(bid => {
     const b = bankById(bid); if (!b) return;
     b.items.forEach(it => {
-      if (!sel.types.includes(it.type)) return;
+      if (!sel.types.includes(it.type) && !b.fixed) return;
       if (!sel.tags.includes(it.tag)) return;
       if (it.type === "group") units.push({ type: "group", bank: b.id, tag: it.tag, refs: it.qs.map(q => b.id + ":" + q.id) });
       else units.push({ type: it.type, bank: b.id, tag: it.tag, refs: [b.id + ":" + it.id] });
@@ -163,9 +165,11 @@ function unitsFor(sel) {
   });
   return units;
 }
+function isFixedSel(sel) { return sel.banks.length > 0 && sel.banks.every(id => (bankById(id) || {}).fixed); }
 function buildRefs(sel, countOnly) {
   const mix = countOnly ? (x => x) : shuffle;
   let units = unitsFor(sel);
+  if (isFixedSel(sel)) return units.flatMap(u => u.refs);   // 模擬卷：整份照原本順序
   if (sel.mode === "exam") {
     // 有自訂配分（例如英檢）的題庫：照它的配分抽
     const mockBanks = sel.banks.map(bankById).filter(b => b && b.mock);
@@ -197,7 +201,7 @@ function buildRefs(sel, countOnly) {
 
 function newSession(refs, opts = {}) {
   S = {
-    id: uid(), optv: OPTV, limit: opts.limit || 0, who: opts.who || store.who || "未署名", kind: opts.kind || "exam", title: opts.title || "", banks: opts.banks || [], saved: Date.now(),
+    id: uid(), optv: OPTV, limit: opts.limit || 0, blind: !!opts.blind, who: opts.who || store.who || "未署名", kind: opts.kind || "exam", title: opts.title || "", banks: opts.banks || [], saved: Date.now(),
     qs: refs, idx: 0, ans: {}, work: {}, words: {}, combo: 0, maxCombo: 0, elapsed: 0, started: Date.now()
   };
   store.sessions.unshift(S);
@@ -259,7 +263,7 @@ function spellFull(q, typed) {
 }
 function grade(q, resp) {
   switch (q.type) {
-    case "mc": case "dict": return resp === q.ans;
+    case "mc": case "dict": case "listen": return resp === q.ans;
     case "order": return JSON.stringify(resp) === JSON.stringify(q.ans);
     case "spell": return spellFull(q, resp).toLowerCase() === q.ans.toLowerCase();
     case "trans": case "rewrite": { const n = norm(resp); return transRefs(q).some(r => norm(r) === n); }
@@ -272,7 +276,7 @@ function grade(q, resp) {
 }
 function correctText(q) {
   switch (q.type) {
-    case "mc": case "dict": return `(${LETTERS[q.ans]}) ${q.opts[q.ans]}`;
+    case "mc": case "dict": case "listen": return `(${LETTERS[q.ans]}) ${q.opts[q.ans]}`;
     case "order": return q.ans.map(i => "abcdefgh"[i]).join(" → ");
     case "spell": return q.ans;
     case "trans": case "rewrite": return q.ans.map(a => expand(a)[0]).filter((v, i, a) => a.indexOf(v) === i).slice(0, 2).join("／");
@@ -287,7 +291,7 @@ function respText(q, a) {
   if (!a) return "未作答";
   const r = a.resp;
   switch (q.type) {
-    case "mc": case "dict": return `(${LETTERS[r]}) ${q.opts[r]}`;
+    case "mc": case "dict": case "listen": return `(${LETTERS[r]}) ${q.opts[r]}`;
     case "order": return r.map(i => "abcdefgh"[i]).join(" → ");
     case "spell": return spellFull(q, r);
     case "trans": case "rewrite": return r || "（空白）";
@@ -425,7 +429,9 @@ function homeHTML() {
     h += `</div>`;
   }
   h += `<div class="section-h"><h2>考試範圍</h2><span class="muted" style="font-size:13px">${BANKS.length} 個題庫</span></div>`;
+  let lastSec = "";
   BANKS.slice().sort((x, y) => (x.grade || 0) - (y.grade || 0)).forEach(b => {
+    if (b.section && b.section !== lastSec) { lastSec = b.section; h += `<div class="section-h"><h2>${esc(b.section)}</h2></div>${b.sectionNote ? `<div class="glass card" style="display:flex;flex-direction:column;gap:10px"><div class="muted" style="font-size:14px">${esc(b.sectionNote)}</div>${b.links ? `<div class="row" style="flex-wrap:wrap">${b.links.map(([t, u]) => `<a class="btn" href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>`).join("")}</div>` : ""}</div>` : ""}`; }
     const on = sel.banks.includes(b.id);
     const n = b.items.reduce((s, it) => s + (it.type === "group" ? it.qs.length : 1), 0);
     h += `<div class="glass card bank">
@@ -434,13 +440,21 @@ function homeHTML() {
         <span style="min-width:0"><span class="bank-title" style="display:block">${esc(b.title)}</span><span class="muted" style="font-size:14px">${esc(b.range)}・${n} 題</span></span></button>
         <span class="tag date">加入 ${esc(b.added)}</span></div>
       ${b.note ? `<div class="muted" style="font-size:13.5px">${esc(b.note)}</div>` : ""}
-      ${on && b.exams ? `<div class="opt-block"><label>段考範圍快選</label><div class="seg">${b.exams.map((ex, i) => `<button data-act="exam-pick" data-id="${b.id}" data-i="${i}" aria-pressed="${sameSet(Object.keys(b.tags).filter(t => sel.tags.includes(t)), ex.tags)}">${esc(ex.name)}</button>`).join("")}<button data-act="exam-pick" data-id="${b.id}" data-i="all" aria-pressed="${Object.keys(b.tags).every(t => sel.tags.includes(t))}">全冊</button></div></div>` : ""}
-      ${on ? `<div class="opt-block"><label>細項</label><div class="chips">${Object.entries(b.tags).map(([k, v]) => {
+      ${on && b.exams ? `<div class="opt-block"><label>${b.fixed ? "選擇要考的部分" : "段考範圍快選"}</label><div class="seg">${b.exams.map((ex, i) => `<button data-act="exam-pick" data-id="${b.id}" data-i="${i}" aria-pressed="${sameSet(Object.keys(b.tags).filter(t => sel.tags.includes(t)), ex.tags)}">${esc(ex.name)}</button>`).join("")}${b.fixed ? "" : `<button data-act="exam-pick" data-id="${b.id}" data-i="all" aria-pressed="${Object.keys(b.tags).every(t => sel.tags.includes(t))}">全冊</button>`}</div></div>` : ""}
+      ${on && !b.fixed ? `<div class="opt-block"><label>細項</label><div class="chips">${Object.entries(b.tags).map(([k, v]) => {
       const c = b.items.filter(it => it.tag === k).reduce((s, it) => s + (it.type === "group" ? it.qs.length : 1), 0);
       return `<button class="chip" data-act="tag" data-k="${k}" aria-pressed="${sel.tags.includes(k)}">${esc(v)}<span class="n">${c}</span></button>`;
     }).join("")}</div></div>` : ""}
     </div>`;
   });
+  if (isFixedSel(sel)) {
+    const blindSel = sel.banks.map(bankById).some(b => (b.blind || []).some(t => sel.tags.includes(t)));
+    h += `<div class="glass card" style="display:flex;flex-direction:column;gap:18px"><div class="muted" style="font-size:14px">${blindSel
+      ? "正式考模式：題目照正式考試的順序和題數，計時作答。聽力每題只播一遍；作答時不會顯示對錯、沒有提示，交卷後才看成績和解析。"
+      : "寫作正式考：照正式考試的題型順序，計時 40 分鐘。"}</div>
+    <div class="start-bar"><div class="muted tnum">這次共 <b style="color:var(--ink);font-size:18px">${examN}</b> 題</div>
+    <button class="btn primary big" data-act="start" ${examN ? "" : "disabled"}>${I.play}開始作答</button></div></div>`;
+  } else
   h += `<div class="glass card" style="display:flex;flex-direction:column;gap:18px">
     <div class="opt-block"><label>模式</label><div class="seg">
       <button data-act="mode" data-v="exam" aria-pressed="${sel.mode === "exam"}">模擬段考</button>
@@ -481,13 +495,13 @@ function startTick() {
 function qbarHTML() {
   const last = S.idx === S.qs.length - 1;
   return `<button class="nav" data-act="prev" ${S.idx === 0 ? "disabled" : ""} aria-label="上一題">${I.chevL}<span>上一題</span></button>
-  <button class="tb ${showHint ? "on" : ""}" data-act="hint">${I.bulb}提示</button>
+  ${S.blind ? "" : `<button class="tb ${showHint ? "on" : ""}" data-act="hint">${I.bulb}提示</button>`}
   <button class="tb" data-act="grid">${I.grid}題號</button>
-  <button class="tb ${wordMode ? "on" : ""}" data-act="wordmode">${I.aa}生字</button>
+  ${S.blind ? "" : `<button class="tb ${wordMode ? "on" : ""}" data-act="wordmode">${I.aa}生字</button>`}
   <button class="nav next" data-act="${last ? "finish" : "next"}"><span>${last ? "交卷" : "下一題"}</span>${last ? I.flag : I.chevR}</button>`;
 }
 function quizHTML() {
-  const i = S.idx, X = getQ(i); const q = X.q; const a = S.ans[i];
+  const i = S.idx, X = getQ(i); const q = X.q; const a = S.blind ? null : S.ans[i];
   const answered = Object.keys(S.ans).length;
   const typeLabel = X.ftype === "vocab" ? "單字練習" : TYPE_LABEL[X.ftype] + (q.type === "order" ? "・排序" : "");
   let h = `<section class="view ${wordMode ? "wordmode" : ""}" style="gap:16px">
@@ -499,11 +513,11 @@ function quizHTML() {
     <div class="combo-mini ${S.combo ? "" : "zero"}" id="combomini">×${S.combo}</div></div>`;
   const passage = X.group ? passageHTML(X, i) : "";
   h += `<div class="qlayout ${passage ? "has-passage" : ""}">${passage}<div class="glass card qcard" id="qcard" data-i="${i}">
-    <div class="qhead"><span class="qnum">Q${i + 1}</span>${q.type === "trans" || q.type === "essay" || q.zhPrompt ? "" : `<button class="speak" data-act="read-q" aria-label="念題目" title="念題目">${I.speaker}</button>`}<span class="tag">${typeLabel}</span>${X.group ? "" : X.bank ? `<span class="tag">${esc(tagName(X.bank, q.tag))}</span>` : ""}</div>
+    <div class="qhead"><span class="qnum">Q${i + 1}</span>${q.type === "trans" || q.type === "essay" || q.type === "listen" || q.zhPrompt || S.blind ? "" : `<button class="speak" data-act="read-q" aria-label="念題目" title="念題目">${I.speaker}</button>`}<span class="tag">${typeLabel}</span>${X.group ? "" : X.bank ? `<span class="tag">${esc(tagName(X.bank, q.tag))}</span>` : ""}</div>
     ${questionBody(X, i, a, false)}
     ${showHint && !a ? `<div class="hintbox">${I.bulb}<div>${esc(q.hint || "這題沒有提示")}</div></div>` : ""}
     ${a ? feedbackHTML(X, a) : ""}
-    ${i === 0 && !a && !S.tipSeen ? `<div class="muted" style="font-size:13.5px">小技巧：題目裡不會的字直接點一下就會加入生字表；選項裡的字請先打開下方「生字」。選項右邊的圓圈斜線按鈕可以先劃掉不要的答案。</div>` : ""}
+    ${i === 0 && !a && !S.tipSeen && !S.blind ? `<div class="muted" style="font-size:13.5px">小技巧：題目裡不會的字直接點一下就會加入生字表；選項裡的字請先打開下方「生字」。選項右邊的圓圈斜線按鈕可以先劃掉不要的答案。</div>` : ""}
   </div></div></section>`;
   return h;
 }
@@ -527,13 +541,25 @@ function passageHTML(X, i) {
   }
   return `<div class="glass card passage"><div class="eyebrow">題組・${{ dialogue: "對話", article: "短文", cloze: "克漏字", notice: "公告" }[g.kind]}</div>
   <h3 class="ptitle" data-ctx>${wrapWords(g.title, m)}</h3>
-  <div class="read-bar"><button class="btn sm" data-act="read-all">${reading ? `${I.stop}<span>停止</span>` : `${I.speaker}<span>朗讀全文</span>`}</button>
-  <div class="seg sm">${[0.7, 0.9, 1.1].map(r => `<button data-act="rate" data-v="${r}" aria-pressed="${(store.settings.rate || 0.9) === r}">${r === 0.7 ? "慢" : r === 0.9 ? "中" : "快"}</button>`).join("")}</div></div>
+  ${S.blind ? "" : `<div class="read-bar"><button class="btn sm" data-act="read-all">${reading ? `${I.stop}<span>停止</span>` : `${I.speaker}<span>朗讀全文</span>`}</button>
+  <div class="seg sm">${[0.7, 0.9, 1.1].map(r => `<button data-act="rate" data-v="${r}" aria-pressed="${(store.settings.rate || 0.9) === r}">${r === 0.7 ? "慢" : r === 0.9 ? "中" : "快"}</button>`).join("")}</div></div>`}
   <div class="ptext ${g.kind}">${body}</div>
   ${g.gloss ? `<div class="gloss">${g.gloss.map(([e, z]) => `<span><b>${esc(e)}</b> ${esc(z)}</span>`).join("")}</div>` : ""}</div>`;
 }
+/* ---------- 聽力 ---------- */
+function listenScript(q) { return q.script.map(l => l.replace(/^([WM]\d?): /, (m, w) => (w[0] === "W" ? "女：" : "男："))); }
+function listenHTML(q, i, a, review) {
+  const w = review ? {} : (S.work[i] || {});
+  const once = !review && S.blind, used = once && w.played;
+  const reveal = review || (a && !once);
+  let h = q.img ? `<div class="limg ${q.part === 4 ? "tri" : ""}"><img src="${esc(q.img)}" alt="聽力題圖片" onerror="this.parentNode.classList.add('noimg');this.remove()">${q.part === 4 ? "<span>A</span><span>B</span><span>C</span>" : ""}</div>` : "";
+  if (!review) h += `<div class="listen-bar"><button class="btn ${used ? "" : "primary"}" data-act="listen-play" ${used ? "disabled" : ""}>${I.speaker}<span>${used ? "已播放" : w.played ? "再聽一次" : "播放題目"}</span></button>
+  <span class="muted" style="font-size:13.5px">${once ? "正式考：每題只播一遍" : { 1: "看圖，聽問題和三個選項", 2: "聽一句話，選出最適合的回應", 3: "聽一段對話和問題", 4: "聽短文和問題，選出符合的圖" }[q.part]}</span></div>`;
+  if (reveal && !review) h += `<details class="script"><summary>聽力原文</summary>${listenScript(q).map(l => `<div data-ctx>${wrapWords(l, S.words)}</div>`).join("")}</details>`;
+  return h;
+}
 function fillsFor(q, a) {
-  if (!a || !(q.type === "mc" || q.type === "dict")) return null;
+  if (!a || !isMC(q)) return null;
   const n = blankCount(q.stem); if (!n) return null;
   const parts = n > 1 ? q.opts[q.ans].split(/;\s*/) : [q.opts[q.ans]];
   return parts.length === n ? parts : null;
@@ -542,16 +568,19 @@ function questionBody(X, i, a, review) {
   const q = X.q, m = review ? (review.words || {}) : S.words, locked = !!a;
   const st = review ? {} : (S.work[i] || {});
   let h = "";
-  if (q.type === "mc" || q.type === "dict") {
+  if (isMC(q)) {
     const fills = fillsFor(q, a);
-    if (q.blank) h += `<div class="stem">第 <b>${q.blank}</b> 格應填入哪一句？</div>`;
+    if (q.type === "listen") h += listenHTML(q, i, a, review);
+    else if (q.blank) h += `<div class="stem">第 <b>${q.blank}</b> 格應填入哪一句？</div>`;
     else h += `<div class="stem" data-ctx>${[].concat(q.stem).map(l => `<span class="line" data-ctx>${lineHTML(l, m, fills)}</span>`).join("")}</div>`;
     if (q.box) h += `<div class="boxed" data-ctx>${q.box.map(l => `<div>${lineHTML(l, m, null, [q.uline])}</div>`).join("")}</div>`;
     if (q.post) h += `<div class="stem" style="font-size:17px" data-ctx>${wrapWords(q.post, m)}</div>`;
     const struck = st.struck || [];
     h += `<div class="opts ${locked ? "locked" : ""}">${q.opts.map((o, k) => {
       let cls = "opt"; if (locked) { cls += " locked"; if (k === q.ans) cls += " right"; else if (a.resp === k) cls += " wrong"; } else if (struck.includes(k)) cls += " struck";
-      return `<div class="${cls}" data-k="${k}"><button class="opt-main" data-act="opt" data-k="${k}" ${locked ? 'aria-disabled="true"' : ""}><span class="letter">${LETTERS[k]}</span><span class="txt" data-ctx>${q.zhOpts ? esc(o) : wrapWords(o, m)}</span></button>${locked ? "" : `<button class="strike" data-act="strike" data-k="${k}" aria-label="劃掉 ${LETTERS[k]}" title="劃掉">${I.strike}</button>`}</div>`;
+      if (!review && !locked && S.blind && S.ans[i] && S.ans[i].resp === k) cls += " picked";
+      const hideTxt = q.type === "listen" && (q.part === 1 || q.part === 4) && !locked;
+      return `<div class="${cls}" data-k="${k}"><button class="opt-main" data-act="opt" data-k="${k}" ${locked ? 'aria-disabled="true"' : ""}><span class="letter">${LETTERS[k]}</span><span class="txt" data-ctx>${hideTxt ? `<span class="muted">${q.part === 1 ? "（聽選項 " + LETTERS[k] + "）" : "圖 " + LETTERS[k]}</span>` : q.zhOpts ? esc(o) : wrapWords(o, m)}</span></button>${locked ? "" : `<button class="strike" data-act="strike" data-k="${k}" aria-label="劃掉 ${LETTERS[k]}" title="劃掉">${I.strike}</button>`}</div>`;
     }).join("")}</div>`;
   }
   else if (q.type === "order") {
@@ -645,8 +674,9 @@ function feedbackHTML(X, a) {
 function work(i) { return S.work[i] || (S.work[i] = {}); }
 function commit(resp, el) {
   const i = S.idx, X = getQ(i), q = X.q;
-  if (S.ans[i]) return;
+  if (S.ans[i] && !S.blind) return;
   const correct = grade(q, resp);
+  if (S.blind) { S.ans[i] = { resp, correct, hint: false, t: Math.round(S.elapsed) }; S.tipSeen = true; save(); rerenderKeep(); return; }
   S.ans[i] = { resp, correct, hint: !!(S.work[i] && S.work[i].hint), t: Math.round(S.elapsed) };
   if (q.type === "match") S.ans[i].perm = work(i).perm;
   if (correct) { S.combo++; S.maxCombo = Math.max(S.maxCombo, S.combo); } else S.combo = 0;
@@ -657,13 +687,13 @@ function commit(resp, el) {
   if (correct) {
     sfxGood(S.combo);
     let target = card;
-    if (q.type === "mc" || q.type === "dict") target = $(`.opt[data-k="${q.ans}"]`) || card;
+    if (isMC(q)) target = $(`.opt[data-k="${q.ans}"]`) || card;
     target.classList.add("pop");
     comboFX(S.combo, target);
     const cm = $("#combomini"); if (cm) { cm.style.transform = "scale(1.3)"; setTimeout(() => cm.style.transform = "", 220); }
   } else {
     sfxBad();
-    const t = (q.type === "mc" || q.type === "dict") ? $(`.opt[data-k="${resp}"]`) : card;
+    const t = isMC(q) ? $(`.opt[data-k="${resp}"]`) : card;
     if (t) t.classList.add("shake");
   }
   const fb = $(".feedback"); if (fb && fb.getBoundingClientRect().bottom > innerHeight - 90) fb.scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "center" });
@@ -865,7 +895,7 @@ function reviewItem(att, i) {
   if (!X) return `<details class="rv"><summary><span class="st skip">?</span><span class="sum">題目已從題庫移除</span></summary></details>`;
   const q = X.q, a = att.ans[i];
   const st = !a ? "skip" : a.correct ? "ok" : "no";
-  const sumText = q.zh || q.zhPrompt || q.prompt || (q.src ? [].concat(q.src).join(" ") : "") || (q.blank ? `${X.group.title}・第 ${q.blank} 格` : [].concat(q.stem || q.sent || "").join(" "));
+  const sumText = q.type === "listen" ? `${tagName(X.bank, q.tag)}・${(q.part === 1 ? listenScript(q)[0] : listenScript(q).slice(-1)[0]) || ""}` : q.zh || q.zhPrompt || q.prompt || (q.src ? [].concat(q.src).join(" ") : "") || (q.blank ? `${X.group.title}・第 ${q.blank} 格` : [].concat(q.stem || q.sent || "").join(" "));
   const typeL = X.ftype === "vocab" ? "單字" : TYPE_LABEL[X.ftype];
   let body = "";
   if (X.group) body += `<details class="pfold"><summary><span class="muted">題組：${esc(X.group.title)}（展開文章）</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext ${X.group.kind}" style="margin-top:8px;font-size:15.5px">${X.group.passage.map(p => `<p>${esc(p).replace(/\[\[(\d)\]\]/g, '<span class="cz">$1</span>')}</p>`).join("")}</div></details>`;
@@ -880,7 +910,8 @@ function reviewItem(att, i) {
 }
 function questionReview(q) {
   const opts = q.opts ? `<ol type="A" style="margin:6px 0 0;padding-left:26px">${q.opts.map((o, k) => `<li style="${k === q.ans ? "color:var(--good);font-weight:700" : ""}">${esc(o)}</li>`).join("")}</ol>` : "";
-  if (q.type === "mc" || q.type === "dict") return `${q.blank ? `<b>第 ${q.blank} 格</b>` : [].concat(q.stem).map(l => `<div>${esc(l)}</div>`).join("")}${q.box ? `<div class="boxed" style="font-size:15px;margin-top:6px">${q.box.map(esc).join("<br>")}</div>` : ""}${q.post ? `<div>${esc(q.post)}</div>` : ""}${opts}`;
+  if (q.type === "listen") return `${q.img ? `<div class="limg ${q.part === 4 ? "tri" : ""}" style="max-width:420px"><img src="${esc(q.img)}" alt="" onerror="this.parentNode.remove()">${q.part === 4 ? "<span>A</span><span>B</span><span>C</span>" : ""}</div>` : ""}<div class="script">${listenScript(q).map(l => `<div>${esc(l)}</div>`).join("")}</div>${q.part === 1 ? "" : opts}`;
+  if (isMC(q)) return `${q.blank ? `<b>第 ${q.blank} 格</b>` : [].concat(q.stem).map(l => `<div>${esc(l)}</div>`).join("")}${q.box ? `<div class="boxed" style="font-size:15px;margin-top:6px">${q.box.map(esc).join("<br>")}</div>` : ""}${q.post ? `<div>${esc(q.post)}</div>` : ""}${opts}`;
   if (q.type === "order") return `<div>${esc(q.stem)}</div><div style="margin-top:6px">${q.items.map((t, k) => `<div><b>${"abcd"[k]}.</b> ${esc(t)}</div>`).join("")}</div>`;
   if (q.type === "spell") return `${q.zhPrompt ? `<div>${esc(q.zhPrompt)}</div>` : ""}<div>${esc(q.stem).replace("___", `<b>${esc(spellParts(q.ans).first)}____${esc(spellParts(q.ans).last)}</b>`)}</div>`;
   if (q.type === "trans") return `<div style="font-weight:650">${esc(q.zh)}</div>`;
@@ -965,7 +996,13 @@ document.addEventListener("click", e => {
   switch (A) {
     case "tab": go(d.v); break;
     case "sound": store.settings.sound = !store.settings.sound; save(); render(); if (store.settings.sound) tone(880, 0, .15); break;
-    case "bank": { const i = sel.banks.indexOf(d.id); if (i >= 0) sel.banks.splice(i, 1); else { sel.banks.push(d.id); Object.keys(bankById(d.id).tags).forEach(t => { if (!sel.tags.includes(t)) sel.tags.push(t); }); } save(); rerenderKeep(); break; }
+    case "bank": {
+      const i = sel.banks.indexOf(d.id), nb = bankById(d.id);
+      if (i >= 0) sel.banks.splice(i, 1);
+      else if (nb.fixed) { sel.banks = [d.id]; sel.tags = nb.exams[0].tags.slice(); }   // 模擬卷一次只考一份，預設先考聽讀
+      else { sel.banks = sel.banks.filter(id => !bankById(id).fixed); sel.banks.push(d.id); Object.keys(nb.tags).forEach(t => { if (!sel.tags.includes(t)) sel.tags.push(t); }); }
+      save(); rerenderKeep(); break;
+    }
     case "exam-pick": {
       const b = bankById(d.id); const own = Object.keys(b.tags);
       sel.tags = sel.tags.filter(t => !own.includes(t)).concat(d.i === "all" ? own : b.exams[+d.i].tags);
@@ -985,8 +1022,10 @@ document.addEventListener("click", e => {
       const titles = sel.banks.map(id => bankById(id).title).join("＋");
       // 英檢模擬考：照正式考試時間倒數（閱讀 35 分、寫作 40 分）
       let limit = 0;
-      if (sel.mode === "exam") sel.banks.map(bankById).forEach(b => (b.timeLimits || []).forEach(([tags, min]) => { if (tags.some(t => sel.tags.includes(t))) limit += min * 60; }));
-      const opts = { kind: "exam", limit, title: `${titles}・${sel.mode === "exam" ? (limit ? "模擬測驗" : "模擬段考") : "自訂練習"}`, banks: sel.banks.slice() };
+      const fixed = isFixedSel(sel);
+      if (sel.mode === "exam" || fixed) sel.banks.map(bankById).forEach(b => (b.timeLimits || []).forEach(([tags, min]) => { if (tags.some(t => sel.tags.includes(t))) limit += min * 60; }));
+      const blind = fixed && sel.banks.map(bankById).some(b => (b.blind || []).some(t => sel.tags.includes(t)));
+      const opts = { kind: "exam", limit, blind, title: `${titles}・${fixed ? (blind ? "正式考・聽力閱讀" : "正式考・寫作") : sel.mode === "exam" ? (limit ? "模擬測驗" : "模擬段考") : "自訂練習"}`, banks: sel.banks.slice() };
       // 這個名字在這台裝置還沒有個人代碼 → 先登記（名字被別人用了就請他輸入代碼）
       if (typeof ensureCode === "function" && !store.codes[nm]) { act.disabled = true; ensureCode(nm).then(ok => { act.disabled = false; if (ok) newSession(refs, opts); }); }
       else newSession(refs, opts);
@@ -1002,15 +1041,15 @@ document.addEventListener("click", e => {
     case "close-sheet": closeSheet(); break;
 
     // quiz
-    case "opt": if (S && !S.ans[S.idx]) { const st = work(S.idx).struck || []; if (st.includes(+d.k)) { toast("這個選項已劃掉，先取消劃掉再選"); break; } commit(+d.k); } break;
+    case "opt": if (S && (!S.ans[S.idx] || S.blind)) { const st = work(S.idx).struck || []; if (st.includes(+d.k)) { toast("這個選項已劃掉，先取消劃掉再選"); break; } commit(+d.k); } break;
     case "strike": { const w2 = work(S.idx); const st = w2.struck || (w2.struck = []); const k = +d.k; const i = st.indexOf(k); if (i >= 0) st.splice(i, 1); else st.push(k); save(); const el = act.closest(".opt"); el.classList.toggle("struck"); break; }
     case "prev": gotoQ(S.idx - 1); break;
     case "next": gotoQ(S.idx + 1); break;
     case "hint": showHint = !showHint; if (showHint && !S.ans[S.idx]) work(S.idx).hint = true; save(); rerenderKeep(); break;
     case "wordmode": wordMode = !wordMode; toast(wordMode ? "生字模式：點任何單字都會加入生字表" : "已關閉生字模式"); rerenderKeep(); break;
     case "grid": {
-      sheet(`<h3>題號</h3><div class="grid-nums">${S.qs.map((_, i) => { const a = S.ans[i]; return `<button class="gn ${a ? (a.correct ? "ok" : "no") : ""} ${i === S.idx ? "cur" : ""}" data-act="goto" data-i="${i}">${i + 1}</button>`; }).join("")}</div>
-      <div class="legend"><span><i style="background:var(--good)"></i>答對</span><span><i style="background:var(--bad)"></i>答錯</span><span><i style="background:var(--glass-hi);box-shadow:inset 0 0 0 1px var(--edge)"></i>未作答</span></div>
+      sheet(`<h3>題號</h3><div class="grid-nums">${S.qs.map((_, i) => { const a = S.ans[i]; return `<button class="gn ${a ? (S.blind ? "done" : a.correct ? "ok" : "no") : ""} ${i === S.idx ? "cur" : ""}" data-act="goto" data-i="${i}">${i + 1}</button>`; }).join("")}</div>
+      <div class="legend">${S.blind ? `<span><i style="background:var(--accent)"></i>已作答</span>` : `<span><i style="background:var(--good)"></i>答對</span><span><i style="background:var(--bad)"></i>答錯</span>`}<span><i style="background:var(--glass-hi);box-shadow:inset 0 0 0 1px var(--edge)"></i>未作答</span></div>
       <div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn primary" data-act="finish">交卷</button></div>`);
       break;
     }
@@ -1106,7 +1145,7 @@ document.addEventListener("keydown", e => {
   if (e.key === "ArrowRight") gotoQ(S.idx + 1);
   if (e.key === "ArrowLeft") gotoQ(S.idx - 1);
   const q = getQ(S.idx).q;
-  if ((q.type === "mc" || q.type === "dict") && !S.ans[S.idx]) { const k = "abcd".indexOf(e.key.toLowerCase()); if (k >= 0 && k < q.opts.length) commit(k); }
+  if (isMC(q) && (!S.ans[S.idx] || S.blind)) { const k = "abcd".indexOf(e.key.toLowerCase()); if (k >= 0 && k < q.opts.length) commit(k); }
 });
 // 每次進題目前準備亂序
 const _render = render;

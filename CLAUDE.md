@@ -94,7 +94,13 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
 網站網址、老師代碼、試算表連結、學生怎麼把網站加到 iPad 主畫面（Safari 分享 → 加入主畫面）。
 
 ## 日常維護
-- **改題目／加題庫**：編輯 `docs/js/bank*.js`（出題工具在 `helpers.js`：M 單選、SP 拼字、T 翻譯、R 重組、E 挑錯、X 配對、G 題組、D 字典題；英檢另有 RW 改寫、ES 段落寫作）。
+- **改題目／加題庫**：編輯 `docs/js/bank*.js`（出題工具在 `helpers.js`：M 單選、SP 拼字、T 翻譯、R 重組、E 挑錯、X 配對、G 題組、D 字典題；英檢另有 RW 改寫、ES 段落寫作、L 聽力）。
+- **英檢初級**：練習題在 `bankgept.js`＋`bankgept2.js`（題庫 gept-e）；正式考模擬卷在 `bankgeptmock.js`（gept-m1～m3，`fixed` 整卷固定順序、`blind` 聽讀部分不顯示對錯、聽力只播一遍）。
+  - 聽力 `L(id, tag, part, script, opts, ans, hint, exp, pic)`：part 1 看圖辨義（選項用念的）、2 問答、3 簡短對話、4 短文聽解（三圖選一）；script 每行一句，`W: ` 女聲、`M: ` 男聲、沒標記是旁白。
+    part 1、4 的答案順序固定（不會自動平衡），新增時自己把 A/B/C 分散。
+  - part 1、4 的圖：`docs/img/listen/<題庫>-<題號>.png`，依 `pic` 欄位的英文描述用 Higgsfield 畫（Seedream 5.0 Flash，0.5 點／張，黑白線稿、圖中不能有字；
+    part 4 是三格橫排，網站會自動標 A/B/C）。避免畫小孩游泳、泳衣（會被判成不當內容）。畫好後壓縮（寬 1200、48 色 PNG）。
+  - 正式考模擬卷的題目不可以抄官方或出版社的真題（網站是公開的）；官方真題請學生到 GEPT i學網。
   新題目裡沒收錄的字要加到 `dict*.js`（格式 `word|詞性|中文`）。
 - **改完之後**：`node tools/build_tts_jobs.mjs && .venv/bin/python tools/gen_audio.py`，再 `git add -A && git commit && git push`
 - 單選題的選項順序會在載入時自動平衡，新增題目請加在每份題庫的最後面，已存在的題目不要改 id 或移動位置（舊紀錄靠 id 對應）。

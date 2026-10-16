@@ -16,3 +16,13 @@ const Q = (id, stem, opts, ans, hint, exp) => ({ id, type: "mc", stem, opts, ans
 const B = (id, blank, opts, ans, hint, exp) => ({ id, type: "mc", blank, stem: `第 ${blank} 格`, opts, ans, hint, exp });
 const O = (id, stem, items, ans, hint, exp) => ({ id, type: "order", stem, items, ans, hint, exp });
 const bank = id => BANKS.find(b => b.id === id);
+/* 聽力：part 1 看圖辨義（選項用念的，自動接在題目後）、2 問答、3 簡短對話、4 短文聽解（三張圖選一）
+   script 每行一句；"W: " 女聲、"M: " 男聲、沒有標記 = 旁白。pic = 畫圖用的英文描述 */
+const L = (id, tag, part, script, opts, ans, hint, exp, pic) => ({
+  id, type: "listen", tag, part, opts, ans, hint, exp, pic,
+  script: part === 1 ? script.concat(opts.map((o, k) => "ABC"[k] + ". " + o)) : script,
+  fixedOrder: part === 1 || part === 4,
+  v2: [...id].reduce((s, c) => s + c.charCodeAt(0), 0) % 2 === 1
+});
+/* 第 1、4 部分的圖片：docs/img/listen/<題庫>-<題號>.png（沒有圖檔時畫面會自動隱藏） */
+const listenImages = b => b.items.forEach(it => { if (it.type === "listen" && (it.part === 1 || it.part === 4)) it.img = `img/listen/${b.id}-${it.id}.png`; });

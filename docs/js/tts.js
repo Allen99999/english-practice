@@ -10,17 +10,19 @@ function fallbackSpeak(text, done) {
     u.onend = done; u.onerror = done; speechSynthesis.speak(u);
   } catch (e) { done(); }
 }
-/* items: [{text, voice, el?}] 依序播放 */
+/* items: [{text, voice, el?, gap?}] 依序播放；gap = 播完這句後停幾毫秒 */
 function playItems(items, onEnd) {
   const token = ++playToken;
   try { speechSynthesis.cancel(); } catch (e) { }
   PLAYER.pause();
   let i = 0;
+  let prevGap = 0;
   const next = () => {
     if (token !== playToken) return;
+    if (prevGap) { const g = prevGap; prevGap = 0; setTimeout(next, g); return; }
     document.querySelectorAll(".speaking").forEach(x => x.classList.remove("speaking"));
     if (i >= items.length) { onEnd && onEnd(); return; }
-    const it = items[i++];
+    const it = items[i++]; prevGap = it.gap || 0;
     if (it.el && it.el.isConnected) it.el.classList.add("speaking");
     const name = ttsName(it.voice, it.text);
     if (AUDIO_SET && AUDIO_SET.has(name)) {
@@ -57,3 +59,15 @@ function readQuestion() {
   if (!items.length) { toast("這題沒有英文可以念"); return; }
   playItems(items);
 }
+/* 聽力題：整段播放，句子之間停頓；正式考每題只能播一次 */
+function playListen() {
+  const X = S && getQ(S.idx); if (!X || X.q.type !== "listen") return;
+  const w = work(S.idx);
+  if (S.blind && w.played) return;
+  const items = questionSpeech(X.q).map((it, k, arr) => Object.assign({ gap: k === arr.length - 1 ? 0 : (X.q.part === 1 && k > 0 ? 900 : 600) }, it));
+  w.played = (w.played || 0) + 1; save(true);
+  const b = document.querySelector('[data-act="listen-play"]');
+  if (b) { b.disabled = true; b.innerHTML = `${I.speaker}<span>播放中…</span>`; }
+  playItems(items, () => { if (view === "quiz") rerenderKeep(); });
+}
+document.addEventListener("click", e => { const b = e.target.closest('[data-act="listen-play"]'); if (b && !b.disabled) playListen(); });
