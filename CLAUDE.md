@@ -29,7 +29,7 @@
 3. `clasp login`（瀏覽器選他的 Google 帳號並允許）。
 
 ### 3. 產生代碼
-- 班級代碼：`eng-` 加 4 位隨機數字（給學生）；老師代碼：12 位隨機英數（只給 Allen）
+- 班級代碼：Allen 決定不用（`CLASS_CODE = ""`，學生只要輸入名字）；老師代碼：Allen 指定的代碼（只給 Allen）
 - 依 `apps-script/Secrets.example.gs` 寫出 `apps-script/Secrets.gs`
 - 把兩個代碼寫進專案根目錄 `secrets.local.md`（已在 .gitignore），也直接告訴 Allen
 
@@ -46,7 +46,7 @@ clasp push -f
 - 驗證（都要通過）：
   - `curl -sL "<URL>?action=ping"` → `{"ok":true}`
   - `curl -sL "<URL>?action=list&teacherCode=<老師代碼>"` → `{"ok":true,"attempts":[...]}`
-  - `curl -sL -H "Content-Type: text/plain" -d '{"action":"submit","classCode":"wrong","attempt":{"id":"x"}}' "<URL>"` → `wrong class code`
+  - `curl -sL -H "Content-Type: text/plain" -d '{"action":"submit","attempt":{}}' "<URL>"` → `missing attempt`（不寫入試算表；若有設 CLASS_CODE，帶錯代碼應回 `wrong class code`）
   - 如果回傳的是 HTML 登入頁，代表部署權限不是「任何人」，檢查 appsscript.json 的 webapp 設定後重新部署
 - 把網址填進 `docs/js/config.js` 的 `SYNC_URL`
 - 之後改了 Code.gs：`clasp push -f && clasp deploy -i <deploymentId> --description "vN"`（網址不變）
@@ -84,14 +84,14 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
 - 驗證：首頁 200、`audio/manifest.json` 有內容、隨便一個 mp3 回 200
 
 ### 7. 完整測試（可用 Playwright 或請 Allen 用手機開）
-- 開網站 → 輸入名字和班級代碼 → 做一份短的練習並交卷
+- 開網站 → 輸入名字 → 做一份短的練習並交卷
 - 到試算表確認多了一列（`clasp open-container` 可開啟試算表）
 - 網站「總覽」分頁輸入老師代碼 → 看得到剛剛那筆
 - 題組按「朗讀全文」應播放 MP3（不是機器音）
 - 測試用的那一列可以請 Allen 在試算表裡刪掉
 
 ### 8. 最後回報給 Allen
-網站網址、班級代碼、老師代碼、試算表連結、學生怎麼把網站加到 iPad 主畫面（Safari 分享 → 加入主畫面）。
+網站網址、老師代碼、試算表連結、學生怎麼把網站加到 iPad 主畫面（Safari 分享 → 加入主畫面）。
 
 ## 日常維護
 - **改題目／加題庫**：編輯 `docs/js/bank*.js`（出題工具在 `helpers.js`：M 單選、SP 拼字、T 翻譯、R 重組、E 挑錯、X 配對、G 題組、D 字典題；英檢另有 RW 改寫、ES 段落寫作）。

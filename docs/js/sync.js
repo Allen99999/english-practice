@@ -1,7 +1,6 @@
 /* ===== 成績同步（Google 試算表 / Apps Script） ===== */
 const SYNC_ON = !!(SITE_CONFIG.SYNC_URL);
 store.outbox = store.outbox || [];
-store.classCode = store.classCode || "";
 function compactAttempt(a) { return { id: a.id, optv: a.optv, who: a.who, kind: a.kind, title: a.title, banks: a.banks, date: a.date, duration: a.duration, qs: a.qs, ans: a.ans, words: a.words, maxCombo: a.maxCombo, score: a.score, total: a.total, hints: a.hints }; }
 async function postSync(payload) {
   const r = await fetch(SITE_CONFIG.SYNC_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
@@ -9,17 +8,15 @@ async function postSync(payload) {
 }
 let flushing = false;
 async function flushOutbox() {
-  if (!SYNC_ON || flushing || !store.outbox.length || !store.classCode) return;
+  if (!SYNC_ON || flushing || !store.outbox.length) return;
   flushing = true;
   try {
     while (store.outbox.length) {
-      await postSync({ action: "submit", classCode: store.classCode, attempt: store.outbox[0] });
+      await postSync({ action: "submit", attempt: store.outbox[0] });
       store.outbox.shift(); save(true);
     }
     toast("成績已同步到老師那邊");
-  } catch (e) {
-    if (String(e.message).includes("class code")) toast("班級代碼不對，成績先存在這台裝置");
-  }
+  } catch (e) { }
   flushing = false; if (view === "home") rerenderKeep();
 }
 function onAttemptSaved(att) {
@@ -30,8 +27,7 @@ function onAttemptSaved(att) {
 function syncHomeHTML() {
   if (!SYNC_ON) return "";
   const n = store.outbox.length;
-  return `<div class="who-row" style="margin-top:6px"><input id="classcode" class="field" placeholder="班級代碼（老師給的）" autocomplete="off" value="${esc(store.classCode)}" maxlength="20" style="max-width:240px"></div>
-  <div class="muted" style="font-size:13px">${store.classCode ? (n ? `還有 ${n} 筆成績等待上傳 <button class="chip" data-act="sync-now">重新上傳</button>` : "交卷後成績會自動同步給老師") : "輸入班級代碼後，交卷成績會自動同步給老師"}</div>`;
+  return `<div class="muted" style="font-size:13px">${n ? `還有 ${n} 筆成績等待上傳 <button class="chip" data-act="sync-now">重新上傳</button>` : "交卷後成績會自動同步給老師"}</div>`;
 }
 function syncTeacherHTML() {
   if (!SYNC_ON) return "";
@@ -53,8 +49,6 @@ async function pullRemote() {
     save(true); render(); toast(`載入 ${j.attempts.length} 筆雲端紀錄`);
   } catch (e) { toast(String(e.message).includes("teacher") ? "老師代碼不對" : "載入失敗，請檢查網路"); }
 }
-document.addEventListener("input", e => { if (e.target.id === "classcode") { store.classCode = e.target.value.trim(); save(); } });
-document.addEventListener("change", e => { if (e.target.id === "classcode") flushOutbox(); });
 document.addEventListener("click", e => {
   const act = e.target.closest("[data-act]"); if (!act) return;
   if (act.dataset.act === "sync-now") flushOutbox();

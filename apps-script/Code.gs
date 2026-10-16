@@ -1,6 +1,6 @@
 /**
  * 英文練習網站：成績同步後端（綁定在 Google 試算表上的 Apps Script）
- * - 學生交卷：POST {action:"submit", classCode, attempt}
+ * - 學生交卷：POST {action:"submit", classCode, attempt}（CLASS_CODE 留空就不檢查班級代碼）
  * - 老師讀取：GET ?action=list&teacherCode=...
  * 代碼放在 Secrets.gs（不會上傳到 GitHub）
  */
@@ -19,7 +19,7 @@ function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
     if (body.action !== "submit") return json_({ ok: false, error: "unknown action" });
-    if (String(body.classCode || "").trim() !== CLASS_CODE) return json_({ ok: false, error: "wrong class code" });
+    if (CLASS_CODE && String(body.classCode || "").trim() !== CLASS_CODE) return json_({ ok: false, error: "wrong class code" });
     const a = body.attempt || {};
     if (!a.id) return json_({ ok: false, error: "missing attempt" });
     const lock = LockService.getScriptLock(); lock.waitLock(10000);
