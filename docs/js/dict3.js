@@ -1,0 +1,185 @@
+const DICT_RAW3 = `
+add|v.|加入
+agra|n.|阿格拉（印度城市）
+airport|n.|機場
+animal|n.|動物
+apple|n.|蘋果
+april|n.|四月
+baby|n.|嬰兒
+banana|n.|香蕉
+bear|n.|熊
+behind|prep.|在…後面
+being|v.|be 的 V-ing 形
+between|prep.|在…之間
+big|adj.|大的
+birthday|n.|生日
+black|adj.|黑色的
+bottle|n.|瓶子
+bowl|n.|碗
+boy|n.|男孩
+boyfriend|n.|男朋友
+bread|n.|麵包
+brown|adj.|棕色的
+butter|n.|奶油
+camera|n.|相機
+careful|adj.|小心的
+cat|n.|貓
+chair|n.|椅子
+child|n.|小孩（複數 children）
+children|n.|小孩們（child 的複數）
+clean|adj./v.|乾淨的；清理
+cleanup|n.|清掃活動、淨灘
+close|v.|關上
+closed|adj.|關閉的、不營業的
+coffee|n.|咖啡
+colorful|adj.|色彩繽紛的
+concert|n.|演唱會、音樂會
+cool|adj.|酷的；涼爽的
+culture|n.|文化
+cup|n.|杯子
+curly|adj.|捲的
+dark|adj./n.|黑暗的；黑暗
+desk|n.|書桌
+dirty|adj.|髒的
+dog|n.|狗
+door|n.|門
+down|adv.|向下
+early|adv.|早
+ear|n.|耳朵
+egg|n.|蛋
+eight|n.|八
+eighteen|n.|十八
+elephant|n.|大象
+ella|n.|人名
+engineer|n.|工程師
+enjoy|v.|享受
+eye|n.|眼睛
+father|n.|父親
+fifteen|n.|十五
+fifth|adj.|第五
+fifty-four|n.|五十四
+fire|n.|火
+floor|n.|地板
+flour|n.|麵粉
+foot|n.|腳
+fork|n.|叉子
+forty-five|n.|四十五
+forty-two|n.|四十二
+fridge|n.|冰箱
+fried|adj.|炒的、炸的
+fruit|n.|水果
+girl|n.|女孩
+girlfriend|n.|女朋友
+glassies|×|（錯誤拼法，正確是 glasses）
+grandpa|n.|爺爺、外公
+hair|n.|頭髮
+half|n.|一半
+hallway|n.|走廊
+hit|v.|撞到、打
+honey|n.|蜂蜜
+hospital|n.|醫院
+i'd|—|I would 的縮寫（I'd like 我想要）
+india|n.|印度
+indian|adj.|印度的
+january|n.|一月
+jog|v.|慢跑
+journey|n.|旅程
+juice|n.|果汁
+june|n.|六月
+kate|n.|人名
+kenting|n.|墾丁
+key|n.|鑰匙
+kim|n.|人名
+kitchen|n.|廚房
+lion|n.|獅子
+mahal|n.|瑪哈（Taj Mahal 泰姬瑪哈陵）
+taj|n.|泰姬（Taj Mahal 泰姬瑪哈陵）
+march|n.|三月
+market|n.|市場
+mash|v.|壓成泥
+mix|v.|混合
+monkey|n.|猴子
+museum|n.|博物館
+ninth|adj.|第九
+nora|n.|人名
+nose|n.|鼻子
+o'clock|adv.|…點鐘
+officer|n.|官員（police officer 警察）
+open|v./adj.|打開；開放的
+over|adv./prep.|在那邊（over there）；在…上方
+owl|n.|貓頭鷹
+page|n.|頁
+paint|v.|畫畫、油漆
+painting|n.|畫作
+pan|n.|平底鍋
+pancake|n.|鬆餅
+panda|n.|貓熊
+parent|n.|父母親之一（parents 父母）
+person|n.|人
+photo|n.|照片
+piano|n.|鋼琴
+pick|v.|撿；挑選
+place|n.|地方
+plane|n.|飛機
+plastic|adj./n.|塑膠的；塑膠
+police|n.|警察
+pot|n.|鍋子
+quiet|adj.|安靜的
+quietly|adv.|安靜地
+recipe|n.|食譜
+red|adj.|紅色的
+restaurant|n.|餐廳
+rice|n.|米飯
+roof|n.|屋頂
+sad|adj.|難過的
+sandwich|n.|三明治
+saturday|n.|星期六
+scarf|n.|圍巾
+sea|n.|海
+seldom|adv.|很少
+sell|v.|賣
+sold|v.|賣（sell 的過去式）
+seven|n.|七
+seventy|n.|七十
+seventy-two|n.|七十二
+short|adj.|短的；矮的
+smoking|n.|吸菸
+sofa|n.|沙發
+souvenir|n.|紀念品
+spice|n.|香料
+step|n.|步驟；腳步
+straw|n.|吸管
+sugar|n.|糖
+swam|v.|游泳（swim 的過去式）
+tall|adj.|高的
+taxi|n.|計程車
+tennis|n.|網球
+thirteen|n.|十三
+thirty|n.|三十
+throw|v.|丟
+tiger|n.|老虎
+top|n.|頂端（on top 在上面）
+touch|v.|摸、碰
+trash|n.|垃圾
+tree|n.|樹
+trip|n./v.|旅行；絆倒
+tuesday|n.|星期二
+twelfth|adj.|第十二
+twelve|n.|十二
+twenty-eight|n.|二十八
+twenty-eighth|adj.|第二十八
+twenty-eight-th|×|（錯誤拼法）
+under|prep.|在…下面
+usually|adv.|通常
+visit|v.|拜訪、參觀
+waist|n.|腰
+walk|v.|走路
+weekday|n.|平日（週一到週五）
+welcome|adj.|受歡迎的（You're welcome 不客氣）
+window|n.|窗戶
+woman|n.|女人
+zebra|n.|斑馬
+zoo|n.|動物園
+taked|×|（錯誤拼法，正確是 took）
+bigger|adj.|比較大的（big 的比較級）
+`;

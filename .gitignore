@@ -1,0 +1,10 @@
+apps-script/Secrets.gs
+apps-script/.clasp.json
+secrets.local.md
+tools/tts_jobs.json
+.venv/
+node_modules/
+.DS_Store
+*.part
+*.tgz
+samples/
