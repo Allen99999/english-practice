@@ -187,8 +187,21 @@ function geptMock(sel) {
 }
 function adaptivePlan(gm) { return typeof toeflAdaptivePlan === "function" ? toeflAdaptivePlan(gm) : null; }
 function isFixedSel(sel) { return sel.banks.length > 0 && sel.banks.every(id => (bankById(id) || {}).fixed); }
+/* 做過的題目：從「這個名字」的作答紀錄和暫存即時計算。刪掉紀錄或暫存，那些題目就算沒做過 */
+function seenRefs(who) {
+  const set = new Set(), me = r => (r.who || "未署名") === (who || "未署名");
+  store.attempts.filter(me).forEach(a => (a.qs || []).forEach(r => typeof r === "string" && set.add(r)));
+  store.sessions.filter(me).forEach(s => (s.qs || []).forEach(r => typeof r === "string" && set.add(r)));
+  return set;
+}
+/* 打亂後，把沒做過的題目排前面（題組看裡面做過的比例） */
+function freshFirst(units, seen) {
+  const rate = u => u.refs.filter(r => seen.has(r)).length / u.refs.length;
+  return shuffle(units).map((u, k) => [u, rate(u), k]).sort((a, b) => a[1] - b[1] || a[2] - b[2]).map(x => x[0]);
+}
 function buildRefs(sel, countOnly) {
-  const mix = countOnly ? (x => x) : shuffle;
+  const seen = countOnly ? null : seenRefs(((document.getElementById("who") || {}).value || store.who || "").trim());
+  const mix = countOnly ? (x => x) : (u => freshFirst(u, seen));
   let units = unitsFor(sel);
   const gm = geptMock(sel);
   if (gm) return unitsFor({ banks: [gm.bank.id], tags: gm.tags, types: TYPE_ORDER }).filter(u => !u.stage || u.stage === "router").flatMap(u => u.refs);   // 正式考卷：整份照原本順序
@@ -218,7 +231,7 @@ function buildRefs(sel, countOnly) {
   const out = []; let n = 0;
   for (const u of units) { if (sel.count && n >= sel.count) break; out.push(u); n += u.refs.length; }
   if (sel.order === "type") out.sort((a, b) => TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type));
-  return out.flatMap(u => u.refs);
+  return (sel.order === "type" || countOnly ? out : shuffle(out)).flatMap(u => u.refs);   // 選好題目後，完全隨機就再打亂一次
 }
 
 function newSession(refs, opts = {}) {
@@ -332,6 +345,16 @@ function respText(q, a) {
 
 /* ================= 音效 / 發音 ================= */
 let AC = null;
+/* iPhone／iPad：第一次點畫面時解鎖音效；audioSession 設成 playback，靜音開關打開也能聽到（iOS 17+） */
+try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) { }
+function unlockAudio() {
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state !== "running") AC.resume();
+    const b = AC.createBuffer(1, 1, 22050), src = AC.createBufferSource(); src.buffer = b; src.connect(AC.destination); src.start(0);
+  } catch (e) { }
+}
+["touchend", "pointerdown", "keydown"].forEach(ev => addEventListener(ev, unlockAudio, { passive: true }));
 function audio() { if (!store.settings.sound) return null; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume(); return AC; } catch (e) { return null; } }
 function tone(freq, t0, dur, type = "sine", vol = .16) {
   const ac = audio(); if (!ac) return;
@@ -512,7 +535,7 @@ function homeHTML() {
     }).join("")}</div></div>`}
     ${sel.mode === "custom" ? `<div class="opt-block"><label>題數</label><div class="seg">${[10, 20, 30, 0].map(c => `<button data-act="count" data-v="${c}" aria-pressed="${sel.count === c}">${c || "全部"}</button>`).join("")}</div></div>
     <div class="opt-block"><label>順序</label><div class="seg"><button data-act="order" data-v="type" aria-pressed="${sel.order === "type"}">依題型排列</button><button data-act="order" data-v="random" aria-pressed="${sel.order === "random"}">完全隨機</button></div></div>` : ""}
-    <div class="start-bar"><div class="muted tnum">這次共 <b style="color:var(--ink);font-size:18px">${examN}</b> 題</div>
+    <div class="start-bar"><div class="muted tnum">這次共 <b style="color:var(--ink);font-size:18px">${examN}</b> 題${store.who && !gm ? (() => { const seen = seenRefs(store.who), all = unitsFor(sel).flatMap(u => u.refs), left = all.filter(r => !seen.has(r)).length; return `<div style="font-size:12.5px">${esc(store.who)} 在這個範圍還有 ${left} / ${all.length} 題沒做過，會優先出</div>`; })() : ""}</div>
     <button class="btn primary big" data-act="start" ${examN ? "" : "disabled"}>${I.play}開始作答</button></div>
   </div>`;
   if (last) {
@@ -997,6 +1020,7 @@ function reviewItem(att, i) {
   ${q.exp ? `<dt>解析</dt><dd>${esc(q.exp)}</dd>` : ""}
   ${q.hint ? `<dt>提示</dt><dd class="muted">${esc(q.hint)}</dd>` : ""}</dl>`;
   if ((q.type === "trans" || q.type === "rewrite") && a && !a.correct) body += diffHTML(q, a.resp);
+  if (q.type === "speak" && a && a.resp && a.resp.rec && store.teacherCode) body += `<button class="btn" data-act="rec-fetch" data-att="${esc(att.id)}" data-i="${i}">${I.play}播放學生錄音</button>`;
   return `<details class="rv"><summary><span class="st ${st}">${st === "ok" ? I.check : st === "no" ? I.x : "–"}</span><span class="tag">${i + 1}</span><span class="sum">${esc(sumText)}</span><span class="tag">${typeL}</span><span class="chev">${I.chevR.replace("<svg", '<svg width="16" height="16"')}</span></summary><div class="rv-body">${body}</div></details>`;
 }
 function questionReview(q) {

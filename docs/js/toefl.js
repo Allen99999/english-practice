@@ -77,7 +77,7 @@ function speakHTML(q, i, a) {
   ${q.mode === "interview" && (w.played || reveal) ? `<div class="muted" style="font-size:15px">Q：${esc(q.text)}</div>` : ""}
   <div class="rec-box">${rec && rec.mr && rec.mr.state === "recording"
     ? `<button class="btn danger" data-act="rec-stop"><span class="rec-dot"></span>停止錄音</button><span class="tnum muted" id="rectime">0:00 / ${fmtTime(q.secs)}</span>`
-    : `<button class="btn" data-act="rec-start"><span class="rec-dot"></span>${rec && rec.url ? "重新錄音" : "開始錄音"}</button><span class="muted" style="font-size:13px">建議作答時間約 ${q.secs} 秒；錄音只存在這台裝置，不會上傳</span>`}
+    : `<button class="btn" data-act="rec-start"><span class="rec-dot"></span>${rec && rec.url ? "重新錄音" : "開始錄音"}</button><span class="muted" style="font-size:13px">建議作答時間約 ${q.secs} 秒；${typeof SYNC_ON !== "undefined" && SYNC_ON ? "自評後錄音會上傳給老師" : "錄音只存在這台裝置"}</span>`}
   ${rec && rec.url ? `<audio controls src="${rec.url}" style="width:100%;margin-top:8px"></audio>` : ""}</div>
   ${!reveal ? `<div class="row"><button class="btn ${rec && rec.url ? "primary" : ""}" data-act="sp-reveal">${q.mode === "repeat" ? "看原句並自評" : "看參考回答並自評"}</button></div>`
     : `<div class="model"><div class="step-label">${q.mode === "repeat" ? "原句" : "參考回答"}</div><div class="ptext" style="font-size:16px">${esc(q.mode === "repeat" ? q.text : q.model)}</div></div>
@@ -90,7 +90,7 @@ async function recStart() {
     if (REC && REC.url) URL.revokeObjectURL(REC.url);
     REC = { mr, chunks, idx: S.idx, t0: Date.now(), url: null };
     mr.ondataavailable = e => chunks.push(e.data);
-    mr.onstop = () => { stream.getTracks().forEach(t => t.stop()); REC.url = URL.createObjectURL(new Blob(chunks, { type: mr.mimeType || "audio/mp4" })); clearInterval(REC.timer); if (view === "quiz") rerenderKeep(); };
+    mr.onstop = () => { stream.getTracks().forEach(t => t.stop()); REC.blob = new Blob(chunks, { type: mr.mimeType || "audio/mp4" }); REC.url = URL.createObjectURL(REC.blob); clearInterval(REC.timer); if (view === "quiz") rerenderKeep(); };
     mr.start(); rerenderKeep();
     const lim = getQ(S.idx).q.secs || 45;
     REC.timer = setInterval(() => { const t = (Date.now() - REC.t0) / 1000, el = $("#rectime"); if (el) el.textContent = `${fmtTime(t)} / ${fmtTime(lim)}`; if (t >= lim + 2 && mr.state === "recording") mr.stop(); }, 250);
@@ -148,10 +148,37 @@ document.addEventListener("click", e => {
   if (a === "rec-start") recStart();
   if (a === "rec-stop" && REC && REC.mr && REC.mr.state === "recording") REC.mr.stop();
   if (a === "sp-reveal") { work(S.idx).reveal = true; save(); rerenderKeep(); }
-  if (a === "sp-rate") commit({ rate: d.v });
+  if (a === "sp-rate") {
+    const i = S.idx, rec = REC && REC.idx === i && REC.blob ? REC.blob : null;
+    commit({ rate: d.v, rec: !!rec });
+    if (rec) uploadRec(rec, S.id, i, S.who);
+  }
+  if (a === "rec-fetch") fetchRec(act);
 });
 document.addEventListener("input", e => {
   if (!e.target.classList || !e.target.classList.contains("ct-in") || !S) return;
   const first = groupIdx(getQ(S.idx).group)[0], w = work(first); (w.ct || (w.ct = {}))[e.target.dataset.n] = e.target.value; save();
   if (e.target.value.length >= +e.target.maxLength) { const all = [...document.querySelectorAll(".ct-in")], k = all.indexOf(e.target); if (all[k + 1]) all[k + 1].focus(); }
 });
+
+/* ---------- 錄音上傳給老師（學生要有個人代碼）；老師在解析裡播放 ---------- */
+function uploadRec(blob, attemptId, idx, who, tries = 0) {
+  if (typeof SYNC_ON === "undefined" || !SYNC_ON || !store.codes[who]) return;
+  if (blob.size > 2900000) { toast("錄音太長，沒有上傳"); return; }
+  const fr = new FileReader();
+  fr.onload = async () => {
+    try { await postSync({ action: "audio", name: who, code: store.codes[who], attemptId, idx, mime: blob.type, data: String(fr.result).split(",")[1] }, 60000); toast("錄音已上傳給老師"); }
+    catch (e) { if (tries < 1 && !e.server) setTimeout(() => uploadRec(blob, attemptId, idx, who, tries + 1), 4000); else toast("錄音上傳失敗"); }
+  };
+  fr.readAsDataURL(blob);
+}
+async function fetchRec(btn) {
+  const code = store.teacherCode; if (!code) { toast("請先在總覽輸入老師代碼"); return; }
+  btn.disabled = true; btn.textContent = "載入錄音中…";
+  try {
+    const r = await fetch(SITE_CONFIG.SYNC_URL + "?action=audio&teacherCode=" + encodeURIComponent(code) + "&att=" + encodeURIComponent(btn.dataset.att) + "&i=" + btn.dataset.i);
+    const j = await r.json(); if (!j.ok) throw new Error(j.error);
+    const au = document.createElement("audio"); au.controls = true; au.style.width = "100%"; au.src = `data:${j.mime};base64,${j.data}`;
+    btn.replaceWith(au); au.play().catch(() => { });
+  } catch (e) { btn.disabled = false; btn.textContent = String(e.message).includes("no audio") ? "找不到錄音（可能還沒上傳完成）" : "載入失敗，再試一次"; }
+}

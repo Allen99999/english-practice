@@ -67,6 +67,7 @@ function doPost(e) {
         case "claim": return claim_(body);
         case "login": if (rateLimited_("login", 200)) return json_({ ok: false, error: "busy" }); return login_(body);
         case "setcode": return setcode_(body);
+        case "audio": return audioUpload_(body);
       }
       return json_({ ok: false, error: "unknown action" });
     } finally { lock.releaseLock(); }
@@ -124,9 +125,41 @@ function setcode_(body) {
   return json_({ ok: true });
 }
 
+/* ---------- 口說錄音：學生上傳到老師的雲端硬碟「Apex English 錄音」資料夾，老師用老師代碼取回 ---------- */
+const REC_FOLDER = "Apex English 錄音";
+function recFolder_() {
+  const props = PropertiesService.getScriptProperties(), id = props.getProperty("recFolder");
+  if (id) { try { return DriveApp.getFolderById(id); } catch (e) { } }
+  const f = DriveApp.createFolder(REC_FOLDER); props.setProperty("recFolder", f.getId()); return f;
+}
+function recName_(att, i) { return "rec_" + String(att).replace(/[^A-Za-z0-9_-]/g, "") + "_" + Number(i) + ".m4a"; }
+function audioUpload_(body) {
+  const name = name_(body.name), code = code_(body.code), st = findStudent_(name);
+  if (!st || st.code !== code) return json_({ ok: false, error: "wrong code" });   // 只收已登記代碼的學生
+  if (!/^[A-Za-z0-9_-]{4,40}$/.test(String(body.attemptId || ""))) return json_({ ok: false, error: "bad audio" });
+  const data = String(body.data || "");
+  if (!data || data.length > 4000000) return json_({ ok: false, error: "too large" });   // 約 3 MB 以內
+  if (rateLimited_("audio", 150)) return json_({ ok: false, error: "busy" });
+  const folder = recFolder_(), fname = recName_(body.attemptId, body.idx);
+  const old = folder.getFilesByName(fname); while (old.hasNext()) old.next().setTrashed(true);
+  const mime = /^audio\/[a-z0-9.+-]+$/i.test(String(body.mime || "")) ? String(body.mime).split(";")[0] : "audio/mp4";
+  const file = folder.createFile(Utilities.newBlob(Utilities.base64Decode(data), mime, fname));
+  file.setDescription(name + "｜" + new Date().toISOString());
+  return json_({ ok: true });
+}
+
 function doGet(e) {
   const p = (e && e.parameter) || {};
   if (p.action === "ping") return json_({ ok: true });
+  if (p.action === "audio") {   // 老師播放錄音
+    const c = CacheService.getScriptCache();
+    if (Number(c.get("tfail") || 0) >= 10) return json_({ ok: false, error: "locked" });
+    if (String(p.teacherCode || "") !== TEACHER_CODE) { c.put("tfail", String(Number(c.get("tfail") || 0) + 1), 900); return json_({ ok: false, error: "wrong teacher code" }); }
+    const it = recFolder_().getFilesByName(recName_(p.att, p.i));
+    if (!it.hasNext()) return json_({ ok: false, error: "no audio" });
+    const blob = it.next().getBlob();
+    return json_({ ok: true, mime: blob.getContentType(), data: Utilities.base64Encode(blob.getBytes()) });
+  }
   if (p.action !== "list") return json_({ ok: false, error: "unknown action" });
   // 老師代碼連續輸錯 10 次，鎖 15 分鐘（防止有人用程式一直猜）
   const c = CacheService.getScriptCache();
@@ -149,4 +182,4 @@ function rateLimited_(key, max) {
 }
 
 /* 在編輯器裡手動執行一次，用來授權並建立工作表 */
-function setup() { sheet_(); students_(); Logger.log("ok: sheet ready"); }
+function setup() { sheet_(); students_(); recFolder_(); Logger.log("ok: sheet ready"); }
