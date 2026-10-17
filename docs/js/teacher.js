@@ -145,22 +145,12 @@ function teacherHTML() {
 
 /* ================= 老師批改 ================= */
 const GRADE_TYPES = ["rewrite", "trans", "essay", "speak"];   // 需要老師判斷的題型：寫作、句子改寫、翻譯、口說
-function gradeIdx(att) { return (att.qs || []).map((_, i) => i).filter(i => { const X = getQ(i, att); return X && GRADE_TYPES.includes(X.q.type) && att.ans && att.ans[i]; }); }
+/* 要老師批改的題目：作文、口說一律要；改寫、翻譯只有「系統判錯」的才要（不管學生有沒有反應） */
+function gradeIdx(att) { return (att.qs || []).map((_, i) => i).filter(i => { const X = getQ(i, att), a = att.ans && att.ans[i]; if (!X || !a || !GRADE_TYPES.includes(X.q.type)) return false; return X.q.type === "essay" || X.q.type === "speak" || sysWrong(a); }); }
 function isRemote(att) { return ((store.imported || {}).attempts || []).some(a => a.id === att.id); }
 function rv(att) { return (store.reviews || {})[att.id] || { done: false, marks: {} }; }
 /* 把老師的改判套到載入的紀錄上（保留系統原本的判定，取消改判時可以還原） */
-function applyReviews() {
-  ((store.imported || {}).attempts || []).forEach(att => {
-    const m = rv(att).marks || {};
-    Object.entries(att.ans || {}).forEach(([i, a]) => {
-      const X = getQ(+i, att); if (!X) return;
-      if (a.auto === undefined) { a.auto = a.correct; a.autoPts = ptsOf(X.q, X.bank, a); }
-      if (i in m && m[i] !== null) { const v = typeof m[i] === "number" ? m[i] : (m[i] ? maxPts(X.q, X.bank) : 0); a.pts = v; a.correct = v >= passPts(X.q, X.bank); a.tmark = true; }
-      else { a.correct = a.auto; a.pts = a.autoPts; delete a.tmark; }
-    });
-    const P = attPoints(att); att.score = P.s; att.total = P.t;
-  });
-}
+function applyReviews() { ((store.imported || {}).attempts || []).forEach(att => applyMarks(att, rv(att).marks || {})); }
 function pendingHTML(atts) {
   if (!store.teacherCode) return "";
   const list = atts.filter(a => isRemote(a) && !rv(a).done && gradeIdx(a).length);
@@ -197,8 +187,9 @@ function gradeItemHTML(att, i) {
 function gradeButtonsHTML(att, i, full) {
   if (!store.teacherCode || !isRemote(att)) return "";
   const X = getQ(i, att); if (!X || !GRADE_TYPES.includes(X.q.type) || !att.ans[i]) return "";
-  const a = att.ans[i], sysPts = a.auto !== undefined ? (a.autoPts !== undefined ? a.autoPts : (a.auto ? maxPts(X.q, X.bank) : 0)) : ptsOf(X.q, X.bank, a);
-  return `<div class="grade-bar"><span class="muted" style="font-size:13px">${X.q.type === "essay" || X.q.type === "speak" ? "學生自評" : "系統判定"}：${sysPts} / ${maxPts(X.q, X.bank)} 分${a.tmark ? `　老師評分：<b style="color:var(--ink)">${ptsOf(X.q, X.bank, a)} 分</b>` : ""}</span>
+  const a = att.ans[i], m = maxPts(X.q, X.bank), before = a.autoPts !== undefined ? a.autoPts : ptsOf(X.q, X.bank, a);
+  const why = X.q.type === "essay" || X.q.type === "speak" ? `學生自評 ${before} 分` : (a.claim || a.self) ? `系統判錯・<b style="color:var(--gold)">學生反應「我寫的也對」</b>（暫給 ${before} 分）` : `系統判錯（${before} 分）`;
+  return `<div class="grade-bar"><span style="font-size:13.5px">${why}${a.tmark ? `　→　<b class="tscore">老師評分 ${ptsOf(X.q, X.bank, a)} / ${m} 分</b>` : `　<span class="muted">尚未評分</span>`}</span>
   ${a.tmark ? `<button class="chip" data-act="t-mark" data-id="${esc(att.id)}" data-i="${i}" data-v="">還原</button>` : ""}</div>
   ${rubricButtonsHTML(X.q, X.bank, "t-mark", a.tmark ? ptsOf(X.q, X.bank, a) : null, `data-id="${esc(att.id)}" data-i="${i}"`)}`;
 }

@@ -163,6 +163,28 @@ document.addEventListener("keydown", e => {
   if (e.target.id === "lg-code" || e.target.id === "lg-name") { const b = document.querySelector('[data-act="do-login"]'); if (b) b.click(); }
   if (e.target.id === "cd-new") { const b = document.querySelector('[data-act="do-setcode"]'); if (b) b.click(); }
 });
+/* 學生端：取回老師對自己作答的批改，更新這台裝置上的成績 */
+let myRvBusy = false;
+async function pullMyReviews(silent) {
+  if (!SYNC_ON || myRvBusy) return; myRvBusy = true;
+  let changed = 0;
+  try {
+    for (const who of Object.keys(store.codes || {})) {
+      const mine = store.attempts.filter(a => (a.who || "未署名") === who); if (!mine.length) continue;
+      let j; try { j = await postSync({ action: "myreviews", name: who, code: store.codes[who] }, 20000); } catch (e) { continue; }   // 一個名字出錯（例如被老師刪掉）不影響其他名字
+      mine.forEach(att => {
+        const r = (j.reviews || {})[att.id]; if (!r) return;
+        const before = JSON.stringify(att.regrade || []);
+        applyMarks(att, r.marks || {}); att.tdone = !!r.done;
+        if (JSON.stringify(att.regrade || []) !== before) changed++;
+      });
+    }
+  } catch (e) { }
+  myRvBusy = false;
+  if (changed) { save(true); if (!silent || view === "hist" || view === "home") rerenderKeep(); toast(`老師批改了 ${changed} 份作答，成績已更新`); }
+}
+document.addEventListener("click", e => { const t = e.target.closest('[data-act="tab"][data-v="hist"]'); if (t) setTimeout(() => pullMyReviews(true), 0); });
+setTimeout(() => pullMyReviews(true), 2500);
 addEventListener("online", flushOutbox);
 setTimeout(flushOutbox, 1500);
 if (typeof render === "function" && view === "home") render();

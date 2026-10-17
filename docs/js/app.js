@@ -722,7 +722,7 @@ function questionBody(X, i, a, review) {
     ${!sub ? `<div class="row"><button class="btn primary" data-act="essay-submit">寫好了，看範文和檢查表</button></div>` : `
     <div class="model"><div class="step-label">參考範文</div><div class="ptext" style="font-size:16px">${esc(q.model)}</div></div>
     <div class="step-label">自我檢查</div><div class="checklist">${(q.check || ESSAY_CHECK).map((c, k) => `<label class="ck"><input type="checkbox" id="ck${k}" ${locked ? "disabled" : ""}><span>${esc(c)}</span></label>`).join("")}</div>
-    ${locked ? "" : rubricButtonsHTML(q, X.bank, "essay-rate", null)}`}`;
+    ${locked ? "" : selfButtonsHTML(q, X.bank, "essay-rate")}`}`;
   }
   else if (q.type === "scramble") {
     const seq = locked ? a.resp : (st.seq || []), all = q.tiles.concat(q.extra || []);
@@ -765,10 +765,12 @@ function feedbackHTML(X, a) {
   if (q.type === "speak" || q.type === "essay") { const p = ptsOf(q, X.bank, a), m = maxPts(q, X.bank);
     return `<div class="feedback ${a.correct ? "ok" : "no"}"><span class="fb-ic">${a.correct ? I.check : I.x}</span><div style="min-width:0"><b>自評 ${p} / ${m} 分</b><p>${esc(levelDesc(q, X.bank, p))}</p><p>${esc(q.exp || "")}</p></div></div>`; }
   const extra = (q.type === "trans" || q.type === "rewrite") && !a.correct ? diffHTML(q, a.resp) : "";
-  const self = (q.type === "trans" || q.type === "rewrite") && !a.correct && !a.self ? `<div class="muted" style="font-size:13.5px;margin-top:10px">標準答案只列出常見寫法。如果你的寫法也合理，請依評分標準自評：</div>${rubricButtonsHTML(q, X.bank, "selfpts", null)}` : "";
+  const canClaim = (q.type === "trans" || q.type === "rewrite") && !a.correct && !a.claim && !a.self;
+  const self = canClaim ? `<div class="muted" style="font-size:13.5px;margin-top:10px">標準答案只列出常見寫法。如果你覺得自己的寫法也對：</div><button class="btn" data-act="claim" style="margin-top:6px">我覺得我寫的也對</button>`
+    : a.claim ? `<div class="muted" style="font-size:13.5px;margin-top:8px">已反應給老師，這題先給你分數；老師批改後可能會調整。</div>` : "";
   return `<div class="feedback ${a.correct ? "ok" : "no"}"><span class="fb-ic">${a.correct ? I.check : I.x}</span><div style="min-width:0">
-  <b>${a.self ? `自評 ${ptsOf(q, X.bank, a)} / ${maxPts(q, X.bank)} 分` : a.correct ? ["答對了！", "正確！", "漂亮！", "沒錯！"][Math.floor(Math.random() * 4)] : "答錯了"}</b>
-  ${a.correct ? "" : `<p>正確答案：<b style="display:inline;color:var(--ink)">${esc(correctText(q))}</b></p>`}
+  <b>${a.claim ? "已反應：我寫的也對" : a.self ? `自評 ${ptsOf(q, X.bank, a)} / ${maxPts(q, X.bank)} 分` : a.correct ? ["答對了！", "正確！", "漂亮！", "沒錯！"][Math.floor(Math.random() * 4)] : "答錯了"}</b>
+  ${a.correct && !a.claim ? "" : `<p>正確答案：<b style="display:inline;color:var(--ink)">${esc(correctText(q))}</b></p>`}
   <p>${esc(q.exp || "")}</p>${extra}${self}</div></div>`;
 }
 
@@ -780,7 +782,7 @@ function commit(resp, el) {
   const correct = grade(q, resp);
   if (S.blind) { S.ans[i] = { resp, correct, hint: false, t: Math.round(S.elapsed) }; S.ans[i].max = maxPts(q, X.bank); S.ans[i].pts = ptsOf(q, X.bank, S.ans[i]); S.tipSeen = true; save(); rerenderKeep(); return; }
   S.ans[i] = { resp, correct, hint: !!(S.work[i] && S.work[i].hint), t: Math.round(S.elapsed) };
-  S.ans[i].max = maxPts(q, X.bank); S.ans[i].pts = ptsOf(q, X.bank, S.ans[i]);
+  S.ans[i].max = maxPts(q, X.bank); S.ans[i].pts = ptsOf(q, X.bank, S.ans[i]); S.ans[i].sys = correct;
   if (q.type === "match") S.ans[i].perm = work(i).perm;
   if (correct) { S.combo++; S.maxCombo = Math.max(S.maxCombo, S.combo); } else S.combo = 0;
   S.tipSeen = true; showHint = false;
@@ -982,6 +984,8 @@ function resultHTML(id) {
   <div class="stat"><div class="k">最高 Combo</div><div class="v" style="color:var(--gold)">×${attCombo(att)}</div></div>
   <div class="stat"><div class="k">用了提示</div><div class="v">${hintCount}</div></div>
   <div class="stat"><div class="k">生字</div><div class="v">${Object.keys(att.words || {}).length}</div></div></div></div>`;
+  if (att.regrade && att.regrade.length && !(typeof isRemote === "function" && isRemote(att) && store.teacherCode)) h += `<div class="glass card regrade-card"><div class="section-h" style="margin:0"><h2>老師的批改</h2><span class="tag regrade-tag">${att.regrade.length} 題分數有調整</span></div>
+    ${att.regrade.map(c => { const X = getQ(c.i, att); return `<button class="pend-row" data-act="rv-jump" data-i="${c.i}"><span class="tag">第 ${c.i + 1} 題</span><span style="flex:1;text-align:left;min-width:0">${esc(X ? tagName(X.bank, X.q.tag) : "")}<br><span class="muted" style="font-size:13px">${c.from} 分 → <b style="color:${c.to > c.from ? "var(--good)" : "var(--bad)"}">${c.to} 分</b>（滿分 ${X ? maxPts(X.q, X.bank) : "?"}）</span></span>${I.chevR}</button>`; }).join("")}</div>`;
   if (typeof teacherResultBar === "function") h += teacherResultBar(att);
   if (typeof geptWritingHTML === "function") h += geptWritingHTML(att);
   if (typeof toeflBandHTML === "function") h += toeflBandHTML(att);
@@ -1018,7 +1022,7 @@ function reviewItem(att, i) {
   else if (X.group && X.group.kind === "ctest") body += `<div class="ptext" style="font-size:15.5px">${esc(X.group.passage[0].replace(/\{([^}]*)\}/g, "$1"))}</div>`;
   else if (X.group) body += `<details class="pfold"><summary><span class="muted">題組：${esc(X.group.title)}（展開文章）</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext ${X.group.kind}" style="margin-top:8px;font-size:15.5px">${X.group.passage.map(p => `<p>${esc(p).replace(/\[\[(\d)\]\]/g, '<span class="cz">$1</span>')}</p>`).join("")}</div></details>`;
   body += `<div>${questionReview(q)}</div>`;
-  body += `<dl class="kv"><dt>你的答案</dt><dd class="${a && a.correct ? "ans-ok" : "ans-no"}" style="${a && a.correct ? "" : "text-decoration:none"}">${esc(respText(q, a))}${a && (a.self || a.tmark || rubricOf(q, X.bank)) ? `（${a.tmark ? "老師評分" : a.self || q.type === "essay" || q.type === "speak" ? "自評" : "得分"} ${ptsOf(q, X.bank, a)} / ${maxPts(q, X.bank)}）` : ""}${a && a.hint ? ` <span class="tag">用了提示</span>` : ""}</dd>
+  body += `<dl class="kv"><dt>你的答案</dt><dd class="${a && a.correct ? "ans-ok" : "ans-no"}" style="${a && a.correct ? "" : "text-decoration:none"}">${esc(respText(q, a))}${a && a.claim ? "（學生反應：我寫的也對）" : ""}${a && (a.self || a.tmark || rubricOf(q, X.bank)) ? `（${a.tmark ? "老師評分" : a.self || q.type === "essay" || q.type === "speak" ? "自評" : "得分"} ${ptsOf(q, X.bank, a)} / ${maxPts(q, X.bank)}）` : ""}${a && a.hint ? ` <span class="tag">用了提示</span>` : ""}</dd>
   <dt>正確答案</dt><dd class="ans-ok">${esc(correctText(q))}</dd>
   ${q.type === "trans" || q.type === "rewrite" ? `<dt>可接受</dt><dd class="muted" style="font-size:14px">${q.ans.map(x => esc(x).replace(/\{([^}]*)\}/g, (m, g) => `[${g.split("|").map(s => s || "∅").join(" / ")}]`)).join("<br>")}</dd>` : ""}
   ${q.exp ? `<dt>解析</dt><dd>${esc(q.exp)}</dd>` : ""}
@@ -1026,7 +1030,7 @@ function reviewItem(att, i) {
   if ((q.type === "trans" || q.type === "rewrite") && a && !a.correct) body += diffHTML(q, a.resp);
   if (q.type === "speak" && a && store.teacherCode) body += `<button class="btn" data-act="rec-fetch" data-att="${esc(att.id)}" data-i="${i}">${I.play}播放學生錄音</button>`;
   if (typeof gradeButtonsHTML === "function") body += gradeButtonsHTML(att, i);
-  return `<details class="rv"><summary><span class="st ${st}">${st === "ok" ? I.check : st === "no" ? I.x : "–"}</span><span class="tag">${i + 1}</span><span class="sum">${esc(sumText)}</span><span class="tag">${typeL}</span><span class="chev">${I.chevR.replace("<svg", '<svg width="16" height="16"')}</span></summary><div class="rv-body">${body}</div></details>`;
+  return `<details class="rv" id="rv-${i}" ${att.regrade && att.regrade.some(c => c.i === i) ? "open" : ""}><summary><span class="st ${st}">${st === "ok" ? I.check : st === "no" ? I.x : "–"}</span><span class="tag">${i + 1}</span><span class="sum">${esc(sumText)}</span><span class="tag">${typeL}</span><span class="chev">${I.chevR.replace("<svg", '<svg width="16" height="16"')}</span></summary><div class="rv-body">${body}</div></details>`;
 }
 function questionReview(q) {
   const opts = q.opts ? `<ol type="A" style="margin:6px 0 0;padding-left:26px">${q.opts.map((o, k) => `<li style="${k === q.ans ? "color:var(--good);font-weight:700" : ""}">${esc(o)}</li>`).join("")}</ol>` : "";
@@ -1060,7 +1064,7 @@ function vtable(rows, opts = {}) {
 function histItem(a) {
   const p = a.total ? a.score / a.total : 0;
   return `<button class="hitem" data-act="open-att" data-id="${esc(a.id)}"><span class="hs" style="background:color-mix(in srgb,${scoreColor(p)} 16%,transparent);color:${scoreColor(p)}">${Math.round(p * 100)}</span>
-  <span class="hm"><span class="ht" style="display:block"><span class="tag who-tag">${esc(a.who || "未署名")}</span> ${esc(a.title)}</span><span class="hd tnum">${fmtDate(a.date)}・${a.score}/${a.total} 題・${fmtTime(a.duration)}・Combo ×${attCombo(a)}・生字 ${Object.keys(a.words || {}).length}</span></span>
+  <span class="hm"><span class="ht" style="display:block"><span class="tag who-tag">${esc(a.who || "未署名")}</span> ${esc(a.title)}</span>${a.regrade && a.regrade.length ? `<span class="tag regrade-tag">老師已批改・${a.origTotal === a.total ? `原 ${a.origScore} → ` : ""}${a.score}/${a.total}</span>` : ""}<span class="hd tnum">${fmtDate(a.date)}・${a.score}/${a.total} ${a.total !== (a.qs || []).length ? "分" : "題"}・${fmtTime(a.duration)}・Combo ×${attCombo(a)}・生字 ${Object.keys(a.words || {}).length}</span></span>
   <span style="color:var(--ink-3)">${I.chevR.replace("<svg", '<svg width="18" height="18"')}</span></button>`;
 }
 function whoChips(act, cur, names) {
@@ -1187,6 +1191,8 @@ document.addEventListener("click", e => {
     case "submit": submitCurrent(); break;
     case "essay-submit": { const w2 = work(S.idx); w2.val = $("#essayin").value; if (wcount(w2.val) < 5) { toast("先寫幾句再看範文"); break; } w2.submitted = true; save(); rerenderKeep(); break; }
     case "essay-rate": { const w2 = work(S.idx); commit({ text: w2.val, level: +d.v }); break; }
+    case "rv-jump": { const el = document.getElementById("rv-" + d.i); if (el) { el.open = true; el.scrollIntoView({ behavior: "smooth", block: "center" }); el.classList.add("pop"); } break; }
+    case "claim": { const a = S.ans[S.idx], X = getQ(S.idx); a.claim = true; a.pts = maxPts(X.q, X.bank); a.correct = true; save(); rerenderKeep(); toast("已反應給老師，這題先給你分數"); break; }
     case "selfok": case "selfpts": { const a = S.ans[S.idx], X = getQ(S.idx), v = d.v === undefined ? maxPts(X.q, X.bank) : +d.v; a.pts = v; a.correct = v >= passPts(X.q, X.bank); a.self = true; save(); rerenderKeep(); break; }
     case "opick": { const w2 = work(S.idx); const p = w2.pick || (w2.pick = []); const k = +d.k; const i = p.indexOf(k); if (i >= 0) p.splice(i); else p.push(k); save(); rerenderKeep(); break; }
     case "order-reset": work(S.idx).pick = []; save(); rerenderKeep(); break;

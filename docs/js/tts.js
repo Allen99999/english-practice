@@ -27,6 +27,7 @@ function playItems(items, onEnd) {
     const name = ttsName(it.voice, it.text);
     if (AUDIO_SET && AUDIO_SET.has(name)) {
       PLAYER.src = "audio/" + name + ".mp3";
+      const nx = items[i]; if (nx) { const nn = ttsName(nx.voice, nx.text); if (AUDIO_SET.has(nn)) { const pre = new Audio(); pre.preload = "auto"; pre.src = "audio/" + nn + ".mp3"; } }   // 預先載入下一句，減少停頓
       PLAYER.playbackRate = audioRate();
       PLAYER.onended = next; PLAYER.onerror = () => fallbackSpeak(it.text, next);
       PLAYER.play().catch(() => fallbackSpeak(it.text, next));

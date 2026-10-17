@@ -81,12 +81,15 @@ function speakHTML(q, i, a) {
   ${rec && rec.url ? `<audio controls src="${rec.url}" style="width:100%;margin-top:8px"></audio>` : ""}</div>
   ${!reveal ? `<div class="row"><button class="btn ${rec && rec.url ? "primary" : ""}" data-act="sp-reveal">${q.mode === "repeat" ? "看原句並自評" : "看參考回答並自評"}</button></div>`
     : `<div class="model"><div class="step-label">${q.mode === "repeat" ? "原句" : "參考回答"}</div><div class="ptext" style="font-size:16px">${esc(q.mode === "repeat" ? q.text : q.model)}</div></div>
-    ${locked ? "" : rubricButtonsHTML(q, null, "sp-rate", null)}`}`;
+    ${locked ? "" : selfButtonsHTML(q, null, "sp-rate")}`}`;
 }
 async function recStart() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const mr = new MediaRecorder(stream), chunks = [];
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
+    // 壓縮：單聲道、約 24 kbps（人聲夠清楚，45 秒約 140 KB）
+    const opt = { audioBitsPerSecond: 24000 }; ["audio/mp4", "audio/webm;codecs=opus", "audio/webm"].some(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t) && (opt.mimeType = t));
+    let mr; try { mr = new MediaRecorder(stream, opt); } catch (e) { mr = new MediaRecorder(stream); }
+    const chunks = [];
     if (REC && REC.url) URL.revokeObjectURL(REC.url);
     REC = { mr, chunks, idx: S.idx, t0: Date.now(), url: null };
     mr.ondataavailable = e => chunks.push(e.data);
@@ -179,7 +182,8 @@ async function fetchRec(btn) {
     const r = await fetch(SITE_CONFIG.SYNC_URL + "?action=audio&teacherCode=" + encodeURIComponent(code) + "&att=" + encodeURIComponent(btn.dataset.att) + "&i=" + btn.dataset.i);
     const j = await r.json(); if (!j.ok) throw new Error(j.error);
     const au = document.createElement("audio"); au.controls = true; au.style.width = "100%"; const d0 = j.data.slice(0, 8), mime = d0.startsWith("GkXf") ? "audio/webm" : d0.startsWith("T2dn") ? "audio/ogg" : /^(SUQz|\/\/)/.test(d0) ? "audio/mpeg" : "audio/mp4";   // 依檔案內容判斷格式
-    au.src = `data:${mime};base64,${j.data}`;
+    const bin = atob(j.data), buf = new Uint8Array(bin.length); for (let k = 0; k < bin.length; k++) buf[k] = bin.charCodeAt(k);
+    au.preload = "auto"; au.src = URL.createObjectURL(new Blob([buf], { type: mime }));   // 用 Blob 網址播放，比 data: 網址順
     btn.replaceWith(au); au.play().catch(() => { });
   } catch (e) { btn.disabled = false; btn.textContent = String(e.message).includes("no audio") ? "找不到錄音（可能還沒上傳完成）" : "載入失敗，再試一次"; }
 }

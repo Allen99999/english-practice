@@ -70,6 +70,8 @@ function doPost(e) {
         case "audio": return audioUpload_(body);
         case "review": return review_(body);
         case "delete": return deleteAttempt_(body);
+        case "delstudent": return deleteStudent_(body);
+        case "myreviews": if (rateLimited_("myreviews", 400)) return json_({ ok: false, error: "busy" }); return myReviews_(body);
       }
       return json_({ ok: false, error: "unknown action" });
     } finally { lock.releaseLock(); }
@@ -212,6 +214,29 @@ function deleteAttempt_(body) {
   const n = del(sheet_(), 2); del(reviews_(), 1);
   try { const it = recFolder_().searchFiles('title contains "rec_' + id + '_"'); while (it.hasNext()) it.next().setTrashed(true); } catch (e) { }
   return json_({ ok: true, deleted: n });
+}
+
+/* 學生取回自己被老師批改的結果（名字＋個人代碼） */
+function myReviews_(body) {
+  const name = name_(body.name), err = check_(name, code_(body.code));
+  if (err) return json_({ ok: false, error: err });
+  const sh = sheet_(), ids = {};
+  if (sh.getLastRow() > 1) sh.getRange(2, 2, sh.getLastRow() - 1, 2).getValues().forEach(r => { if (name_(r[1]) === name) ids[r[0]] = 1; });
+  const all = reviewMap_(), out = {};
+  Object.keys(all).forEach(id => { if (ids[id]) out[id] = all[id]; });
+  return json_({ ok: true, reviews: out });
+}
+/* 刪除一位學生：作答紀錄、批改紀錄、錄音、個人代碼全部刪掉 */
+function deleteStudent_(body) {
+  const err = teacherErr_(body.teacherCode); if (err) return json_({ ok: false, error: err });
+  const name = name_(body.name);
+  const sh = sheet_(); let ids = [];
+  if (sh.getLastRow() > 1) { const v = sh.getRange(2, 2, sh.getLastRow() - 1, 2).getValues(); for (let r = v.length - 1; r >= 0; r--) if (name_(v[r][1]) === name) { ids.push(String(v[r][0])); sh.deleteRow(r + 2); } }
+  const rvs = reviews_(); if (rvs.getLastRow() > 1) { const v = rvs.getRange(2, 1, rvs.getLastRow() - 1, 1).getValues(); for (let r = v.length - 1; r >= 0; r--) if (ids.indexOf(String(v[r][0])) >= 0) rvs.deleteRow(r + 2); }
+  try { const f = recFolder_(); ids.forEach(id => { const it = f.searchFiles('title contains "rec_' + id + '_"'); while (it.hasNext()) it.next().setTrashed(true); }); } catch (e) { }
+  const st = students_(); let removed = 0;
+  if (st.getLastRow() > 1) { const v = st.getRange(2, 1, st.getLastRow() - 1, 1).getValues(); for (let r = v.length - 1; r >= 0; r--) if (name_(v[r][0]) === name) { st.deleteRow(r + 2); removed++; } }
+  return json_({ ok: true, attempts: ids.length, students: removed });
 }
 
 /* 全站流量限制：同一種動作每 10 分鐘最多 max 次（擋掉灌爆試算表的行為） */

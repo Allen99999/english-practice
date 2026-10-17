@@ -70,3 +70,28 @@ function geptWritingHTML(att) {
   <div class="stats">${m1 ? `<div class="stat"><div class="k">單句寫作</div><div class="v">${p1}<span class="muted" style="font-size:15px"> / ${m1}</span></div></div>` : ""}${lv !== null ? `<div class="stat"><div class="k">段落寫作</div><div class="v">${Number.isInteger(lv) ? lv : lv.toFixed(1)}<span class="muted" style="font-size:15px"> / 5 級分</span></div></div>` : ""}</div>
   <div class="muted" style="font-size:12.5px">單句寫作每題 0～2 分、段落寫作 0～5 級分；寫作成績＝（單句得分 ÷ 30 ＋ 段落級分 ÷ 5）× 50，70 分通過。${full ? "" : "這次只做了部分題型，所以不換算總分。"}</div></div>`;
 }
+
+/* 學生自評：簡化成三個選項（老師批改才用完整的官方量表） */
+function selfLevels(max) { return max >= 5 ? [[1, "還需加強"], [3, "中等"], [5, "達到要求"]] : [[0, "還需加強"], [1, "中等"], [max, "達到要求"]]; }
+function selfButtonsHTML(q, bank, act) {
+  const m = maxPts(q, bank);
+  return `<div class="row self-rate">${selfLevels(m).map(([lv, t]) => `<button class="btn ${lv === m ? "primary" : ""}" data-act="${act}" data-v="${lv}">${t}<span class="muted" style="font-size:12px;margin-left:4px">${lv} 分</span></button>`).join("")}</div>`;
+}
+/* 系統原本判錯嗎（判對的就不用老師批改） */
+function sysWrong(a) { if (!a) return false; if (a.sys !== undefined) return !a.sys; if (a.self || a.claim) return true; return a.auto !== undefined ? !a.auto : !a.correct; }
+/* 套用老師評分：保留批改前的結果（auto），回傳有變動的題目 */
+function applyMarks(att, marks) {
+  const changes = [];
+  Object.entries(att.ans || {}).forEach(([i, a]) => {
+    const X = getQ(+i, att); if (!X) return;
+    if (a.auto === undefined) { a.auto = a.correct; a.autoPts = ptsOf(X.q, X.bank, a); }
+    if (marks && i in marks && marks[i] !== null) {
+      const v = typeof marks[i] === "number" ? marks[i] : (marks[i] ? maxPts(X.q, X.bank) : 0);
+      a.pts = v; a.correct = v >= passPts(X.q, X.bank); a.tmark = true;
+      if (v !== a.autoPts) changes.push({ i: +i, from: a.autoPts, to: v });
+    } else { a.correct = a.auto; a.pts = a.autoPts; delete a.tmark; }
+  });
+  if (att.origScore === undefined) { att.origScore = att.score; att.origTotal = att.total; }
+  const P = attPoints(att); att.score = P.s; att.total = P.t; att.regrade = changes;
+  return changes;
+}

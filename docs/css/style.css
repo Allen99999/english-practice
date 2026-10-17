@@ -629,3 +629,11 @@ details.script summary{cursor:pointer;font-weight:650;color:var(--ink-2)}
 .wl-1{display:block;font-family:"New York",ui-serif,Georgia,serif;font-style:italic;font-weight:400;font-size:clamp(26px,4.6vw,40px);color:var(--ink-2);letter-spacing:-.01em}
 .wl-2{display:block;font-weight:800;font-size:clamp(42px,9vw,74px);background:linear-gradient(100deg,var(--ink) 20%,color-mix(in srgb,var(--ink) 55%,#b48cff) 60%,color-mix(in srgb,var(--ink) 40%,#7fb8ff));-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:6px}
 .wl-2 em{font-family:"New York",ui-serif,Georgia,serif;font-style:italic;font-weight:600;letter-spacing:-.02em}
+/* 評分選項：選中的整個反白 */
+.rb.on{background:var(--accent);color:var(--accent-ink);box-shadow:0 8px 20px -10px var(--shadow)}
+.rb.on b{background:var(--accent-ink);color:var(--accent)}
+.rb.on span{font-weight:650}
+.tscore{color:var(--ink);background:var(--gold-soft);padding:2px 8px;border-radius:8px}
+.self-rate{gap:8px}
+.regrade-tag{background:var(--gold-soft);color:var(--gold);font-weight:700}
+.regrade-card{display:flex;flex-direction:column;gap:10px;box-shadow:inset 0 0 0 1.5px var(--gold)}
