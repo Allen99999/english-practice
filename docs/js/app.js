@@ -817,7 +817,13 @@ function submitCurrent() {
     commit({ tok: w.tok, fix: v });
   }
 }
-function rerenderKeep() { const sy = scrollY; render(); scrollTo(0, sy); }
+function rerenderKeep() {
+  const sy = scrollY, keep = {};
+  document.querySelectorAll("#app details").forEach((d, k) => keep[d.id || d.dataset.who || d.dataset.group || "d" + k] = d.open);
+  render();
+  document.querySelectorAll("#app details").forEach((d, k) => { const key = d.id || d.dataset.who || d.dataset.group || "d" + k; if (key in keep) d.open = keep[key]; });
+  scrollTo(0, sy);
+}
 function gotoQ(n) {
   if (typeof adaptAdvance === "function" && n > S.idx) adaptAdvance(n);
   if (n < 0 || n >= S.qs.length) return;
@@ -1030,7 +1036,8 @@ function reviewItem(att, i) {
   if ((q.type === "trans" || q.type === "rewrite") && a && !a.correct) body += diffHTML(q, a.resp);
   if (q.type === "speak" && a && store.teacherCode) body += `<button class="btn" data-act="rec-fetch" data-att="${esc(att.id)}" data-i="${i}">${I.play}播放學生錄音</button>`;
   if (typeof gradeButtonsHTML === "function") body += gradeButtonsHTML(att, i);
-  return `<details class="rv" id="rv-${i}" ${att.regrade && att.regrade.some(c => c.i === i) ? "open" : ""}><summary><span class="st ${st}">${st === "ok" ? I.check : st === "no" ? I.x : "–"}</span><span class="tag">${i + 1}</span><span class="sum">${esc(sumText)}</span><span class="tag">${typeL}</span><span class="chev">${I.chevR.replace("<svg", '<svg width="16" height="16"')}</span></summary><div class="rv-body">${body}</div></details>`;
+  const autoOpen = animNext && att.regrade && att.regrade.some(c => c.i === i) && !(typeof isRemote === "function" && isRemote(att) && store.teacherCode);
+  return `<details class="rv" id="rv-${i}" ${autoOpen ? "open" : ""}><summary><span class="st ${st}">${st === "ok" ? I.check : st === "no" ? I.x : "–"}</span><span class="tag">${i + 1}</span><span class="sum">${esc(sumText)}</span><span class="tag">${typeL}</span><span class="chev">${I.chevR.replace("<svg", '<svg width="16" height="16"')}</span></summary><div class="rv-body">${body}</div></details>`;
 }
 function questionReview(q) {
   const opts = q.opts ? `<ol type="A" style="margin:6px 0 0;padding-left:26px">${q.opts.map((o, k) => `<li style="${k === q.ans ? "color:var(--good);font-weight:700" : ""}">${esc(o)}</li>`).join("")}</ol>` : "";
@@ -1318,4 +1325,29 @@ document.addEventListener("click", e => {
   store.settings.theme = curTheme() === "dark" ? "light" : "dark"; save(true);
   document.documentElement.classList.add("theme-anim"); applyTheme(); rerenderKeep();
   setTimeout(() => document.documentElement.classList.remove("theme-anim"), 700);
+});
+/* 所有可展開的區塊（解析、待批改、聽力原文…）：點標題時用高度動畫展開／收合 */
+document.addEventListener("click", e => {
+  const sm = e.target.closest("details > summary"); if (!sm) return;
+  const d = sm.parentElement; if (d.classList.contains("bank-group")) return;   // 題庫群組有自己的動畫
+  if (e.target.closest("button, a, input") && e.target.closest("button, a, input") !== sm) return;
+  if (reduced() || !d.animate) return;
+  e.preventDefault();
+  if (d._anim) { const old = d._anim; d._anim = null; old.cancel(); d.style.overflow = ""; }
+  const start = d.offsetHeight;
+  if (!d.open) {
+    d.open = true;
+    const end = d.offsetHeight;
+    d.style.overflow = "hidden";
+    const an = d._anim = d.animate([{ height: start + "px" }, { height: end + "px" }], { duration: 340, easing: "cubic-bezier(.2,.9,.25,1)" });
+    const done = () => { if (d._anim !== an) return; d.style.overflow = ""; d._anim = null; };
+    an.onfinish = an.oncancel = done; setTimeout(() => { if (d._anim === an) { an.cancel(); } }, 420);   // 保底：分頁在背景時動畫會暫停
+  } else {
+    const end = sm.offsetHeight + parseFloat(getComputedStyle(d).paddingTop) + parseFloat(getComputedStyle(d).paddingBottom) + parseFloat(getComputedStyle(d).borderTopWidth) * 2;
+    d.style.overflow = "hidden";
+    const an = d._anim = d.animate([{ height: start + "px" }, { height: end + "px" }], { duration: 260, easing: "cubic-bezier(.4,0,.2,1)" });
+    const done = () => { if (d._anim !== an) return; d.open = false; d.style.overflow = ""; d._anim = null; };
+    an.onfinish = done; an.oncancel = () => { if (d._anim === an) { d.style.overflow = ""; d._anim = null; } };
+    setTimeout(() => { if (d._anim === an) { done(); an.cancel(); } }, 340);   // 保底
+  }
 });
