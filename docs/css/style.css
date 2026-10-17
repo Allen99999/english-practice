@@ -581,15 +581,22 @@ details.script summary{cursor:pointer;font-weight:650;color:var(--ink-2)}
 @keyframes sheen{0%{transform:translateX(-45%)}55%,100%{transform:translateX(45%)}}
 .aurora::after{opacity:.035}
 /* 淺色模式：把黑底銀線反相成白底銀線 */
-:root:not([data-theme="dark"]) .aurora{background:#f4f5f8}
-:root:not([data-theme="dark"]) .bg-photo{filter:invert(1) hue-rotate(180deg) brightness(1.04) contrast(.92)}
-:root:not([data-theme="dark"]) .bg-sheen{mix-blend-mode:soft-light;opacity:.7}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .aurora{background:#000}
-  :root:not([data-theme="light"]) .bg-photo{filter:none}
-  :root:not([data-theme="light"]) .bg-sheen{mix-blend-mode:screen;opacity:.55}}
 /* 背景遮罩：讓亮線不搶文字 */
 .aurora::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
   background:radial-gradient(120% 90% at 50% 20%,rgba(0,0,0,.38),rgba(0,0,0,.18) 60%,rgba(0,0,0,.32))}
-:root:not([data-theme="dark"]) .aurora::before{background:radial-gradient(120% 90% at 50% 20%,rgba(255,255,255,.5),rgba(255,255,255,.25) 60%,rgba(255,255,255,.4))}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .aurora::before{background:radial-gradient(120% 90% at 50% 20%,rgba(0,0,0,.38),rgba(0,0,0,.18) 60%,rgba(0,0,0,.32))}}
 .hero .subtitle,.hero .eyebrow,.section-h,.view > .muted{text-shadow:0 1px 10px var(--bg)}
+
+/* 淺色模式背景：薰衣草液態玻璃 */
+:root[data-theme="light"] .aurora{background:#f3f0fa}
+:root[data-theme="light"] .bg-photo{background-image:url("../img/bg-light-2560.jpg")}
+@media (max-width:900px){:root[data-theme="light"] .bg-photo{background-image:url("../img/bg-light-1440.jpg")}}
+:root[data-theme="light"] .bg-sheen{mix-blend-mode:soft-light;opacity:.8}
+:root[data-theme="light"] .aurora::before{background:radial-gradient(120% 90% at 50% 18%,rgba(255,255,255,.42),rgba(255,255,255,.12) 60%,rgba(255,255,255,.3))}
+/* 切換主題時柔和過渡 */
+.theme-anim,.theme-anim *{transition:background-color .6s ease,color .6s ease,box-shadow .6s ease!important}
+.theme-anim .bg-photo{animation-play-state:running}
+.theme-btn svg{transition:transform .6s var(--spring)}
+.theme-btn:active svg{transform:rotate(-40deg) scale(.9)}
+/* 標題與署名 */
+.brand-row{display:flex;align-items:baseline;gap:6px 16px;flex-wrap:wrap}
+.byline{font-size:12.5px;font-weight:650;letter-spacing:.08em;color:var(--ink-2);white-space:nowrap;padding-bottom:6px}

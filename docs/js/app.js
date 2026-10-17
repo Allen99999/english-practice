@@ -8,6 +8,8 @@ const fmtTime = s => { s = Math.max(0, Math.round(s)); const m = Math.floor(s / 
 const fmtDate = t => { const d = new Date(t); return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
 
 const I = {
+  sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>',
+  moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>',
   chevL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
   chevR: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
   bulb: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1.1 2V16h5v-.2c.1-.8.5-1.5 1.1-2A6 6 0 0 0 12 3z"/></svg>',
@@ -465,9 +467,10 @@ function homeHTML() {
   const examN = sel.mode === "exam" ? buildRefsCount(sel) : Math.min(avail, sel.count || avail);
   const last = store.attempts[0];
   let h = `<section class="view">
-  <div class="hero"><div><div class="eyebrow">國中段考・全民英檢・TOEFL iBT</div><h1 class="large-title brand">Apex English</h1>
+  <div class="hero"><div><div class="eyebrow">國中段考・全民英檢・TOEFL iBT</div><div class="brand-row"><h1 class="large-title brand">Apex English</h1><span class="byline">Created and designed by Allen L.</span></div>
   <p class="subtitle">全方位英語訓練平台。選好範圍就開始，點題目裡不會的單字，交卷後自動整理成單字表。</p></div>
-  <button class="icon-btn" data-act="sound" aria-label="音效開關" title="音效">${store.settings.sound ? I.sound : I.mute}</button></div>`;
+  <div class="row" style="gap:10px;flex-wrap:nowrap"><button class="icon-btn theme-btn" data-act="theme" aria-label="${curTheme() === "dark" ? "切換成淺色模式" : "切換成深色模式"}" title="${curTheme() === "dark" ? "淺色模式" : "深色模式"}">${curTheme() === "dark" ? I.sun : I.moon}</button>
+  <button class="icon-btn" data-act="sound" aria-label="音效開關" title="音效">${store.settings.sound ? I.sound : I.mute}</button></div></div>`;
   h += `<div class="glass card who-card"><div class="opt-block"><label for="who">作答人</label>
     <div class="who-row"><input id="who" class="field" placeholder="輸入你的名字" autocomplete="off" value="${esc(store.who)}" maxlength="20"></div>
     ${typeof syncHomeHTML === "function" ? syncHomeHTML() : ""}
@@ -1257,3 +1260,20 @@ window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude
   addEventListener("pointermove", e => go(e.clientX / innerWidth - .5, e.clientY / innerHeight - .5), { passive: true });
   addEventListener("deviceorientation", e => { if (e.gamma != null) go(Math.max(-1, Math.min(1, e.gamma / 30)) / 2, Math.max(-1, Math.min(1, (e.beta - 45) / 30)) / 2); }, { passive: true });
 })();
+
+/* 淺色／深色模式：沒手動選過就跟著系統；按右上角按鈕切換並記住 */
+function curTheme() { return document.documentElement.dataset.theme === "dark" ? "dark" : "light"; }
+function applyTheme() {
+  const t = store.settings.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  document.documentElement.dataset.theme = t;
+  document.documentElement.style.colorScheme = t;
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute("content", t === "dark" ? "#000000" : "#f3f0fa"));
+}
+applyTheme();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (!store.settings.theme) { applyTheme(); if (view === "home") rerenderKeep(); } });
+document.addEventListener("click", e => {
+  if (!e.target.closest('[data-act="theme"]')) return;
+  store.settings.theme = curTheme() === "dark" ? "light" : "dark"; save(true);
+  document.documentElement.classList.add("theme-anim"); applyTheme(); rerenderKeep();
+  setTimeout(() => document.documentElement.classList.remove("theme-anim"), 700);
+});
