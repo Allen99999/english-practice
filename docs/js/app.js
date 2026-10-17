@@ -811,11 +811,18 @@ function askFinish() {
   sheet(`<h3>還有 ${left} 題沒作答</h3><p class="muted" style="margin:0 0 16px">沒作答的題目會算錯。要現在交卷嗎？</p>
   <div class="row" style="justify-content:flex-end"><button class="btn" data-act="close-sheet">繼續作答</button><button class="btn primary" data-act="finish-now">交卷</button></div>`);
 }
+/* 最長連續答對：依題目順序和最後的答案計算（正式考模式作答時不累計 combo，舊紀錄也靠這個補算） */
+function streakOf(att) {
+  let run = 0, best = 0;
+  (att.qs || []).forEach((_, i) => { const a = (att.ans || {})[i]; if (a && a.correct) { run++; if (run > best) best = run; } else run = 0; });
+  return best;
+}
+function attCombo(att) { return Math.max(att.maxCombo || 0, att.kind === "vocab" ? 0 : streakOf(att)) || att.maxCombo || 0; }
 function finish() {
   const total = S.qs.length, ok = Object.values(S.ans).filter(a => a.correct).length;
   const att = {
     id: S.id, optv: S.optv, who: S.who || "未署名", kind: S.kind, title: S.title, banks: S.banks, date: Date.now(), duration: Math.round(S.elapsed),
-    qs: S.qs, ans: S.ans, words: S.words, maxCombo: S.maxCombo, score: ok, total,
+    qs: S.qs, ans: S.ans, words: S.words, maxCombo: Math.max(S.maxCombo, S.blind ? streakOf(S) : 0), score: ok, total,
     hints: Object.values(S.work).filter(w => w.hint).length
   };
   store.attempts.unshift(att);
@@ -947,7 +954,7 @@ function resultHTML(id) {
   <circle cx="80" cy="80" r="70" fill="none" stroke="${scoreColor(p)}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C * p} ${C}"/></svg>
   <div class="lbl"><div><div class="big tnum">${Math.round(p * 100)}</div><div class="small">${att.score} / ${att.total} 題答對</div></div></div></div>
   <div class="stats"><div class="stat"><div class="k">用時</div><div class="v">${fmtTime(att.duration)}</div></div>
-  <div class="stat"><div class="k">最高 Combo</div><div class="v" style="color:var(--gold)">×${att.maxCombo}</div></div>
+  <div class="stat"><div class="k">最高 Combo</div><div class="v" style="color:var(--gold)">×${attCombo(att)}</div></div>
   <div class="stat"><div class="k">用了提示</div><div class="v">${hintCount}</div></div>
   <div class="stat"><div class="k">生字</div><div class="v">${Object.keys(att.words || {}).length}</div></div></div></div>`;
   if (typeof toeflBandHTML === "function") h += toeflBandHTML(att);
@@ -1024,7 +1031,7 @@ function vtable(rows, opts = {}) {
 function histItem(a) {
   const p = a.total ? a.score / a.total : 0;
   return `<button class="hitem" data-act="open-att" data-id="${esc(a.id)}"><span class="hs" style="background:color-mix(in srgb,${scoreColor(p)} 16%,transparent);color:${scoreColor(p)}">${Math.round(p * 100)}</span>
-  <span class="hm"><span class="ht" style="display:block"><span class="tag who-tag">${esc(a.who || "未署名")}</span> ${esc(a.title)}</span><span class="hd tnum">${fmtDate(a.date)}・${a.score}/${a.total} 題・${fmtTime(a.duration)}・Combo ×${a.maxCombo}・生字 ${Object.keys(a.words || {}).length}</span></span>
+  <span class="hm"><span class="ht" style="display:block"><span class="tag who-tag">${esc(a.who || "未署名")}</span> ${esc(a.title)}</span><span class="hd tnum">${fmtDate(a.date)}・${a.score}/${a.total} 題・${fmtTime(a.duration)}・Combo ×${attCombo(a)}・生字 ${Object.keys(a.words || {}).length}</span></span>
   <span style="color:var(--ink-3)">${I.chevR.replace("<svg", '<svg width="18" height="18"')}</span></button>`;
 }
 function whoChips(act, cur, names) {
@@ -1040,7 +1047,7 @@ function histHTML() {
   if (!list.length) h += `<div class="glass card empty"><b>還沒有紀錄</b>完成第一次練習後，成績和解析都會存在這裡。</div>`;
   else {
     const avg = list.filter(a => a.kind === "exam").map(a => a.score / a.total);
-    if (avg.length) h += `<div class="stats"><div class="stat glass"><div class="k">練習次數</div><div class="v">${list.length}</div></div><div class="stat glass"><div class="k">平均答對率</div><div class="v">${Math.round(avg.reduce((s, x) => s + x, 0) / avg.length * 100)}%</div></div><div class="stat glass"><div class="k">最佳 Combo</div><div class="v" style="color:var(--gold)">×${Math.max(...list.map(a => a.maxCombo))}</div></div><div class="stat glass"><div class="k">作答人</div><div class="v">${names.length}</div></div></div>`;
+    if (avg.length) h += `<div class="stats"><div class="stat glass"><div class="k">練習次數</div><div class="v">${list.length}</div></div><div class="stat glass"><div class="k">平均答對率</div><div class="v">${Math.round(avg.reduce((s, x) => s + x, 0) / avg.length * 100)}%</div></div><div class="stat glass"><div class="k">最佳 Combo</div><div class="v" style="color:var(--gold)">×${Math.max(...list.map(attCombo))}</div></div><div class="stat glass"><div class="k">作答人</div><div class="v">${names.length}</div></div></div>`;
     h += `<div class="glass card hist">${list.map(a => `<div style="display:flex;gap:8px;align-items:center">${histItem(a)}<button class="icon-btn" data-act="del-att" data-id="${esc(a.id)}" aria-label="刪除這筆" style="flex:none;background:transparent;box-shadow:none;color:var(--ink-3)">${I.x}</button></div>`).join("")}</div>`;
   }
   h += `
