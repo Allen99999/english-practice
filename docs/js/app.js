@@ -302,7 +302,7 @@ function grade(q, resp) {
     case "order": return JSON.stringify(resp) === JSON.stringify(q.ans);
     case "spell": return spellFull(q, resp).toLowerCase() === q.ans.toLowerCase();
     case "trans": case "rewrite": { const n = norm(resp); return transRefs(q).some(r => norm(r) === n); }
-    case "essay": case "speak": return resp && resp.rate === "ok";
+    case "essay": case "speak": return !!resp && (typeof resp.level === "number" ? resp.level >= passPts(q) : resp.rate === "ok");
     case "cword": return norm(resp) === norm(q.ans);
     case "scramble": { const all = q.tiles.concat(q.extra || []); const s = norm(resp.map(i => all[i]).join(" ")); return [q.ans, ...(q.alt || [])].some(a => norm(a) === s); }
     case "match": return resp.every((r, i) => r === i);
@@ -333,8 +333,8 @@ function respText(q, a) {
     case "order": return r.map(i => "abcdefgh"[i]).join(" → ");
     case "spell": return spellFull(q, r);
     case "trans": case "rewrite": return r || "（空白）";
-    case "essay": return `${r.text || "（空白）"}（${wcount(r.text)} 字・自評${r.rate === "ok" ? "達到要求" : "還需加強"}）`;
-    case "speak": return `自評${r.rate === "ok" ? "達到要求" : "還需加強"}`;
+    case "essay": return `${r.text || "（空白）"}（${wcount(r.text)} 字・${typeof r.level === "number" ? `自評 ${r.level} / ${maxPts(q)} 分` : `自評${r.rate === "ok" ? "達到要求" : "還需加強"}`}）`;
+    case "speak": return typeof r.level === "number" ? `自評 ${r.level} / ${maxPts(q)} 分${a.resp.rec ? "（有錄音）" : ""}` : `自評${r.rate === "ok" ? "達到要求" : "還需加強"}`;
     case "cword": return r || "（空白）";
     case "scramble": { const all = q.tiles.concat(q.extra || []); return (q.pre ? q.pre + " " : "") + r.map(i => all[i]).join(" ") + (q.post ? " " + q.post : ""); }
     case "match": return q.left.map((l, i) => `${l} → ${q.right[r[i]] ?? "?"}`).join("；");
@@ -444,6 +444,7 @@ function render() {
   else if (view === "hist") app.innerHTML = histHTML();
   else if (view === "vocab") app.innerHTML = vocabHTML();
   else if (view === "teacher") app.innerHTML = teacherHTML();
+  else if (view === "grade") app.innerHTML = gradeHTML(viewArg);
   if (view === "quiz" && S) linkPhrases(app, S.words); else linkPhrases(app, null);
   const vw = app.querySelector(".view");
   if (vw && animNext) { vw.classList.add("enter"); [...vw.children].forEach((c, k) => c.style.setProperty("--i", Math.min(k, 10))); }
@@ -451,7 +452,7 @@ function render() {
   $("#tabbar").hidden = view === "quiz";
   $("#qbar").hidden = view !== "quiz";
   if (view === "quiz") $("#qbar").innerHTML = qbarHTML();
-  document.querySelectorAll("#tabbar button").forEach(b => b.setAttribute("aria-current", b.dataset.v === (view === "result" ? resultBack : view) ? "page" : "false"));
+  document.querySelectorAll("#tabbar button").forEach(b => b.setAttribute("aria-current", b.dataset.v === (view === "result" ? resultBack : view === "grade" ? "teacher" : view) ? "page" : "false"));
   moveTabIndicator();
 }
 /* 底部選單：玻璃膠囊跟著目前的分頁滑動 */
@@ -721,7 +722,7 @@ function questionBody(X, i, a, review) {
     ${!sub ? `<div class="row"><button class="btn primary" data-act="essay-submit">寫好了，看範文和檢查表</button></div>` : `
     <div class="model"><div class="step-label">參考範文</div><div class="ptext" style="font-size:16px">${esc(q.model)}</div></div>
     <div class="step-label">自我檢查</div><div class="checklist">${(q.check || ESSAY_CHECK).map((c, k) => `<label class="ck"><input type="checkbox" id="ck${k}" ${locked ? "disabled" : ""}><span>${esc(c)}</span></label>`).join("")}</div>
-    ${locked ? "" : `<div class="row"><button class="btn" data-act="essay-rate" data-v="no">還需加強</button><button class="btn primary" data-act="essay-rate" data-v="ok">我覺得達到要求</button></div>`}`}`;
+    ${locked ? "" : rubricButtonsHTML(q, X.bank, "essay-rate", null)}`}`;
   }
   else if (q.type === "scramble") {
     const seq = locked ? a.resp : (st.seq || []), all = q.tiles.concat(q.extra || []);
@@ -761,12 +762,12 @@ function questionBody(X, i, a, review) {
 }
 function feedbackHTML(X, a) {
   const q = X.q;
-  if (q.type === "speak") return `<div class="feedback ${a.correct ? "ok" : "no"}"><span class="fb-ic">${a.correct ? I.check : I.x}</span><div style="min-width:0"><b>${a.correct ? "完成！自評達到要求" : "完成，自評還需加強"}</b><p>${esc(q.exp || "")}</p></div></div>`;
-  if (q.type === "essay") return `<div class="feedback ${a.correct ? "ok" : "no"}"><span class="fb-ic">${a.correct ? I.check : I.x}</span><div style="min-width:0"><b>${a.correct ? "完成！自評達到要求" : "完成，自評還需加強"}</b><p>${esc(q.exp || "")}</p></div></div>`;
+  if (q.type === "speak" || q.type === "essay") { const p = ptsOf(q, X.bank, a), m = maxPts(q, X.bank);
+    return `<div class="feedback ${a.correct ? "ok" : "no"}"><span class="fb-ic">${a.correct ? I.check : I.x}</span><div style="min-width:0"><b>自評 ${p} / ${m} 分</b><p>${esc(levelDesc(q, X.bank, p))}</p><p>${esc(q.exp || "")}</p></div></div>`; }
   const extra = (q.type === "trans" || q.type === "rewrite") && !a.correct ? diffHTML(q, a.resp) : "";
-  const self = (q.type === "trans" || q.type === "rewrite") && !a.correct && !a.self ? `<button class="btn" data-act="selfok" style="margin-top:10px;min-height:38px;font-size:14px">我的寫法也對（自己改成對）</button>` : "";
+  const self = (q.type === "trans" || q.type === "rewrite") && !a.correct && !a.self ? `<div class="muted" style="font-size:13.5px;margin-top:10px">標準答案只列出常見寫法。如果你的寫法也合理，請依評分標準自評：</div>${rubricButtonsHTML(q, X.bank, "selfpts", null)}` : "";
   return `<div class="feedback ${a.correct ? "ok" : "no"}"><span class="fb-ic">${a.correct ? I.check : I.x}</span><div style="min-width:0">
-  <b>${a.correct ? (a.self ? "已改判為正確" : ["答對了！", "正確！", "漂亮！", "沒錯！"][Math.floor(Math.random() * 4)]) : "答錯了"}</b>
+  <b>${a.self ? `自評 ${ptsOf(q, X.bank, a)} / ${maxPts(q, X.bank)} 分` : a.correct ? ["答對了！", "正確！", "漂亮！", "沒錯！"][Math.floor(Math.random() * 4)] : "答錯了"}</b>
   ${a.correct ? "" : `<p>正確答案：<b style="display:inline;color:var(--ink)">${esc(correctText(q))}</b></p>`}
   <p>${esc(q.exp || "")}</p>${extra}${self}</div></div>`;
 }
@@ -777,8 +778,9 @@ function commit(resp, el) {
   const i = S.idx, X = getQ(i), q = X.q;
   if (S.ans[i] && !S.blind) return;
   const correct = grade(q, resp);
-  if (S.blind) { S.ans[i] = { resp, correct, hint: false, t: Math.round(S.elapsed) }; S.tipSeen = true; save(); rerenderKeep(); return; }
+  if (S.blind) { S.ans[i] = { resp, correct, hint: false, t: Math.round(S.elapsed) }; S.ans[i].max = maxPts(q, X.bank); S.ans[i].pts = ptsOf(q, X.bank, S.ans[i]); S.tipSeen = true; save(); rerenderKeep(); return; }
   S.ans[i] = { resp, correct, hint: !!(S.work[i] && S.work[i].hint), t: Math.round(S.elapsed) };
+  S.ans[i].max = maxPts(q, X.bank); S.ans[i].pts = ptsOf(q, X.bank, S.ans[i]);
   if (q.type === "match") S.ans[i].perm = work(i).perm;
   if (correct) { S.combo++; S.maxCombo = Math.max(S.maxCombo, S.combo); } else S.combo = 0;
   S.tipSeen = true; showHint = false;
@@ -842,7 +844,7 @@ function streakOf(att) {
 }
 function attCombo(att) { return Math.max(att.maxCombo || 0, att.kind === "vocab" ? 0 : streakOf(att)) || att.maxCombo || 0; }
 function finish() {
-  const total = S.qs.length, ok = Object.values(S.ans).filter(a => a.correct).length;
+  const P = attPoints(S), total = P.t, ok = P.s;   // 依官方配分：客觀題 1 分、單句寫作 2 分、作文與口說 5 分
   const att = {
     id: S.id, optv: S.optv, who: S.who || "未署名", kind: S.kind, title: S.title, banks: S.banks, date: Date.now(), duration: Math.round(S.elapsed),
     qs: S.qs, ans: S.ans, words: S.words, maxCombo: Math.max(S.maxCombo, S.blind ? streakOf(S) : 0), score: ok, total,
@@ -975,12 +977,13 @@ function resultHTML(id) {
   <div><div class="eyebrow">${att.kind === "vocab" ? "單字練習" : "作答結果"}・作答人 ${esc(att.who || "未署名")}</div><h1 class="large-title" style="font-size:clamp(26px,5vw,36px)">${esc(att.title)}</h1></div>
   <div class="glass card res-top"><div class="ring-score"><svg viewBox="0 0 160 160"><circle cx="80" cy="80" r="70" fill="none" stroke="var(--edge)" stroke-width="12"/>
   <circle cx="80" cy="80" r="70" fill="none" stroke="${scoreColor(p)}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C * p} ${C}"/></svg>
-  <div class="lbl"><div><div class="big tnum">${Math.round(p * 100)}</div><div class="small">${att.score} / ${att.total} 題答對</div></div></div></div>
+  <div class="lbl"><div><div class="big tnum">${Math.round(p * 100)}</div><div class="small">${att.total !== (att.qs || []).length ? `得分 ${att.score} / ${att.total}` : `${att.score} / ${att.total} 題答對`}</div></div></div></div>
   <div class="stats"><div class="stat"><div class="k">用時</div><div class="v">${fmtTime(att.duration)}</div></div>
   <div class="stat"><div class="k">最高 Combo</div><div class="v" style="color:var(--gold)">×${attCombo(att)}</div></div>
   <div class="stat"><div class="k">用了提示</div><div class="v">${hintCount}</div></div>
   <div class="stat"><div class="k">生字</div><div class="v">${Object.keys(att.words || {}).length}</div></div></div></div>`;
   if (typeof teacherResultBar === "function") h += teacherResultBar(att);
+  if (typeof geptWritingHTML === "function") h += geptWritingHTML(att);
   if (typeof toeflBandHTML === "function") h += toeflBandHTML(att);
   // 細項分析
   if (att.kind !== "vocab") {
@@ -1015,7 +1018,7 @@ function reviewItem(att, i) {
   else if (X.group && X.group.kind === "ctest") body += `<div class="ptext" style="font-size:15.5px">${esc(X.group.passage[0].replace(/\{([^}]*)\}/g, "$1"))}</div>`;
   else if (X.group) body += `<details class="pfold"><summary><span class="muted">題組：${esc(X.group.title)}（展開文章）</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext ${X.group.kind}" style="margin-top:8px;font-size:15.5px">${X.group.passage.map(p => `<p>${esc(p).replace(/\[\[(\d)\]\]/g, '<span class="cz">$1</span>')}</p>`).join("")}</div></details>`;
   body += `<div>${questionReview(q)}</div>`;
-  body += `<dl class="kv"><dt>你的答案</dt><dd class="${a && a.correct ? "ans-ok" : "ans-no"}" style="${a && a.correct ? "" : "text-decoration:none"}">${esc(respText(q, a))}${a && a.self ? "（自評正確）" : ""}${a && a.hint ? ` <span class="tag">用了提示</span>` : ""}</dd>
+  body += `<dl class="kv"><dt>你的答案</dt><dd class="${a && a.correct ? "ans-ok" : "ans-no"}" style="${a && a.correct ? "" : "text-decoration:none"}">${esc(respText(q, a))}${a && (a.self || a.tmark || rubricOf(q, X.bank)) ? `（${a.tmark ? "老師評分" : a.self || q.type === "essay" || q.type === "speak" ? "自評" : "得分"} ${ptsOf(q, X.bank, a)} / ${maxPts(q, X.bank)}）` : ""}${a && a.hint ? ` <span class="tag">用了提示</span>` : ""}</dd>
   <dt>正確答案</dt><dd class="ans-ok">${esc(correctText(q))}</dd>
   ${q.type === "trans" || q.type === "rewrite" ? `<dt>可接受</dt><dd class="muted" style="font-size:14px">${q.ans.map(x => esc(x).replace(/\{([^}]*)\}/g, (m, g) => `[${g.split("|").map(s => s || "∅").join(" / ")}]`)).join("<br>")}</dd>` : ""}
   ${q.exp ? `<dt>解析</dt><dd>${esc(q.exp)}</dd>` : ""}
@@ -1183,8 +1186,8 @@ document.addEventListener("click", e => {
     case "finish-now": closeSheet(); finish(); break;
     case "submit": submitCurrent(); break;
     case "essay-submit": { const w2 = work(S.idx); w2.val = $("#essayin").value; if (wcount(w2.val) < 5) { toast("先寫幾句再看範文"); break; } w2.submitted = true; save(); rerenderKeep(); break; }
-    case "essay-rate": { const w2 = work(S.idx); commit({ text: w2.val, rate: d.v }); break; }
-    case "selfok": { const a = S.ans[S.idx]; a.correct = true; a.self = true; save(); rerenderKeep(); break; }
+    case "essay-rate": { const w2 = work(S.idx); commit({ text: w2.val, level: +d.v }); break; }
+    case "selfok": case "selfpts": { const a = S.ans[S.idx], X = getQ(S.idx), v = d.v === undefined ? maxPts(X.q, X.bank) : +d.v; a.pts = v; a.correct = v >= passPts(X.q, X.bank); a.self = true; save(); rerenderKeep(); break; }
     case "opick": { const w2 = work(S.idx); const p = w2.pick || (w2.pick = []); const k = +d.k; const i = p.indexOf(k); if (i >= 0) p.splice(i); else p.push(k); save(); rerenderKeep(); break; }
     case "order-reset": work(S.idx).pick = []; save(); rerenderKeep(); break;
     case "tile": { const w2 = work(S.idx); (w2.seq || (w2.seq = [])).push(+d.k); save(); rerenderKeep(); break; }

@@ -81,7 +81,7 @@ function speakHTML(q, i, a) {
   ${rec && rec.url ? `<audio controls src="${rec.url}" style="width:100%;margin-top:8px"></audio>` : ""}</div>
   ${!reveal ? `<div class="row"><button class="btn ${rec && rec.url ? "primary" : ""}" data-act="sp-reveal">${q.mode === "repeat" ? "看原句並自評" : "看參考回答並自評"}</button></div>`
     : `<div class="model"><div class="step-label">${q.mode === "repeat" ? "原句" : "參考回答"}</div><div class="ptext" style="font-size:16px">${esc(q.mode === "repeat" ? q.text : q.model)}</div></div>
-    ${locked ? "" : `<div class="row"><button class="btn" data-act="sp-rate" data-v="no">還需加強</button><button class="btn primary" data-act="sp-rate" data-v="ok">${q.mode === "repeat" ? "我說得完整正確" : "我回答得清楚完整"}</button></div>`}`}`;
+    ${locked ? "" : rubricButtonsHTML(q, null, "sp-rate", null)}`}`;
 }
 async function recStart() {
   try {
@@ -127,7 +127,7 @@ function toeflBandHTML(att) {
   att.qs.forEach((r, i) => {
     const X = getQ(i, att); if (!X || !X.bank || !/^toefl/.test(X.bank.id)) return;
     const sec = secs[(X.q.tag || "")[0]]; if (!sec) return;
-    any = true; sec[2]++; if (att.ans[i] && att.ans[i].correct) sec[1]++;
+    any = true; sec[2] += maxPts(X.q, X.bank); sec[1] += ptsOf(X.q, X.bank, att.ans[i]);
   });
   if (!any) return "";
   const band = p => BAND_CUTS.find(([c]) => p >= c)[1];
@@ -135,11 +135,12 @@ function toeflBandHTML(att) {
   const avg = Math.round(rows.reduce((t, s) => t + band(s[1] / s[2]), 0) / rows.length * 2) / 2;
   return `<div class="glass card" style="display:flex;flex-direction:column;gap:14px"><div class="section-h" style="margin:0"><h2>預估級分（TOEFL 1～6）</h2>${rows.length > 1 ? `<span class="tag">總分約 ${avg.toFixed(1)}</span>` : ""}</div>
   <div class="stats">${rows.map(([n, o, t]) => `<div class="stat"><div class="k">${n}</div><div class="v">${band(o / t).toFixed(1)}</div><div class="muted tnum" style="font-size:12px">${o}/${t}</div></div>`).join("")}</div>
-  <div class="muted" style="font-size:12.5px">依答對率估算的參考級分（ETS 沒有公開換算表）；寫作、口說是依你的自評計算。</div></div>`;
+  <div class="muted" style="font-size:12.5px">依得分率估算的參考級分（ETS 沒有公開換算表）；Email、討論、口說每題 0～5 分，依自評或老師評分計算。</div></div>`;
 }
 
 /* ---------- 事件 ---------- */
 document.addEventListener("click", e => {
+  const ra = e.target.closest('[data-act="rec-fetch"]'); if (ra) { fetchRec(ra); return; }   // 老師總覽、結果頁也要能播（不在作答中）
   const act = e.target.closest("[data-act]"); if (!act || !S) return;
   const d = act.dataset, a = d.act;
   if (a === "ct-submit") ctSubmit();
@@ -150,10 +151,9 @@ document.addEventListener("click", e => {
   if (a === "sp-reveal") { work(S.idx).reveal = true; save(); rerenderKeep(); }
   if (a === "sp-rate") {
     const i = S.idx, rec = REC && REC.idx === i && REC.blob ? REC.blob : null;
-    commit({ rate: d.v, rec: !!rec });
+    commit({ level: +d.v, rec: !!rec });
     if (rec) uploadRec(rec, S.id, i, S.who);
   }
-  if (a === "rec-fetch") fetchRec(act);
 });
 document.addEventListener("input", e => {
   if (!e.target.classList || !e.target.classList.contains("ct-in") || !S) return;
@@ -178,7 +178,8 @@ async function fetchRec(btn) {
   try {
     const r = await fetch(SITE_CONFIG.SYNC_URL + "?action=audio&teacherCode=" + encodeURIComponent(code) + "&att=" + encodeURIComponent(btn.dataset.att) + "&i=" + btn.dataset.i);
     const j = await r.json(); if (!j.ok) throw new Error(j.error);
-    const au = document.createElement("audio"); au.controls = true; au.style.width = "100%"; au.src = `data:${j.mime};base64,${j.data}`;
+    const au = document.createElement("audio"); au.controls = true; au.style.width = "100%"; const d0 = j.data.slice(0, 8), mime = d0.startsWith("GkXf") ? "audio/webm" : d0.startsWith("T2dn") ? "audio/ogg" : /^(SUQz|\/\/)/.test(d0) ? "audio/mpeg" : "audio/mp4";   // 依檔案內容判斷格式
+    au.src = `data:${mime};base64,${j.data}`;
     btn.replaceWith(au); au.play().catch(() => { });
   } catch (e) { btn.disabled = false; btn.textContent = String(e.message).includes("no audio") ? "找不到錄音（可能還沒上傳完成）" : "載入失敗，再試一次"; }
 }

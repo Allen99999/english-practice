@@ -199,7 +199,7 @@ function review_(body) {
   const k = ids.indexOf(id), row = k >= 0 ? k + 2 : last + 1;
   const cur = k >= 0 ? sh.getRange(row, 1, 1, 3).getValues()[0] : [id, false, "{}"];
   let marks = {}; try { marks = JSON.parse(cur[2] || "{}"); } catch (e) { }
-  if (body.marks && typeof body.marks === "object") Object.keys(body.marks).forEach(i => { const v = body.marks[i]; if (v === null) delete marks[i]; else marks[i] = !!v; });
+  if (body.marks && typeof body.marks === "object") Object.keys(body.marks).forEach(i => { const v = body.marks[i]; if (v === null) delete marks[i]; else marks[i] = typeof v === "number" ? Math.max(0, Math.min(10, Math.round(v))) : !!v; });
   const done = body.done === undefined ? (cur[1] === true || cur[1] === "TRUE") : !!body.done;
   sh.getRange(row, 1, 1, 4).setValues([[id, done, JSON.stringify(marks), new Date()]]);
   return json_({ ok: true, done, marks });

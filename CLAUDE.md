@@ -117,7 +117,9 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
 - 語音檔名由 `tts-text.js` 的 `ttsName(voice, text)` 決定，瀏覽器和 `build_tts_jobs.mjs` 共用同一份程式，改這支要兩邊一起測。
 - repo 是公開的：不要把 Secrets.gs、代碼或學生資料提交進去。
 - 出題會優先出「這個名字還沒做過」的題（app.js 的 seenRefs：從作答紀錄＋暫存即時計算，刪紀錄就算沒做過）。
-- 老師批改：寫作、句子改寫、翻譯、口說（teacher.js 的 GRADE_TYPES）會出現在總覽最上方「待批改」，可逐題改判、標記批改完成；存在試算表 reviews 工作表。
+- 評分（scoring.js）：依官方配分。英檢單句寫作（改寫、合併、重組）每題 0～2、段落寫作 0～5 級分（寫作成績＝(單句/30＋段落/5)×50）；
+  托福 Email、討論、Listen and Repeat、Interview 每題 0～5；其他客觀題 1 分；國中翻譯比照 0～2。自評與老師評分都用同一套 RUBRICS。
+- 老師批改：寫作、句子改寫、翻譯、口說（teacher.js 的 GRADE_TYPES）會出現在總覽最上方「待批改」（學生 → 第幾回 → 批改頁），依官方分數評分、標記批改完成；存在試算表 reviews 工作表。
   老師可刪除紀錄（連同批改紀錄、錄音）；載入成績時以雲端為準，刪掉的紀錄會從總覽消失。
 - 口說錄音：學生自評後上傳到 Allen 雲端硬碟「Apex English 錄音」資料夾（檔名 rec_<attemptId>_<題號>.m4a），老師在解析裡用老師代碼播放。
 - 首頁考試範圍：翰林版國一～國三收在可折疊的群組（依 `range` 含「翰林」判斷）；預設單選，按「複選」才能一次選多冊。

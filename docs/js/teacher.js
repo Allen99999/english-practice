@@ -55,8 +55,11 @@ function teacherHTML() {
   const names = [...new Set(atts.map(a => a.who || "未署名"))];
   if (!names.includes(store.tWho)) store.tWho = names[0] || "";
   const imp = store.imported && store.imported.attempts && store.imported.attempts.length;
-  let h = `<section class="view"><div class="hero"><div><div class="eyebrow">Teacher</div><h1 class="large-title">老師總覽</h1>
-  <p class="subtitle">學生交卷後成績會自動同步。輸入老師代碼載入全班成績，就能看到每個人的分數、弱點和最常錯的題目。</p></div>
+  const hr = new Date().getHours(), greet = hr < 5 ? "Burning the midnight oil" : hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
+  let h = `<section class="view"><div class="hero"><div class="welcome">
+  <div class="eyebrow">${greet}・老師總覽</div>
+  <h1 class="wl-title"><span class="wl-1">Welcome back,</span><span class="wl-2">Teacher <em>Allen</em></span></h1>
+  <p class="subtitle">Your classroom at a glance — 學生交卷後成績會自動同步，待批改的作答會先出現在這裡。</p></div>
   ${imp ? `<div class="row"><button class="btn ghost" data-act="t-clear">清除已載入的成績</button></div>` : ""}</div>
   <div class="row muted" style="font-size:13.5px;gap:10px"><button class="chip" data-act="t-local" aria-pressed="${store.tIncludeLocal !== false}">包含這台裝置的紀錄</button>
   </div>
@@ -150,25 +153,37 @@ function applyReviews() {
   ((store.imported || {}).attempts || []).forEach(att => {
     const m = rv(att).marks || {};
     Object.entries(att.ans || {}).forEach(([i, a]) => {
-      if (a.auto === undefined) a.auto = a.correct;
-      if (i in m) { a.correct = !!m[i]; a.tmark = true; } else { a.correct = a.auto; delete a.tmark; }
+      const X = getQ(+i, att); if (!X) return;
+      if (a.auto === undefined) { a.auto = a.correct; a.autoPts = ptsOf(X.q, X.bank, a); }
+      if (i in m && m[i] !== null) { const v = typeof m[i] === "number" ? m[i] : (m[i] ? maxPts(X.q, X.bank) : 0); a.pts = v; a.correct = v >= passPts(X.q, X.bank); a.tmark = true; }
+      else { a.correct = a.auto; a.pts = a.autoPts; delete a.tmark; }
     });
-    att.score = Object.values(att.ans || {}).filter(a => a.correct).length;
+    const P = attPoints(att); att.score = P.s; att.total = P.t;
   });
 }
 function pendingHTML(atts) {
   if (!store.teacherCode) return "";
   const list = atts.filter(a => isRemote(a) && !rv(a).done && gradeIdx(a).length);
   if (!list.length) return `<div class="glass card" style="display:flex;align-items:center;gap:12px"><span class="fb-ic" style="width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--good);color:#fff">${I.check}</span><div><b>沒有待批改的作答</b><div class="muted" style="font-size:13.5px">寫作、句子改寫、翻譯和口說題，都會先出現在這裡等你批改。</div></div></div>`;
-  return `<div class="section-h"><h2>待批改</h2><span class="tag" style="background:var(--bad);color:#fff">${list.length} 份</span></div>
-  <div class="pending">${list.map(att => {
-    const idx = gradeIdx(att);
-    return `<details class="glass card pend" ${list.length <= 3 ? "open" : ""}><summary><span class="tag who-tag">${esc(att.who || "未署名")}</span><b>${esc(att.title)}</b>
-      <span class="muted tnum" style="font-size:13px">${fmtDate(att.date)}・${idx.length} 題要批改・目前 ${att.score}/${att.total}</span></summary>
-      <div class="pend-list">${idx.map(i => gradeItemHTML(att, i)).join("")}</div>
-      <div class="row" style="justify-content:flex-end;gap:10px;margin-top:6px"><button class="btn ghost" data-act="open-att" data-id="${esc(att.id)}">看整份</button>
-      <button class="btn primary" data-act="t-done" data-id="${esc(att.id)}" data-v="1">${I.check}標記批改完成</button></div></details>`;
-  }).join("")}</div>`;
+  const byWho = {}; list.forEach(a => (byWho[a.who || "未署名"] = byWho[a.who || "未署名"] || []).push(a));
+  return `<div class="section-h"><h2>待批改</h2><span class="tag" style="background:var(--bad);color:#fff">${list.length} 回</span></div>
+  <div class="pending">${Object.entries(byWho).map(([who, arr]) => `<details class="glass card pend" data-who="${esc(who)}" ${store.ui && store.ui["pend:" + who] ? "open" : ""}>
+    <summary><span class="pend-ava">${esc(who.slice(0, 1))}</span><b style="font-size:17px">${esc(who)}</b><span class="muted" style="font-size:13.5px">${arr.length} 回待批改</span><span class="fold-ic" style="margin-left:auto">${I.chevR}</span></summary>
+    <div class="pend-list">${arr.map(att => `<button class="pend-row" data-act="t-grade" data-id="${esc(att.id)}"><span class="tag">第 ${roundNo(att)} 回</span><span style="flex:1;min-width:0;text-align:left"><b>${esc(att.title)}</b><br><span class="muted tnum" style="font-size:12.5px">${fmtDate(att.date)}・${gradeIdx(att).length} 題要批改</span></span>${I.chevR}</button>`).join("")}</div></details>`).join("")}</div>`;
+}
+/* 第幾回：這位學生的第幾份作答（由舊到新） */
+function roundNo(att) { const mine = allAttempts().filter(a => (a.who || "未署名") === (att.who || "未署名")).sort((a, b) => a.date - b.date); return mine.findIndex(a => a.id === att.id) + 1; }
+/* 批改頁：一回裡所有要批改的題目 */
+function gradeHTML(id) {
+  const att = findAtt(id);
+  if (!att) return `<section class="view"><div class="glass card empty"><b>找不到這筆紀錄</b><button class="btn" data-act="tab" data-v="teacher">回總覽</button></div></section>`;
+  const idx = gradeIdx(att), P = attPoints(att), done = rv(att).done;
+  return `<section class="view"><div class="row" style="justify-content:space-between"><button class="btn ghost" data-act="tab" data-v="teacher">${I.chevL}總覽</button><span class="muted" style="font-size:14px">${fmtDate(att.date)}</span></div>
+  <div><div class="eyebrow">批改・第 ${roundNo(att)} 回</div><h1 class="large-title" style="font-size:clamp(26px,5vw,36px)"><span class="tag who-tag" style="font-size:16px;vertical-align:middle">${esc(att.who || "未署名")}</span> ${esc(att.title)}</h1>
+  <p class="subtitle">共 ${idx.length} 題需要你評分・目前得分 ${P.s} / ${P.t}</p></div>
+  <div class="pend-list">${idx.map(i => gradeItemHTML(att, i)).join("")}</div>
+  <div class="row" style="justify-content:flex-end;gap:10px"><button class="btn ghost" data-act="open-att" data-id="${esc(att.id)}">看整份解析</button>
+  <button class="btn primary big" data-act="t-done" data-id="${esc(att.id)}" data-v="${done ? "" : "1"}" data-back="1">${done ? "改回未批改" : `${I.check}批改完成`}</button></div></section>`;
 }
 function gradeItemHTML(att, i) {
   const X = getQ(i, att), q = X.q, a = att.ans[i];
@@ -176,15 +191,16 @@ function gradeItemHTML(att, i) {
   <div style="font-size:15.5px">${questionReview(q)}</div>
   <dl class="kv"><dt>學生答案</dt><dd style="white-space:pre-wrap">${esc(respText(q, a))}</dd>${q.type === "essay" || q.type === "speak" ? "" : `<dt>參考答案</dt><dd class="ans-ok">${esc(correctText(q))}</dd>`}</dl>
   ${q.type === "speak" ? `<button class="btn" data-act="rec-fetch" data-att="${esc(att.id)}" data-i="${i}">${I.play}播放學生錄音</button>` : ""}
-  ${gradeButtonsHTML(att, i)}</div>`;
+  ${gradeButtonsHTML(att, i, true)}</div>`;
 }
 /* 改判按鈕（老師裝置、雲端紀錄、需批改的題型才顯示） */
-function gradeButtonsHTML(att, i) {
+function gradeButtonsHTML(att, i, full) {
   if (!store.teacherCode || !isRemote(att)) return "";
   const X = getQ(i, att); if (!X || !GRADE_TYPES.includes(X.q.type) || !att.ans[i]) return "";
-  const a = att.ans[i], sys = a.auto !== undefined ? a.auto : a.correct;
-  return `<div class="grade-bar"><span class="muted" style="font-size:13px">系統判定：${sys ? "對" : "錯"}${a.tmark ? `　老師改判：<b style="color:${a.correct ? "var(--good)" : "var(--bad)"}">${a.correct ? "對" : "錯"}</b>` : ""}</span>
-  <div class="seg sm"><button data-act="t-mark" data-id="${esc(att.id)}" data-i="${i}" data-v="1" aria-pressed="${!!a.tmark && a.correct}">判對</button><button data-act="t-mark" data-id="${esc(att.id)}" data-i="${i}" data-v="0" aria-pressed="${!!a.tmark && !a.correct}">判錯</button>${a.tmark ? `<button data-act="t-mark" data-id="${esc(att.id)}" data-i="${i}" data-v="">還原</button>` : ""}</div></div>`;
+  const a = att.ans[i], sysPts = a.auto !== undefined ? (a.autoPts !== undefined ? a.autoPts : (a.auto ? maxPts(X.q, X.bank) : 0)) : ptsOf(X.q, X.bank, a);
+  return `<div class="grade-bar"><span class="muted" style="font-size:13px">${X.q.type === "essay" || X.q.type === "speak" ? "學生自評" : "系統判定"}：${sysPts} / ${maxPts(X.q, X.bank)} 分${a.tmark ? `　老師評分：<b style="color:var(--ink)">${ptsOf(X.q, X.bank, a)} 分</b>` : ""}</span>
+  ${a.tmark ? `<button class="chip" data-act="t-mark" data-id="${esc(att.id)}" data-i="${i}" data-v="">還原</button>` : ""}</div>
+  ${rubricButtonsHTML(X.q, X.bank, "t-mark", a.tmark ? ptsOf(X.q, X.bank, a) : null, `data-id="${esc(att.id)}" data-i="${i}"`)}`;
 }
 function teacherResultBar(att) {
   if (!store.teacherCode || !isRemote(att)) return "";
@@ -257,18 +273,19 @@ document.addEventListener("click", async e => {
     case "read-q": readQuestion(); break;
     case "rate": store.settings.rate = +d.v; save(); document.querySelectorAll('[data-act="rate"]').forEach(b => b.setAttribute("aria-pressed", b.dataset.v === d.v)); if (reading) readPassage(); break;
     case "t-pick": store.tWho = d.n; save(); rerenderKeep(); break;
+    case "t-grade": go("grade", d.id); break;
     case "t-mark": {
-      const id = d.id, i = d.i, v = d.v === "" ? null : d.v === "1";
+      const id = d.id, i = d.i, v = d.v === "" ? null : +d.v;
       const r = (store.reviews || (store.reviews = {}))[id] || (store.reviews[id] = { done: false, marks: {} });
       if (v === null) delete r.marks[i]; else r.marks[i] = v;
       applyReviews(); save(true); rerenderKeep();
-      teacherPost({ action: "review", attemptId: id, marks: { [i]: v } }, v === null ? "已還原系統判定" : `已改判為「${v ? "對" : "錯"}」`);
+      teacherPost({ action: "review", attemptId: id, marks: { [i]: v } }, v === null ? "已還原" : `已給 ${v} 分`);
       break;
     }
     case "t-done": {
       const id = d.id, done = d.v === "1";
       const r = (store.reviews || (store.reviews = {}))[id] || (store.reviews[id] = { done: false, marks: {} });
-      r.done = done; save(true); rerenderKeep();
+      r.done = done; save(true); if (d.back && done) go("teacher"); else rerenderKeep();
       teacherPost({ action: "review", attemptId: id, done }, done ? "已標記批改完成" : "已改回未批改");
       break;
     }
@@ -342,3 +359,5 @@ document.addEventListener("click", async e => {
     }
   }
 });
+/* 待批改的學生卡片：記住展開狀態 */
+document.addEventListener("toggle", e => { const p = e.target; if (p.classList && p.classList.contains("pend")) { store.ui = store.ui || {}; store.ui["pend:" + p.dataset.who] = p.open; save(); } }, true);
