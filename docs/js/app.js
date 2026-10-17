@@ -520,7 +520,7 @@ function homeHTML() {
 function bankCardHTML(b, sel, gm) {
   const on = sel.banks.includes(b.id);
   const n = b.items.reduce((s, it) => s + (it.type === "group" ? it.qs.length : 1), 0);
-  const papers = on && b.mockPapers && sel.mode === "exam" && sel.banks.length === 1;
+  const papers = on && b.mockPapers && sel.banks.length === 1;   // 隨機組卷時也要顯示，才能切回正式模擬卷
   const chips = () => `<div class="opt-block"><label>${b.tagIsType ? "題型（可複選）" : "細項"}</label><div class="chips">${Object.entries(b.tags).map(([k, v]) => {
       const c = b.items.filter(it => it.tag === k).reduce((s, it) => s + (it.type === "group" ? it.qs.length : 1), 0);
       return `<button class="chip" data-act="tag" data-k="${k}" aria-pressed="${sel.tags.includes(k)}">${esc(v)}<span class="n">${c}</span></button>`;
