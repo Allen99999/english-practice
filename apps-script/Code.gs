@@ -68,6 +68,8 @@ function doPost(e) {
         case "login": if (rateLimited_("login", 200)) return json_({ ok: false, error: "busy" }); return login_(body);
         case "setcode": return setcode_(body);
         case "audio": return audioUpload_(body);
+        case "review": return review_(body);
+        case "delete": return deleteAttempt_(body);
       }
       return json_({ ok: false, error: "unknown action" });
     } finally { lock.releaseLock(); }
@@ -152,26 +154,64 @@ function doGet(e) {
   const p = (e && e.parameter) || {};
   if (p.action === "ping") return json_({ ok: true });
   if (p.action === "audio") {   // 老師播放錄音
-    const c = CacheService.getScriptCache();
-    if (Number(c.get("tfail") || 0) >= 10) return json_({ ok: false, error: "locked" });
-    if (String(p.teacherCode || "") !== TEACHER_CODE) { c.put("tfail", String(Number(c.get("tfail") || 0) + 1), 900); return json_({ ok: false, error: "wrong teacher code" }); }
+    const terr = teacherErr_(p.teacherCode); if (terr) return json_({ ok: false, error: terr });
     const it = recFolder_().getFilesByName(recName_(p.att, p.i));
     if (!it.hasNext()) return json_({ ok: false, error: "no audio" });
     const blob = it.next().getBlob();
     return json_({ ok: true, mime: blob.getContentType(), data: Utilities.base64Encode(blob.getBytes()) });
   }
   if (p.action !== "list") return json_({ ok: false, error: "unknown action" });
-  // 老師代碼連續輸錯 10 次，鎖 15 分鐘（防止有人用程式一直猜）
-  const c = CacheService.getScriptCache();
-  if (Number(c.get("tfail") || 0) >= 10) return json_({ ok: false, error: "locked" });
-  if (String(p.teacherCode || "") !== TEACHER_CODE) { c.put("tfail", String(Number(c.get("tfail") || 0) + 1), 900); return json_({ ok: false, error: "wrong teacher code" }); }
-  c.remove("tfail");
+  const terr = teacherErr_(p.teacherCode); if (terr) return json_({ ok: false, error: terr });   // 連續輸錯 10 次鎖 15 分鐘
   const sh = sheet_(), st = students_();
   const students = st.getLastRow() < 2 ? [] : st.getRange(2, 1, st.getLastRow() - 1, 2).getValues().map(r => ({ name: name_(r[0]), code: code_(r[1]) }));
-  if (sh.getLastRow() < 2) return json_({ ok: true, attempts: [], students: students });
+  const reviews = reviewMap_();
+  if (sh.getLastRow() < 2) return json_({ ok: true, attempts: [], students: students, reviews: reviews });
   const rows = sh.getRange(2, 1, sh.getLastRow() - 1, HEADERS.length).getValues();
   const attempts = rows.map(r => { try { return JSON.parse(r[9]); } catch (x) { return null; } }).filter(Boolean);
-  return json_({ ok: true, attempts: attempts, students: students });
+  return json_({ ok: true, attempts: attempts, students: students, reviews: reviews });
+}
+
+/* 老師代碼檢查（連續輸錯 10 次鎖 15 分鐘）；回傳錯誤字串或 "" */
+function teacherErr_(code) {
+  const c = CacheService.getScriptCache();
+  if (Number(c.get("tfail") || 0) >= 10) return "locked";
+  if (String(code || "") !== TEACHER_CODE) { c.put("tfail", String(Number(c.get("tfail") || 0) + 1), 900); return "wrong teacher code"; }
+  c.remove("tfail"); return "";
+}
+/* 批改紀錄：reviews 工作表（attemptId、是否批改完成、逐題改判、更新時間） */
+function reviews_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName("reviews");
+  if (!sh) { sh = ss.insertSheet("reviews"); sh.appendRow(["attemptId", "done", "marks", "updatedAt"]); sh.setFrozenRows(1); }
+  return sh;
+}
+function reviewMap_() {
+  const sh = reviews_(), out = {};
+  if (sh.getLastRow() < 2) return out;
+  sh.getRange(2, 1, sh.getLastRow() - 1, 3).getValues().forEach(r => { let m = {}; try { m = JSON.parse(r[2] || "{}"); } catch (e) { } out[r[0]] = { done: r[1] === true || r[1] === "TRUE", marks: m }; });
+  return out;
+}
+function review_(body) {
+  const err = teacherErr_(body.teacherCode); if (err) return json_({ ok: false, error: err });
+  const id = String(body.attemptId || ""); if (!/^[A-Za-z0-9_-]{4,40}$/.test(id)) return json_({ ok: false, error: "bad id" });
+  const sh = reviews_(), last = sh.getLastRow();
+  const ids = last > 1 ? sh.getRange(2, 1, last - 1, 1).getValues().map(r => r[0]) : [];
+  const k = ids.indexOf(id), row = k >= 0 ? k + 2 : last + 1;
+  const cur = k >= 0 ? sh.getRange(row, 1, 1, 3).getValues()[0] : [id, false, "{}"];
+  let marks = {}; try { marks = JSON.parse(cur[2] || "{}"); } catch (e) { }
+  if (body.marks && typeof body.marks === "object") Object.keys(body.marks).forEach(i => { const v = body.marks[i]; if (v === null) delete marks[i]; else marks[i] = !!v; });
+  const done = body.done === undefined ? (cur[1] === true || cur[1] === "TRUE") : !!body.done;
+  sh.getRange(row, 1, 1, 4).setValues([[id, done, JSON.stringify(marks), new Date()]]);
+  return json_({ ok: true, done, marks });
+}
+/* 刪除一筆作答紀錄（連同批改紀錄、錄音） */
+function deleteAttempt_(body) {
+  const err = teacherErr_(body.teacherCode); if (err) return json_({ ok: false, error: err });
+  const id = String(body.attemptId || ""); if (!/^[A-Za-z0-9_-]{4,40}$/.test(id)) return json_({ ok: false, error: "bad id" });
+  const del = (sh, col) => { const last = sh.getLastRow(); if (last < 2) return 0; const v = sh.getRange(2, col, last - 1, 1).getValues(); let n = 0; for (let r = v.length - 1; r >= 0; r--) if (String(v[r][0]) === id) { sh.deleteRow(r + 2); n++; } return n; };
+  const n = del(sheet_(), 2); del(reviews_(), 1);
+  try { const it = recFolder_().searchFiles('title contains "rec_' + id + '_"'); while (it.hasNext()) it.next().setTrashed(true); } catch (e) { }
+  return json_({ ok: true, deleted: n });
 }
 
 /* 全站流量限制：同一種動作每 10 分鐘最多 max 次（擋掉灌爆試算表的行為） */
@@ -182,4 +222,4 @@ function rateLimited_(key, max) {
 }
 
 /* 在編輯器裡手動執行一次，用來授權並建立工作表 */
-function setup() { sheet_(); students_(); recFolder_(); Logger.log("ok: sheet ready"); }
+function setup() { sheet_(); students_(); reviews_(); recFolder_(); Logger.log("ok: sheet ready"); }

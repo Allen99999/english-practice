@@ -980,6 +980,7 @@ function resultHTML(id) {
   <div class="stat"><div class="k">最高 Combo</div><div class="v" style="color:var(--gold)">×${attCombo(att)}</div></div>
   <div class="stat"><div class="k">用了提示</div><div class="v">${hintCount}</div></div>
   <div class="stat"><div class="k">生字</div><div class="v">${Object.keys(att.words || {}).length}</div></div></div></div>`;
+  if (typeof teacherResultBar === "function") h += teacherResultBar(att);
   if (typeof toeflBandHTML === "function") h += toeflBandHTML(att);
   // 細項分析
   if (att.kind !== "vocab") {
@@ -1020,7 +1021,8 @@ function reviewItem(att, i) {
   ${q.exp ? `<dt>解析</dt><dd>${esc(q.exp)}</dd>` : ""}
   ${q.hint ? `<dt>提示</dt><dd class="muted">${esc(q.hint)}</dd>` : ""}</dl>`;
   if ((q.type === "trans" || q.type === "rewrite") && a && !a.correct) body += diffHTML(q, a.resp);
-  if (q.type === "speak" && a && a.resp && a.resp.rec && store.teacherCode) body += `<button class="btn" data-act="rec-fetch" data-att="${esc(att.id)}" data-i="${i}">${I.play}播放學生錄音</button>`;
+  if (q.type === "speak" && a && store.teacherCode) body += `<button class="btn" data-act="rec-fetch" data-att="${esc(att.id)}" data-i="${i}">${I.play}播放學生錄音</button>`;
+  if (typeof gradeButtonsHTML === "function") body += gradeButtonsHTML(att, i);
   return `<details class="rv"><summary><span class="st ${st}">${st === "ok" ? I.check : st === "no" ? I.x : "–"}</span><span class="tag">${i + 1}</span><span class="sum">${esc(sumText)}</span><span class="tag">${typeL}</span><span class="chev">${I.chevR.replace("<svg", '<svg width="16" height="16"')}</span></summary><div class="rv-body">${body}</div></details>`;
 }
 function questionReview(q) {

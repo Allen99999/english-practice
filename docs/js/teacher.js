@@ -61,6 +61,7 @@ function teacherHTML() {
   <div class="row muted" style="font-size:13.5px;gap:10px"><button class="chip" data-act="t-local" aria-pressed="${store.tIncludeLocal !== false}">包含這台裝置的紀錄</button>
   </div>
   ${typeof syncTeacherHTML === "function" ? syncTeacherHTML() : ""}`;
+  h += pendingHTML(atts);
   if (!atts.length) return h + `<div class="glass card empty"><b>還沒有資料</b>在上方輸入老師代碼，按「載入全班成績」。學生交卷後成績會自動同步到這裡。</div></section>`;
 
   /* 全班摘要表 */
@@ -139,6 +140,65 @@ function teacherHTML() {
   return h + `</section>`;
 }
 
+/* ================= 老師批改 ================= */
+const GRADE_TYPES = ["rewrite", "trans", "essay", "speak"];   // 需要老師判斷的題型：寫作、句子改寫、翻譯、口說
+function gradeIdx(att) { return (att.qs || []).map((_, i) => i).filter(i => { const X = getQ(i, att); return X && GRADE_TYPES.includes(X.q.type) && att.ans && att.ans[i]; }); }
+function isRemote(att) { return ((store.imported || {}).attempts || []).some(a => a.id === att.id); }
+function rv(att) { return (store.reviews || {})[att.id] || { done: false, marks: {} }; }
+/* 把老師的改判套到載入的紀錄上（保留系統原本的判定，取消改判時可以還原） */
+function applyReviews() {
+  ((store.imported || {}).attempts || []).forEach(att => {
+    const m = rv(att).marks || {};
+    Object.entries(att.ans || {}).forEach(([i, a]) => {
+      if (a.auto === undefined) a.auto = a.correct;
+      if (i in m) { a.correct = !!m[i]; a.tmark = true; } else { a.correct = a.auto; delete a.tmark; }
+    });
+    att.score = Object.values(att.ans || {}).filter(a => a.correct).length;
+  });
+}
+function pendingHTML(atts) {
+  if (!store.teacherCode) return "";
+  const list = atts.filter(a => isRemote(a) && !rv(a).done && gradeIdx(a).length);
+  if (!list.length) return `<div class="glass card" style="display:flex;align-items:center;gap:12px"><span class="fb-ic" style="width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--good);color:#fff">${I.check}</span><div><b>沒有待批改的作答</b><div class="muted" style="font-size:13.5px">寫作、句子改寫、翻譯和口說題，都會先出現在這裡等你批改。</div></div></div>`;
+  return `<div class="section-h"><h2>待批改</h2><span class="tag" style="background:var(--bad);color:#fff">${list.length} 份</span></div>
+  <div class="pending">${list.map(att => {
+    const idx = gradeIdx(att);
+    return `<details class="glass card pend" ${list.length <= 3 ? "open" : ""}><summary><span class="tag who-tag">${esc(att.who || "未署名")}</span><b>${esc(att.title)}</b>
+      <span class="muted tnum" style="font-size:13px">${fmtDate(att.date)}・${idx.length} 題要批改・目前 ${att.score}/${att.total}</span></summary>
+      <div class="pend-list">${idx.map(i => gradeItemHTML(att, i)).join("")}</div>
+      <div class="row" style="justify-content:flex-end;gap:10px;margin-top:6px"><button class="btn ghost" data-act="open-att" data-id="${esc(att.id)}">看整份</button>
+      <button class="btn primary" data-act="t-done" data-id="${esc(att.id)}" data-v="1">${I.check}標記批改完成</button></div></details>`;
+  }).join("")}</div>`;
+}
+function gradeItemHTML(att, i) {
+  const X = getQ(i, att), q = X.q, a = att.ans[i];
+  return `<div class="pend-item"><div class="row" style="gap:8px"><span class="tag">第 ${i + 1} 題</span><span class="tag">${esc(tagName(X.bank, q.tag))}</span></div>
+  <div style="font-size:15.5px">${questionReview(q)}</div>
+  <dl class="kv"><dt>學生答案</dt><dd style="white-space:pre-wrap">${esc(respText(q, a))}</dd>${q.type === "essay" || q.type === "speak" ? "" : `<dt>參考答案</dt><dd class="ans-ok">${esc(correctText(q))}</dd>`}</dl>
+  ${q.type === "speak" ? `<button class="btn" data-act="rec-fetch" data-att="${esc(att.id)}" data-i="${i}">${I.play}播放學生錄音</button>` : ""}
+  ${gradeButtonsHTML(att, i)}</div>`;
+}
+/* 改判按鈕（老師裝置、雲端紀錄、需批改的題型才顯示） */
+function gradeButtonsHTML(att, i) {
+  if (!store.teacherCode || !isRemote(att)) return "";
+  const X = getQ(i, att); if (!X || !GRADE_TYPES.includes(X.q.type) || !att.ans[i]) return "";
+  const a = att.ans[i], sys = a.auto !== undefined ? a.auto : a.correct;
+  return `<div class="grade-bar"><span class="muted" style="font-size:13px">系統判定：${sys ? "對" : "錯"}${a.tmark ? `　老師改判：<b style="color:${a.correct ? "var(--good)" : "var(--bad)"}">${a.correct ? "對" : "錯"}</b>` : ""}</span>
+  <div class="seg sm"><button data-act="t-mark" data-id="${esc(att.id)}" data-i="${i}" data-v="1" aria-pressed="${!!a.tmark && a.correct}">判對</button><button data-act="t-mark" data-id="${esc(att.id)}" data-i="${i}" data-v="0" aria-pressed="${!!a.tmark && !a.correct}">判錯</button>${a.tmark ? `<button data-act="t-mark" data-id="${esc(att.id)}" data-i="${i}" data-v="">還原</button>` : ""}</div></div>`;
+}
+function teacherResultBar(att) {
+  if (!store.teacherCode || !isRemote(att)) return "";
+  const need = gradeIdx(att).length, done = rv(att).done;
+  return `<div class="glass card row" style="justify-content:space-between;gap:10px">
+  <span>${need ? (done ? `<b style="color:var(--good)">${I.check} 已批改完成</b>` : `<b style="color:var(--bad)">待批改</b>・${need} 題需要你判斷（在下方解析裡改判）`) : `<span class="muted">這份沒有需要人工批改的題目</span>`}</span>
+  <div class="row" style="gap:8px">${need ? `<button class="btn ${done ? "ghost" : "primary"}" data-act="t-done" data-id="${esc(att.id)}" data-v="${done ? "" : "1"}">${done ? "改回未批改" : "標記批改完成"}</button>` : ""}
+  <button class="btn danger" data-act="t-del" data-id="${esc(att.id)}">刪除這筆紀錄</button></div></div>`;
+}
+async function teacherPost(body, okMsg) {
+  try { const j = await postSync(Object.assign({ teacherCode: store.teacherCode }, body), 30000); if (okMsg) toast(okMsg); return j; }
+  catch (e) { toast(e.server ? (String(e.message).includes("teacher") ? "老師代碼不對" : String(e.message).includes("locked") ? "老師代碼輸錯太多次，請稍後再試" : "操作失敗") : "連不上網路，請稍後再試"); return null; }
+}
+
 /* ================= 朗讀 ================= */
 let reading = null;
 function stopReading() {
@@ -197,6 +257,37 @@ document.addEventListener("click", async e => {
     case "read-q": readQuestion(); break;
     case "rate": store.settings.rate = +d.v; save(); document.querySelectorAll('[data-act="rate"]').forEach(b => b.setAttribute("aria-pressed", b.dataset.v === d.v)); if (reading) readPassage(); break;
     case "t-pick": store.tWho = d.n; save(); rerenderKeep(); break;
+    case "t-mark": {
+      const id = d.id, i = d.i, v = d.v === "" ? null : d.v === "1";
+      const r = (store.reviews || (store.reviews = {}))[id] || (store.reviews[id] = { done: false, marks: {} });
+      if (v === null) delete r.marks[i]; else r.marks[i] = v;
+      applyReviews(); save(true); rerenderKeep();
+      teacherPost({ action: "review", attemptId: id, marks: { [i]: v } }, v === null ? "已還原系統判定" : `已改判為「${v ? "對" : "錯"}」`);
+      break;
+    }
+    case "t-done": {
+      const id = d.id, done = d.v === "1";
+      const r = (store.reviews || (store.reviews = {}))[id] || (store.reviews[id] = { done: false, marks: {} });
+      r.done = done; save(true); rerenderKeep();
+      teacherPost({ action: "review", attemptId: id, done }, done ? "已標記批改完成" : "已改回未批改");
+      break;
+    }
+    case "t-del": {
+      const att = findAtt(d.id);
+      sheet(`<h3>刪除這筆紀錄？</h3><p class="muted" style="margin:0 0 16px">${esc(att ? (att.who || "未署名") + "・" + att.title : "")}<br>會從雲端成績、批改紀錄和錄音一起刪除，無法復原。如果這位學生的紀錄全部刪光，他也會從學生列表消失。</p>
+      <div class="row" style="justify-content:flex-end"><button class="btn" data-act="close-sheet">取消</button><button class="btn danger" data-act="t-del-now" data-id="${esc(d.id)}">刪除</button></div>`);
+      break;
+    }
+    case "t-del-now": {
+      act.disabled = true; act.textContent = "刪除中…";
+      const j = await teacherPost({ action: "delete", attemptId: d.id }, "已刪除這筆紀錄");
+      if (!j) { act.disabled = false; act.textContent = "刪除"; break; }
+      const imp = store.imported || { attempts: [] };
+      imp.attempts = (imp.attempts || []).filter(a => a.id !== d.id); store.attempts = store.attempts.filter(a => a.id !== d.id);
+      if (store.reviews) delete store.reviews[d.id];
+      save(true); closeSheet(); go("teacher");
+      break;
+    }
     case "t-local": store.tIncludeLocal = store.tIncludeLocal === false; save(); rerenderKeep(); break;
     case "t-import": sheet(`<h3>貼上學生的成績碼</h3><p class="muted" style="margin:0 0 10px">可以一次貼好幾位學生的成績碼，用換行分開。重複的紀錄會自動略過。</p><textarea class="field" id="tcode" style="font-size:12px;min-height:160px" placeholder="EP1:..."></textarea><div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-act="close-sheet">取消</button><button class="btn primary" data-act="t-do-import">匯入</button></div>`); break;
     case "t-do-import": {

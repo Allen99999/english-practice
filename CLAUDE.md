@@ -117,6 +117,8 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
 - 語音檔名由 `tts-text.js` 的 `ttsName(voice, text)` 決定，瀏覽器和 `build_tts_jobs.mjs` 共用同一份程式，改這支要兩邊一起測。
 - repo 是公開的：不要把 Secrets.gs、代碼或學生資料提交進去。
 - 出題會優先出「這個名字還沒做過」的題（app.js 的 seenRefs：從作答紀錄＋暫存即時計算，刪紀錄就算沒做過）。
+- 老師批改：寫作、句子改寫、翻譯、口說（teacher.js 的 GRADE_TYPES）會出現在總覽最上方「待批改」，可逐題改判、標記批改完成；存在試算表 reviews 工作表。
+  老師可刪除紀錄（連同批改紀錄、錄音）；載入成績時以雲端為準，刪掉的紀錄會從總覽消失。
 - 口說錄音：學生自評後上傳到 Allen 雲端硬碟「Apex English 錄音」資料夾（檔名 rec_<attemptId>_<題號>.m4a），老師在解析裡用老師代碼播放。
 - 首頁考試範圍：翰林版國一～國三收在可折疊的群組（依 `range` 含「翰林」判斷）；預設單選，按「複選」才能一次選多冊。
 - 學生身分：沒有帳號，靠「名字＋個人代碼」。第一次作答時自動產生 6 碼代碼（`sync.js` 的 ensureCode），

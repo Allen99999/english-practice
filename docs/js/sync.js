@@ -141,8 +141,8 @@ async function pullRemote() {
     const j = await r.json(); if (!j.ok) throw new Error(j.error || "");
     store.teacherCode = code;
     const imp = store.imported || (store.imported = { attempts: [], vocab: {}, at: 0 });
-    const ids = new Set(imp.attempts.map(a => a.id));
-    j.attempts.forEach(a => { if (!ids.has(a.id)) { imp.attempts.push(a); ids.add(a.id); } });
+    imp.attempts = j.attempts;   // 以雲端為準：老師刪掉的紀錄也會從這裡消失
+    store.reviews = j.reviews || {}; applyReviews();
     imp.at = store.remoteAt = Date.now(); store.remoteCount = j.attempts.length; store.remoteStudents = j.students || [];
     save(true); render(); toast(`載入 ${j.attempts.length} 筆雲端紀錄`);
   } catch (e) { toast(String(e.message).includes("teacher") ? "老師代碼不對" : String(e.message).includes("locked") ? "老師代碼輸錯太多次，請 15 分鐘後再試" : "載入失敗，請檢查網路"); }
