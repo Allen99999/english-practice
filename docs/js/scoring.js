@@ -49,10 +49,13 @@ function attPoints(att) {
 }
 function levelDesc(q, bank, lv) { const r = rubricOf(q, bank); const l = r && r.levels.find(x => x[0] === lv); return l ? l[1] : ""; }
 /* 分數按鈕（自評或老師批改共用）：act = 事件名稱，cur = 目前分數 */
+const SHORT = { 2: ["錯誤", "小錯", "正確"], 5: ["未答", "很弱", "不足", "尚可", "良好", "優秀"] };
 function rubricButtonsHTML(q, bank, act, cur, extra) {
   const r = rubricOf(q, bank); if (!r) return "";
-  return `<div class="rubric"><div class="step-label">${esc(r.name)}</div>${r.levels.map(([lv, d]) =>
-    `<button class="rb ${cur === lv ? "on" : ""}" data-act="${act}" data-v="${lv}" ${extra || ""}><b>${lv}</b><span>${esc(d)}</span></button>`).join("")}</div>`;
+  const short = SHORT[r.max] || [];
+  return `<div class="rubric"><div class="rb-row">${r.levels.map(([lv, d]) =>
+    `<button class="rb ${cur === lv ? "on" : ""}" data-act="${act}" data-v="${lv}" title="${esc(d)}" ${extra || ""}><b>${lv}</b>${short[lv] ? `<span>${short[lv]}</span>` : ""}</button>`).join("")}</div>
+  <div class="muted rb-desc">${cur === null || cur === undefined ? `${esc(r.name)}・把滑鼠移到按鈕上可以看說明` : `${cur} 分：${esc(levelDesc(q, bank, cur))}`}</div></div>`;
 }
 /* 英檢初級寫作成績（官方換算） */
 function geptWritingHTML(att) {

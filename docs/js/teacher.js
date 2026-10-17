@@ -39,7 +39,8 @@ function allAttempts() {
   ((store.imported || {}).attempts || []).forEach(a => add(a, "imported"));
   return out.sort((a, b) => b.date - a.date);
 }
-function findAtt(id) { return store.attempts.find(a => a.id === id) || ((store.imported || {}).attempts || []).find(a => a.id === id); }
+/* 雲端載入的那份優先（有老師的評分）；沒有才用這台裝置上的 */
+function findAtt(id) { return ((store.imported || {}).attempts || []).find(a => a.id === id) || store.attempts.find(a => a.id === id); }
 function vocabOf(who) {
   const m = {};
   const merge = src => Object.values((src || {})[who] || {}).forEach(v => { const x = m[v.k]; if (!x || (v.n || 0) > (x.n || 0)) m[v.k] = v; });
