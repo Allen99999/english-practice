@@ -65,7 +65,7 @@ function doPost(e) {
       switch (body.action) {
         case "submit": return submit_(body);
         case "claim": return claim_(body);
-        case "login": return login_(body);
+        case "login": if (rateLimited_("login", 200)) return json_({ ok: false, error: "busy" }); return login_(body);
         case "setcode": return setcode_(body);
       }
       return json_({ ok: false, error: "unknown action" });
@@ -76,6 +76,11 @@ function doPost(e) {
 function submit_(body) {
   const a = body.attempt || {};
   if (!a.id) return json_({ ok: false, error: "missing attempt" });
+  // 基本檢查：擋掉格式怪異或過大的資料（避免有人亂塞東西進試算表）
+  if (!/^[A-Za-z0-9_-]{4,40}$/.test(String(a.id))) return json_({ ok: false, error: "bad attempt" });
+  if (String(a.who || "").length > 30 || String(a.title || "").length > 200) return json_({ ok: false, error: "bad attempt" });
+  if (JSON.stringify(a).length > 150000) return json_({ ok: false, error: "too large" });
+  if (rateLimited_("submit", 300)) return json_({ ok: false, error: "busy" });
   const name = name_(a.who), code = code_(body.code);
   if (name && name !== "未署名") {
     const st = findStudent_(name);
@@ -91,6 +96,7 @@ function submit_(body) {
   return json_({ ok: true });
 }
 function claim_(body) {
+  if (rateLimited_("claim", 120)) return json_({ ok: false, error: "busy" });
   const name = name_(body.name), code = code_(body.code);
   if (!name) return json_({ ok: false, error: "missing name" });
   if (!CODE_RE.test(code)) return json_({ ok: false, error: "bad code" });
@@ -122,13 +128,24 @@ function doGet(e) {
   const p = (e && e.parameter) || {};
   if (p.action === "ping") return json_({ ok: true });
   if (p.action !== "list") return json_({ ok: false, error: "unknown action" });
-  if (String(p.teacherCode || "") !== TEACHER_CODE) return json_({ ok: false, error: "wrong teacher code" });
+  // 老師代碼連續輸錯 10 次，鎖 15 分鐘（防止有人用程式一直猜）
+  const c = CacheService.getScriptCache();
+  if (Number(c.get("tfail") || 0) >= 10) return json_({ ok: false, error: "locked" });
+  if (String(p.teacherCode || "") !== TEACHER_CODE) { c.put("tfail", String(Number(c.get("tfail") || 0) + 1), 900); return json_({ ok: false, error: "wrong teacher code" }); }
+  c.remove("tfail");
   const sh = sheet_(), st = students_();
   const students = st.getLastRow() < 2 ? [] : st.getRange(2, 1, st.getLastRow() - 1, 2).getValues().map(r => ({ name: name_(r[0]), code: code_(r[1]) }));
   if (sh.getLastRow() < 2) return json_({ ok: true, attempts: [], students: students });
   const rows = sh.getRange(2, 1, sh.getLastRow() - 1, HEADERS.length).getValues();
   const attempts = rows.map(r => { try { return JSON.parse(r[9]); } catch (x) { return null; } }).filter(Boolean);
   return json_({ ok: true, attempts: attempts, students: students });
+}
+
+/* 全站流量限制：同一種動作每 10 分鐘最多 max 次（擋掉灌爆試算表的行為） */
+function rateLimited_(key, max) {
+  const c = CacheService.getScriptCache(), k = "rl:" + key, n = Number(c.get(k) || 0);
+  if (n >= max) return true;
+  c.put(k, String(n + 1), 600); return false;
 }
 
 /* 在編輯器裡手動執行一次，用來授權並建立工作表 */

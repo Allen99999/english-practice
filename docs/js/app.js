@@ -481,7 +481,7 @@ function homeHTML() {
       const done = Object.keys(ses.ans).length;
       h += `<div class="resume"><div style="min-width:0"><div class="row" style="gap:8px"><span class="tag who-tag">${esc(ses.who || "未署名")}</span><span style="font-weight:700;font-size:16px">${esc(ses.title)}</span></div>
       <div class="muted tnum" style="font-size:13.5px;margin-top:4px">已作答 ${done} / ${ses.qs.length} 題・用時 ${fmtTime(ses.elapsed)}・存於 ${fmtDate(ses.saved || ses.started)}</div></div>
-      <div class="row"><button class="btn ghost" data-act="discard" data-id="${ses.id}">刪除</button><button class="btn primary" data-act="resume" data-id="${ses.id}">${I.play}繼續作答</button></div></div>`;
+      <div class="row"><button class="btn ghost" data-act="discard" data-id="${esc(ses.id)}">刪除</button><button class="btn primary" data-act="resume" data-id="${esc(ses.id)}">${I.play}繼續作答</button></div></div>`;
     });
     h += `</div>`;
   }
@@ -961,11 +961,11 @@ function resultHTML(id) {
   // 單字表
   const words = Object.values(att.words || {});
   h += `<div class="glass card" style="display:flex;flex-direction:column;gap:14px"><div class="section-h" style="margin:0;flex-wrap:wrap"><h2>這次的生字表</h2>
-  ${words.length ? `<button class="btn primary" data-act="drill-att" data-id="${att.id}">${I.play}用這些字練習</button>` : ""}</div>
+  ${words.length ? `<button class="btn primary" data-act="drill-att" data-id="${esc(att.id)}">${I.play}用這些字練習</button>` : ""}</div>
   ${words.length ? vtable(words.map(w => ({ k: w.k, pos: w.pos, zh: w.zh, ctx: w.ctx ? [w.ctx] : [] }))) : `<div class="muted">這次沒有標記生字。作答時點一下不會的單字，就會出現在這裡。</div>`}</div>`;
   // 解析
   const wrong = att.qs.map((_, i) => i).filter(i => !(att.ans[i] && att.ans[i].correct));
-  h += `<div class="section-h"><h2>完整解析</h2>${wrong.length && att.kind !== "vocab" ? `<button class="btn" data-act="retry-wrong" data-id="${att.id}">${I.redo}錯題再練（${wrong.length}）</button>` : ""}</div>
+  h += `<div class="section-h"><h2>完整解析</h2>${wrong.length && att.kind !== "vocab" ? `<button class="btn" data-act="retry-wrong" data-id="${esc(att.id)}">${I.redo}錯題再練（${wrong.length}）</button>` : ""}</div>
   <div class="seg" style="align-self:flex-start"><button data-act="rv-filter" data-v="all" aria-pressed="${!rvWrongOnly}">全部</button><button data-act="rv-filter" data-v="wrong" aria-pressed="${rvWrongOnly}">只看錯題（${wrong.length}）</button></div>
   <div class="rv-list">${att.qs.map((r, i) => reviewItem(att, i)).filter((x, i) => !rvWrongOnly || wrong.includes(i)).join("")}</div>`;
   h += `<div class="row" style="justify-content:center;margin-top:8px"><button class="btn" data-act="tab" data-v="home">${I.home}回首頁</button></div></section>`;
@@ -1023,7 +1023,7 @@ function vtable(rows, opts = {}) {
 /* ================= 紀錄 ================= */
 function histItem(a) {
   const p = a.total ? a.score / a.total : 0;
-  return `<button class="hitem" data-act="open-att" data-id="${a.id}"><span class="hs" style="background:color-mix(in srgb,${scoreColor(p)} 16%,transparent);color:${scoreColor(p)}">${Math.round(p * 100)}</span>
+  return `<button class="hitem" data-act="open-att" data-id="${esc(a.id)}"><span class="hs" style="background:color-mix(in srgb,${scoreColor(p)} 16%,transparent);color:${scoreColor(p)}">${Math.round(p * 100)}</span>
   <span class="hm"><span class="ht" style="display:block"><span class="tag who-tag">${esc(a.who || "未署名")}</span> ${esc(a.title)}</span><span class="hd tnum">${fmtDate(a.date)}・${a.score}/${a.total} 題・${fmtTime(a.duration)}・Combo ×${a.maxCombo}・生字 ${Object.keys(a.words || {}).length}</span></span>
   <span style="color:var(--ink-3)">${I.chevR.replace("<svg", '<svg width="18" height="18"')}</span></button>`;
 }
@@ -1041,7 +1041,7 @@ function histHTML() {
   else {
     const avg = list.filter(a => a.kind === "exam").map(a => a.score / a.total);
     if (avg.length) h += `<div class="stats"><div class="stat glass"><div class="k">練習次數</div><div class="v">${list.length}</div></div><div class="stat glass"><div class="k">平均答對率</div><div class="v">${Math.round(avg.reduce((s, x) => s + x, 0) / avg.length * 100)}%</div></div><div class="stat glass"><div class="k">最佳 Combo</div><div class="v" style="color:var(--gold)">×${Math.max(...list.map(a => a.maxCombo))}</div></div><div class="stat glass"><div class="k">作答人</div><div class="v">${names.length}</div></div></div>`;
-    h += `<div class="glass card hist">${list.map(a => `<div style="display:flex;gap:8px;align-items:center">${histItem(a)}<button class="icon-btn" data-act="del-att" data-id="${a.id}" aria-label="刪除這筆" style="flex:none;background:transparent;box-shadow:none;color:var(--ink-3)">${I.x}</button></div>`).join("")}</div>`;
+    h += `<div class="glass card hist">${list.map(a => `<div style="display:flex;gap:8px;align-items:center">${histItem(a)}<button class="icon-btn" data-act="del-att" data-id="${esc(a.id)}" aria-label="刪除這筆" style="flex:none;background:transparent;box-shadow:none;color:var(--ink-3)">${I.x}</button></div>`).join("")}</div>`;
   }
   h += `
   ${typeof syncHistHTML === "function" ? syncHistHTML() : ""}`;

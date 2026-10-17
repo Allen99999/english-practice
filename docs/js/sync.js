@@ -145,7 +145,7 @@ async function pullRemote() {
     j.attempts.forEach(a => { if (!ids.has(a.id)) { imp.attempts.push(a); ids.add(a.id); } });
     imp.at = store.remoteAt = Date.now(); store.remoteCount = j.attempts.length; store.remoteStudents = j.students || [];
     save(true); render(); toast(`載入 ${j.attempts.length} 筆雲端紀錄`);
-  } catch (e) { toast(String(e.message).includes("teacher") ? "老師代碼不對" : "載入失敗，請檢查網路"); }
+  } catch (e) { toast(String(e.message).includes("teacher") ? "老師代碼不對" : String(e.message).includes("locked") ? "老師代碼輸錯太多次，請 15 分鐘後再試" : "載入失敗，請檢查網路"); }
 }
 document.addEventListener("click", e => {
   const act = e.target.closest("[data-act]"); if (!act) return;

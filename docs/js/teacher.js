@@ -98,7 +98,7 @@ function teacherHTML() {
     <div class="chart-wrap"><svg viewBox="0 0 ${W} ${H}" class="trend" role="img" aria-label="最近 ${trend.length} 次的答對率">
     ${[0, 50, 100].map(g => `<line x1="${pad}" x2="${W - pad}" y1="${y(g)}" y2="${y(g)}" class="gridl"/><text x="${pad - 6}" y="${y(g) + 4}" class="axl" text-anchor="end">${g}</text>`).join("")}
     ${trend.map((a, i) => { const p = pct(a.score, a.total); const x = pad + step * i + (step - bw) / 2; const top = y(p); const ht = Math.max(2, y(0) - top);
-      return `<g class="bar-g" data-act="open-att" data-id="${a.id}"><title>${fmtDate(a.date)}｜${a.title}｜${a.score}/${a.total}（${p}%）</title>
+      return `<g class="bar-g" data-act="open-att" data-id="${esc(a.id)}"><title>${fmtDate(a.date)}｜${esc(a.title)}｜${a.score}/${a.total}（${p}%）</title>
       <rect x="${x - 4}" y="10" width="${bw + 8}" height="${H - 30}" fill="transparent"/>
       <path d="M${x},${y(0)} V${top + 4} Q${x},${top} ${x + 4},${top} H${x + bw - 4} Q${x + bw},${top} ${x + bw},${top + 4} V${y(0)} Z" class="barm"/>
       ${i === trend.length - 1 || i === 0 ? `<text x="${x + bw / 2}" y="${top - 6}" class="vall" text-anchor="middle">${p}</text>` : ""}</g>`; }).join("")}
