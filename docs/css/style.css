@@ -504,7 +504,6 @@ details.script summary{cursor:pointer;font-weight:650;color:var(--ink-2)}
 .btn:active,.chip:active,.icon-btn:active,.save-btn:active{transform:scale(.94)}
 .seg button:active,.tile:active{transform:scale(.95)}
 .opt:active{transform:scale(.985)}
-.chip[aria-pressed="true"],.seg button[aria-pressed="true"]{animation:pressPop .4s var(--spring)}
 @keyframes pressPop{0%{transform:scale(.92)}100%{transform:scale(1)}}
 .check{transition:background .25s,box-shadow .25s,transform .4s var(--spring)}
 .check.on{transform:scale(1.06)}
@@ -530,8 +529,8 @@ details.script summary{cursor:pointer;font-weight:650;color:var(--ink-2)}
 .bank-group-body{overflow:hidden}
 
 /* 題目卡片切換 */
-.qcard{animation:riseIn .45s var(--ease-out) both}
-.feedback{animation:riseIn .4s var(--ease-out) both}
+.feedback{animation:none}
+.feedback.fresh{animation:riseIn .4s var(--ease-out) both}
 .sheet{animation:sheetIn .5s var(--spring) both}
 @keyframes sheetIn{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:none}}
 .toast{animation:sheetIn .45s var(--spring) both}
@@ -565,3 +564,32 @@ details.script summary{cursor:pointer;font-weight:650;color:var(--ink-2)}
 .rec-dot{width:10px;height:10px;border-radius:50%;background:var(--bad);display:inline-block}
 .btn.danger .rec-dot{background:#fff;animation:pressPop .8s ease-in-out infinite alternate}
 .ct-in::placeholder{color:var(--ink-3);letter-spacing:.18em}
+
+/* ===== 背景：液態玻璃照片＋緩慢流動＋光澤掃過（淺色模式自動反相成銀白版） ===== */
+.aurora{background:#000}
+.aurora i{display:none}
+.bg-photo{position:absolute;inset:-6%;background:url("../img/bg-2560.jpg") center/cover no-repeat;will-change:transform;
+  animation:bgFlow 48s ease-in-out infinite alternate;transform-origin:50% 45%}
+@media (max-width:900px){.bg-photo{background-image:url("../img/bg-1440.jpg")}}
+@keyframes bgFlow{
+  0%{transform:translate3d(calc(var(--px,0) * 1px),calc(var(--py,0) * 1px),0) scale(1.04) rotate(0deg)}
+  50%{transform:translate3d(calc(-1.5% + var(--px,0) * 1px),calc(1% + var(--py,0) * 1px),0) scale(1.1) rotate(.6deg)}
+  100%{transform:translate3d(calc(1.5% + var(--px,0) * 1px),calc(-1.2% + var(--py,0) * 1px),0) scale(1.07) rotate(-.4deg)}}
+.bg-sheen{position:absolute;inset:-20%;pointer-events:none;mix-blend-mode:screen;opacity:.55;
+  background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.10) 46%,rgba(190,215,255,.16) 50%,rgba(255,255,255,.08) 54%,transparent 62%);
+  animation:sheen 14s ease-in-out infinite}
+@keyframes sheen{0%{transform:translateX(-45%)}55%,100%{transform:translateX(45%)}}
+.aurora::after{opacity:.035}
+/* 淺色模式：把黑底銀線反相成白底銀線 */
+:root:not([data-theme="dark"]) .aurora{background:#f4f5f8}
+:root:not([data-theme="dark"]) .bg-photo{filter:invert(1) hue-rotate(180deg) brightness(1.04) contrast(.92)}
+:root:not([data-theme="dark"]) .bg-sheen{mix-blend-mode:soft-light;opacity:.7}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .aurora{background:#000}
+  :root:not([data-theme="light"]) .bg-photo{filter:none}
+  :root:not([data-theme="light"]) .bg-sheen{mix-blend-mode:screen;opacity:.55}}
+/* 背景遮罩：讓亮線不搶文字 */
+.aurora::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 20%,rgba(0,0,0,.38),rgba(0,0,0,.18) 60%,rgba(0,0,0,.32))}
+:root:not([data-theme="dark"]) .aurora::before{background:radial-gradient(120% 90% at 50% 20%,rgba(255,255,255,.5),rgba(255,255,255,.25) 60%,rgba(255,255,255,.4))}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .aurora::before{background:radial-gradient(120% 90% at 50% 20%,rgba(0,0,0,.38),rgba(0,0,0,.18) 60%,rgba(0,0,0,.32))}}
+.hero .subtitle,.hero .eyebrow,.section-h,.view > .muted{text-shadow:0 1px 10px var(--bg)}

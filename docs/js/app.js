@@ -771,7 +771,8 @@ function commit(resp, el) {
     const t = isMC(q) ? $(`.opt[data-k="${resp}"]`) : card;
     if (t) t.classList.add("shake");
   }
-  const fb = $(".feedback"); if (fb && fb.getBoundingClientRect().bottom > innerHeight - 90) fb.scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "center" });
+  const fb = $(".feedback"); if (fb) fb.classList.add("fresh");   // 只有剛作答時播一次
+  if (fb && fb.getBoundingClientRect().bottom > innerHeight - 90) fb.scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "center" });
 }
 function submitCurrent() {
   const i = S.idx, q = getQ(i).q, w = work(i);
@@ -1247,3 +1248,12 @@ if (window.claude && window.claude.hot) {
   window.claude.hot.snapshot && window.claude.hot.snapshot(() => ({ sessions: store.sessions }));
 }
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+/* 背景視差：滑鼠移動或手機傾斜時，背景跟著微微移動 */
+(() => {
+  const el = document.querySelector(".bg-photo"); if (!el || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  let tx = 0, ty = 0, x = 0, y = 0, raf = 0;
+  const step = () => { x += (tx - x) * .06; y += (ty - y) * .06; el.style.setProperty("--px", x.toFixed(2)); el.style.setProperty("--py", y.toFixed(2)); raf = Math.abs(tx - x) + Math.abs(ty - y) > .05 ? requestAnimationFrame(step) : 0; };
+  const go = (nx, ny) => { tx = nx * 18; ty = ny * 18; if (!raf) raf = requestAnimationFrame(step); };
+  addEventListener("pointermove", e => go(e.clientX / innerWidth - .5, e.clientY / innerHeight - .5), { passive: true });
+  addEventListener("deviceorientation", e => { if (e.gamma != null) go(Math.max(-1, Math.min(1, e.gamma / 30)) / 2, Math.max(-1, Math.min(1, (e.beta - 45) / 30)) / 2); }, { passive: true });
+})();
