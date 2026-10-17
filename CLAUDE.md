@@ -110,7 +110,7 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
   - 語音只做聽力和口說（build_tts_jobs.mjs 會跳過托福的閱讀、寫作和 dict7.js 的單字），托福頁面也不顯示「念題目／朗讀全文」。
   - 寫作、口說是自評＋範文；口說可錄音（只存在學生裝置，不上傳）。結果頁會顯示依答對率估算的 1～6 級分。
   - Allen 提供的「新托福模擬小題本」只當格式參考，內容含 ETS 官方題，不可照搬到網站。
-- **網站名稱與分享預覽**：名稱 Apex English；分享預覽圖是 `docs/og.png`（1200×630，用 Chrome headless 從 HTML 截圖產生），index.html 有 og:／twitter: 標籤。
+- **網站名稱與分享預覽**：名稱 Apex English；分享預覽圖是 `docs/og-v2.png`（換圖時改新檔名，避免 LINE/FB 快取舊圖）（1200×630，用 Chrome headless 從 HTML 截圖產生），index.html 有 og:／twitter: 標籤。
   新題目裡沒收錄的字要加到 `dict*.js`（格式 `word|詞性|中文`）。
 - **改完之後**：`node tools/build_tts_jobs.mjs && .venv/bin/python tools/gen_audio.py`，再 `git add -A && git commit && git push`
 - 單選題的選項順序會在載入時自動平衡，新增題目請加在每份題庫的最後面，已存在的題目不要改 id 或移動位置（舊紀錄靠 id 對應）。
