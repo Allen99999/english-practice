@@ -8,3 +8,5 @@ node_modules/
 *.part
 *.tgz
 samples/
+多次元托福*/
+.claude/

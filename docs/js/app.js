@@ -303,7 +303,7 @@ function grade(q, resp) {
     case "spell": return spellFull(q, resp).toLowerCase() === q.ans.toLowerCase();
     case "trans": case "rewrite": { const n = norm(resp); return transRefs(q).some(r => norm(r) === n); }
     case "essay": case "speak": return !!resp && (typeof resp.level === "number" ? resp.level >= passPts(q) : resp.rate === "ok");
-    case "cword": return norm(resp) === norm(q.ans);
+    case "cword": return [q.ans, ...(q.alt || [])].some(x => norm(x) === norm(resp));
     case "scramble": { const all = q.tiles.concat(q.extra || []); const s = norm(resp.map(i => all[i]).join(" ")); return [q.ans, ...(q.alt || [])].some(a => norm(a) === s); }
     case "match": return resp.every((r, i) => r === i);
     case "error": return resp.tok === q.wrong && q.fix.some(f => norm(f) === norm(resp.fix));
@@ -319,7 +319,7 @@ function correctText(q) {
     case "essay": return "參考範文：" + q.model;
     case "speak": return q.mode === "repeat" ? q.text : "參考回答：" + (q.model || "");
     case "cword": return q.ans;
-    case "scramble": return q.ans;
+    case "scramble": return q.frame ? bsFill(q, q.tiles) : q.ans;
     case "match": return q.left.map((l, i) => `${l} → ${q.right[i]}`).join("；");
     case "error": return `${q.sent.split(" ")[q.wrong].replace(/[.,?!]/g, "")} → ${q.fix[0]}`;
   }
@@ -336,7 +336,7 @@ function respText(q, a) {
     case "essay": return `${r.text || "（空白）"}（${wcount(r.text)} 字・${typeof r.level === "number" ? `自評 ${r.level} / ${maxPts(q)} 分` : `自評${r.rate === "ok" ? "達到要求" : "還需加強"}`}）`;
     case "speak": return typeof r.level === "number" ? `自評 ${r.level} / ${maxPts(q)} 分${a.resp.rec ? "（有錄音）" : ""}` : `自評${r.rate === "ok" ? "達到要求" : "還需加強"}`;
     case "cword": return r || "（空白）";
-    case "scramble": { const all = q.tiles.concat(q.extra || []); return (q.pre ? q.pre + " " : "") + r.map(i => all[i]).join(" ") + (q.post ? " " + q.post : ""); }
+    case "scramble": { const all = q.tiles.concat(q.extra || []); return q.frame ? bsFill(q, r.map(i => all[i])) : (q.pre ? q.pre + " " : "") + r.map(i => all[i]).join(" ") + (q.post ? " " + q.post : ""); }
     case "match": return q.left.map((l, i) => `${l} → ${q.right[r[i]] ?? "?"}`).join("；");
     case "error": return `${(q.sent.split(" ")[r.tok] || "").replace(/[.,?!]/g, "")} → ${r.fix || "?"}`;
   }
@@ -499,6 +499,8 @@ function homeHTML() {
     <div class="who-row"><input id="who" class="field" placeholder="輸入你的名字" autocomplete="off" value="${esc(store.who)}" maxlength="20"></div>
     ${typeof syncHomeHTML === "function" ? syncHomeHTML() : ""}
     ${store.names.length ? `<div class="chips">${store.names.map(n => `<button class="chip" data-act="pick-who" data-n="${esc(n)}" aria-pressed="${n === store.who}">${esc(n)}</button>`).join("")}</div>` : ""}</div></div>`;
+  const fr = store.who && sel.banks.length === 1 && famRoot(sel.banks[0]);
+  if (fr) h += skillBarsHTML(fr, store.attempts.filter(a => (a.who || "未署名") === store.who), store.who, true);
   if (sess.length) {
     h += `<div class="section-h"><h2>已存檔，可繼續</h2><span class="muted" style="font-size:13px">${sess.length} 份</span></div><div class="glass card resume-list">`;
     sess.slice().sort((a, b) => (b.saved || 0) - (a.saved || 0)).forEach(ses => {
@@ -633,9 +635,10 @@ function passageHTML(X, i) {
   } else if (g.kind === "notice") {
     body = g.passage.map((l, k) => `<span class="dl" data-ctx ${k === 0 ? 'style="font-weight:700"' : ""}>${wrapWords(l, m)}</span>`).join("");
   } else {
-    body = g.passage.map(p => `<p data-ctx>${wrapWords(p, m, g.uline)}</p>`).join("");
+    body = insMarks(g.passage.map(p => `<p data-ctx>${wrapWords(p, m, g.uline)}</p>`).join(""), g, insShown(g));
   }
-  return `<div class="glass card passage"><div class="eyebrow">題組・${{ dialogue: "對話", article: "短文", cloze: "克漏字", notice: "公告" }[g.kind]}</div>
+  const toefl = X.bank && /^toefl/.test(X.bank.id);
+  return `<div class="glass card passage"><div class="eyebrow">${toefl ? esc(tagName(X.bank, X.q.tag)) : "題組・" + { dialogue: "對話", article: "短文", cloze: "克漏字", notice: "公告" }[g.kind]}</div>
   <h3 class="ptitle" data-ctx>${wrapWords(g.title, m)}</h3>
   ${S.blind || (X.bank && /^toefl/.test(X.bank.id)) ? "" : `<div class="read-bar"><button class="btn sm" data-act="read-all">${reading ? `${I.stop}<span>停止</span>` : `${I.speaker}<span>朗讀全文</span>`}</button>
   <div class="seg sm">${[0.7, 0.9, 1.1].map(r => `<button data-act="rate" data-v="${r}" aria-pressed="${(store.settings.rate || 0.9) === r}">${r === 0.7 ? "慢" : r === 0.9 ? "中" : "快"}</button>`).join("")}</div></div>`}
@@ -659,6 +662,27 @@ function fillsFor(q, a) {
   const n = blankCount(q.stem); if (!n) return null;
   const parts = n > 1 ? q.opts[q.ans].split(/;\s*/) : [q.opts[q.ans]];
   return parts.length === n ? parts : null;
+}
+/* Build a Sentence 的回應句：固定的字＋空格（空格依序放字卡；點已放的字卡可以拿回來） */
+function bsFrameHTML(q, seq, all, locked) {
+  let k = 0;
+  return q.frame.split(/(_)/).map(p => {
+    if (p !== "_") { const t = p.trim(); return t ? `<span class="bs-fix ${/^[?.!,]+$/.test(t) ? "punct" : ""}">${esc(t)}</span>` : ""; }
+    const j = k++, t = seq[j];
+    return t !== undefined && t !== null ? `<button class="tile" data-act="slot" data-k="${j}" ${locked ? "disabled" : ""}>${esc(all[t])}</button>` : `<span class="bs-blank"></span>`;
+  }).join("");
+}
+function bsFill(q, words) { let k = 0; return q.frame.replace(/_/g, () => words[k++] || "___").replace(/\s+([?.!,])/g, "$1"); }
+/* 句子插入題：把文章裡的 ■ 編號；show = 把句子放進正確的位置（練習答完、看解析時） */
+function insMarks(html, g, show) {
+  if (!html.includes("■")) return html;
+  const iq = g.qs.find(x => x.ins); let n = 0;
+  return html.replace(/■/g, () => { const j = n++; return `<b class="ins-mk">■<small>${j + 1}</small></b>${show && iq && j === iq.ans ? `<span class="ins-sent">${esc(iq.ins)}</span>` : ""}`; });
+}
+function insShown(g) {
+  const iq = g.qs.find(x => x.ins); if (!iq || S.blind) return false;
+  const k = S.qs.findIndex((r, j) => { const y = getQ(j); return y && y.group === g && y.q.id === iq.id; });
+  return k >= 0 && !!S.ans[k];
 }
 function questionBody(X, i, a, review) {
   const q = X.q, m = review ? (review.words || {}) : S.words, locked = !!a;
@@ -713,6 +737,7 @@ function questionBody(X, i, a, review) {
     const sub = locked || st.submitted; const txt = locked ? a.resp.text : (st.val || "");
     h += `<div class="eyebrow">${esc(q.label || "段落寫作")}</div><div class="stem" style="font-size:17px">${esc(q.prompt)}</div>
     ${q.scenario ? `<div class="boxed" style="font-size:16px">${esc(q.scenario)}${q.bullets ? `<ul style="margin:8px 0 0;padding-left:22px">${q.bullets.map(b => `<li>${esc(b)}</li>`).join("")}</ul>` : ""}</div>` : ""}
+    ${q.mail ? `<div class="mailhead"><div><span>To</span>${esc(q.mail.to)}</div><div><span>Subject</span>${esc(q.mail.subject)}</div></div>` : ""}
     ${q.posts ? `<div class="posts">${q.posts.map(([who, t], k) => `<div class="post ${k ? "" : "prof"}"><div class="post-who">${esc(who)}</div><div data-ctx>${wrapWords(t, m)}</div></div>`).join("")}</div>` : ""}
     ${q.img ? `<img class="essay-img" src="${esc(q.img)}" alt="看圖寫作的圖片" onerror="this.remove()">` : ""}
     ${q.scenes ? `<div class="scenes">${q.scenes.map((s, k) => `<div class="scene"><span class="sn">${k + 1}</span><span data-ctx>${wrapWords(s, m)}</span></div>`).join("")}</div>` : ""}
@@ -725,12 +750,12 @@ function questionBody(X, i, a, review) {
     ${locked ? "" : selfButtonsHTML(q, X.bank, "essay-rate")}`}`;
   }
   else if (q.type === "scramble") {
-    const seq = locked ? a.resp : (st.seq || []), all = q.tiles.concat(q.extra || []);
+    const seq = locked ? a.resp : (st.seq || []), all = q.tiles.concat(q.extra || []), full = seq.length === q.tiles.length && !seq.includes(null);
     h += `<div class="eyebrow">${q.ctx ? "Build a Sentence：用字卡完成回應的句子" + (q.extra && q.extra.length ? "（有一張字卡用不到）" : "") : "把字卡排成正確的句子"}</div>${q.zh ? `<div class="zh">${esc(q.zh)}</div>` : ""}
     ${q.ctx ? `<div class="bs-ctx" data-ctx>${wrapWords(q.ctx, m)}</div>` : ""}
-    <div class="bs-line">${q.pre ? `<span class="bs-fix">${esc(q.pre)}</span>` : ""}<div class="slots ${seq.length ? "" : "empty"}">${seq.map((t, k) => `<button class="tile" data-act="slot" data-k="${k}" ${locked ? "disabled" : ""}>${esc(all[t])}</button>`).join("")}</div>${q.post ? `<span class="bs-fix">${esc(q.post)}</span>` : ""}</div>
+    ${q.frame ? `<div class="bs-line frame">${bsFrameHTML(q, seq, all, locked)}</div>` : `<div class="bs-line">${q.pre ? `<span class="bs-fix">${esc(q.pre)}</span>` : ""}<div class="slots ${seq.length ? "" : "empty"}">${seq.map((t, k) => `<button class="tile" data-act="slot" data-k="${k}" ${locked ? "disabled" : ""}>${esc(all[t])}</button>`).join("")}</div>${q.post ? `<span class="bs-fix">${esc(q.post)}</span>` : ""}</div>`}
     ${locked ? "" : `<div class="tiles">${(st.perm || all.map((_, k) => k)).map(t => `<button class="tile ${seq.includes(t) ? "used" : ""}" data-act="tile" data-k="${t}">${esc(all[t])}</button>`).join("")}</div>
-    <div class="row"><button class="btn ghost" data-act="scr-reset">清除</button><button class="btn primary" data-act="submit" ${seq.length === q.tiles.length ? "" : "disabled"}>確認</button></div>`}`;
+    <div class="row"><button class="btn ghost" data-act="scr-reset">清除</button><button class="btn primary" data-act="submit" ${full ? "" : "disabled"}>確認</button></div>`}`;
   }
   else if (q.type === "match") {
     const PC = Array(6).fill("var(--accent)");
@@ -809,7 +834,7 @@ function submitCurrent() {
   if (q.type === "spell") { const v = $("#spellin").value.trim(); if (!v) { toast("先填入字母"); return; } commit(v); }
   else if (q.type === "trans" || q.type === "rewrite") { const v = $("#transin").value.trim(); if (!v) { toast("先輸入英文句子"); return; } commit(v); }
   else if (q.type === "order") { if ((w.pick || []).length === q.items.length) commit(w.pick.slice()); }
-  else if (q.type === "scramble") { if ((w.seq || []).length === q.tiles.length) commit(w.seq.slice()); }
+  else if (q.type === "scramble") { if ((w.seq || []).length === q.tiles.length && !w.seq.includes(null)) commit(w.seq.slice()); }
   else if (q.type === "match") { const arr = q.left.map((_, k) => w.pairs[k]); if (arr.every(v => v !== undefined && v !== null)) commit(arr); }
   else if (q.type === "error") {
     if (w.tok === undefined || w.tok === null) { toast("先點出錯誤的字"); return; }
@@ -878,6 +903,7 @@ function sentenceOf(el, word) {
   box.querySelectorAll(".spk").forEach(x => x.remove());
   box.querySelectorAll(".blank:not(.filled)").forEach(x => x.textContent = "___");
   box.querySelectorAll(".cz").forEach(x => x.textContent = " ___ ");
+  box.querySelectorAll(".ins-mk,.ins-sent").forEach(x => x.remove());
   const txt = box.textContent.replace(/\s+/g, " ").trim();
   const sents = txt.match(/[^.!?]+[.!?"]*/g) || [txt];
   const re = new RegExp("\\b" + word.replace(/[^a-z'-]/gi, "") + "\\b", "i");
@@ -1026,7 +1052,7 @@ function reviewItem(att, i) {
   let body = "";
   if (X.group && X.group.kind === "listening") body += `<details class="pfold"><summary><span class="muted">聽力原文：${esc(X.group.title)}</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext dialogue" style="margin-top:8px;font-size:15.5px">${listenGroupScript(X.group).map(l => `<p>${esc(l)}</p>`).join("")}</div></details>`;
   else if (X.group && X.group.kind === "ctest") body += `<div class="ptext" style="font-size:15.5px">${esc(X.group.passage[0].replace(/\{([^}]*)\}/g, "$1"))}</div>`;
-  else if (X.group) body += `<details class="pfold"><summary><span class="muted">題組：${esc(X.group.title)}（展開文章）</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext ${X.group.kind}" style="margin-top:8px;font-size:15.5px">${X.group.passage.map(p => `<p>${esc(p).replace(/\[\[(\d)\]\]/g, '<span class="cz">$1</span>')}</p>`).join("")}</div></details>`;
+  else if (X.group) body += `<details class="pfold"><summary><span class="muted">題組：${esc(X.group.title)}（展開文章）</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext ${X.group.kind}" style="margin-top:8px;font-size:15.5px">${insMarks(X.group.passage.map(p => `<p>${esc(p).replace(/\[\[(\d)\]\]/g, '<span class="cz">$1</span>')}</p>`).join(""), X.group, true)}</div></details>`;
   body += `<div>${questionReview(q)}</div>`;
   body += `<dl class="kv"><dt>你的答案</dt><dd class="${a && a.correct ? "ans-ok" : "ans-no"}" style="${a && a.correct ? "" : "text-decoration:none"}">${esc(respText(q, a))}${a && a.claim ? "（學生反應：我寫的也對）" : ""}${a && (a.self || a.tmark || rubricOf(q, X.bank)) ? `（${a.tmark ? "老師評分" : a.self || q.type === "essay" || q.type === "speak" ? "自評" : "得分"} ${ptsOf(q, X.bank, a)} / ${maxPts(q, X.bank)}）` : ""}${a && a.hint ? ` <span class="tag">用了提示</span>` : ""}</dd>
   <dt>正確答案</dt><dd class="ans-ok">${esc(correctText(q))}</dd>
@@ -1048,7 +1074,7 @@ function questionReview(q) {
   if (q.type === "trans") return `<div style="font-weight:650">${esc(q.zh)}</div>`;
   if (q.type === "rewrite") return `<div class="muted">${esc(q.instr)}</div>${[].concat(q.src).map(s => `<div style="font-weight:650">${esc(s)}</div>`).join("")}`;
   if (q.type === "essay") return `<div>${esc(q.prompt)}</div>${q.scenario ? `<div class="muted">${esc(q.scenario)}</div>` : ""}${(q.bullets || []).map(b => `<div class="muted">• ${esc(b)}</div>`).join("")}${(q.posts || []).map(([w, t]) => `<div class="muted"><b>${esc(w)}：</b>${esc(t)}</div>`).join("")}${(q.scenes || []).map((s, k) => `<div class="muted">${k + 1}. ${esc(s)}</div>`).join("")}<div style="margin-top:8px"><b>參考範文：</b>${esc(q.model)}</div>`;
-  if (q.type === "scramble") return `${q.ctx ? `<div>${esc(q.ctx)}</div>` : ""}<div style="font-weight:650">${esc(q.zh || "")}</div><div class="muted">${q.tiles.concat(q.extra || []).map(esc).join(" / ")}</div>`;
+  if (q.type === "scramble") return `${q.ctx ? `<div>${esc(q.ctx)}</div>` : ""}<div style="font-weight:650">${esc(q.frame ? q.frame.replace(/_/g, "____") : q.zh || "")}</div><div class="muted">${q.tiles.concat(q.extra || []).map(esc).join(" / ")}</div>`;
   if (q.type === "cword") return `<div>${esc(q.pre)}<b>${"_".repeat(q.miss.length)}</b></div>`;
   if (q.type === "speak") return `${q.scenario ? `<div class="muted">${esc(q.scenario)}</div>` : ""}<div style="font-weight:650">${esc(q.text)}</div>${q.model ? `<div style="margin-top:8px"><b>參考回答：</b>${esc(q.model)}</div>` : ""}`;
   if (q.type === "match") return `<div>${esc(q.stem)}</div>`;
@@ -1068,6 +1094,47 @@ function vtable(rows, opts = {}) {
 }
 
 /* ================= 紀錄 ================= */
+/* ================= 聽說讀寫進度：長條＝做過的題目佔這部分總題數（練習題＋正式模擬卷），顏色＝答對率 ================= */
+const SKILLS = [["l", "聽", "Listening", /^(Listening|聽力)/], ["s", "說", "Speaking", /^(Speaking|口說)/], ["r", "讀", "Reading", /^(Reading|閱讀)/], ["w", "寫", "Writing", /^(Writing|寫作)/]];
+function skillOf(b, tag) { const n = tagName(b, tag), k = SKILLS.find(x => x[3].test(n)); return k ? k[0] : null; }
+/* 有正式模擬卷的題庫（英檢、托福）＋它的模擬卷算同一組 */
+function famRoot(id) { const b = bankById(id); if (!b) return null; return b.mockPapers ? b : BANKS.find(x => (x.mockPapers || []).includes(id)) || null; }
+function famRoots(atts) { const set = new Set(); atts.forEach(a => (a.qs || []).forEach(r => { if (typeof r === "string") { const f = famRoot(r.split(":")[0]); if (f) set.add(f); } })); return [...set]; }
+function skillStats(root, atts) {
+  const ids = [root.id, ...(root.mockPapers || [])], st = {};
+  SKILLS.forEach(([k]) => st[k] = { total: 0, done: 0, pts: 0, max: 0, tags: [] });
+  ids.forEach(id => { const b = bankById(id); if (b) b.items.forEach(it => { const k = skillOf(b, it.tag); if (!k) return; st[k].total += it.type === "group" ? it.qs.length : 1; if (id === root.id && !st[k].tags.includes(it.tag)) st[k].tags.push(it.tag); }); });
+  const seen = new Set();   // 同一題做過好幾次：只算最近一次
+  atts.slice().sort((a, b) => (b.date || 0) - (a.date || 0)).forEach(att => (att.qs || []).forEach((r, i) => {
+    if (typeof r !== "string" || seen.has(r) || !ids.includes(r.split(":")[0])) return;
+    const a = (att.ans || {})[i], X = a && getQ(i, att); if (!X) return;
+    const k = skillOf(X.bank, X.q.tag); if (!k) return;
+    seen.add(r); st[k].done++; st[k].max += maxPts(X.q, X.bank); st[k].pts += ptsOf(X.q, X.bank, a);
+  }));
+  return st;
+}
+function skillBarsHTML(root, atts, who, canGo) {
+  const st = skillStats(root, atts), rows = SKILLS.filter(([k]) => st[k].total);
+  if (!rows.length) return "";
+  const acc = k => st[k].max ? st[k].pts / st[k].max : null;
+  const tried = rows.filter(([k]) => st[k].done >= 5).sort((x, y) => acc(x[0]) - acc(y[0]));
+  const weak = tried.length > 1 && acc(tried[0][0]) < .85 ? tried[0][0] : null, none = rows.filter(([k]) => !st[k].done);
+  const tip = !rows.some(([k]) => st[k].done) ? "還沒有作答紀錄，做完第一回就會顯示各部分的進度。"
+    : none.length ? `${none.map(x => `${x[2]}（${x[1]}）`).join("、")}還沒練習過，建議先各做一回，才看得出哪裡弱。`
+    : weak ? `${rows.find(x => x[0] === weak)[2]}（${rows.find(x => x[0] === weak)[1]}）答對率最低，建議優先加強這部分。`
+    : tried.length < rows.length ? "有些部分題數還太少，多做幾題結果會更準。" : "各部分表現平均，可以用正式模擬卷檢驗整體實力。";
+  return `<div class="glass card skills"><div class="section-h" style="margin:0"><h2>聽說讀寫進度${who ? `・${esc(who)}` : ""}</h2><span class="tag">${esc(root.title.replace(/（.*?）/, ""))}</span></div>
+  ${rows.map(([k, zh, en]) => {
+    const s = st[k], cov = s.done / s.total, p = acc(k), col = s.done ? scoreColor(p) : "var(--ink-3)";
+    return `<div class="sk-row"><div class="sk-name"><b>${zh}</b><span>${en}</span></div>
+    <div class="sk-bar" title="完成度 ${Math.round(cov * 100)}%"><i style="width:${Math.max(cov * 100, s.done ? 1.5 : 0)}%;background:${col}"></i></div>
+    <div class="sk-meta"><span class="tnum">已做 <b>${s.done}</b> / ${s.total} 題（${Math.round(cov * 100)}%）</span>${s.done ? `<span class="tnum">答對率 <b style="color:${col}">${Math.round(p * 100)}%</b></span>` : ""}
+    ${!s.done ? `<span class="tag none">還沒練習</span>` : k === weak ? `<span class="tag weak">建議加強</span>` : ""}
+    ${canGo ? `<button class="chip" data-act="skill-go" data-b="${esc(root.id)}" data-k="${k}" style="min-height:28px;padding:0 10px;font-size:12.5px">練這部分</button>` : ""}</div></div>`;
+  }).join("")}
+  <div class="sk-tip">${esc(tip)}</div>
+  <div class="muted" style="font-size:12px">長條長度＝做過的題目佔這部分總題數（練習題＋正式模擬卷，同一題只算一次）；顏色＝最近一次作答的得分率：綠 ≥ 85%、黃 ≥ 60%、紅 &lt; 60%。寫作、口說依自評或老師評分計算。</div></div>`;
+}
 function histItem(a) {
   const p = a.total ? a.score / a.total : 0;
   return `<button class="hitem" data-act="open-att" data-id="${esc(a.id)}"><span class="hs" style="background:color-mix(in srgb,${scoreColor(p)} 16%,transparent);color:${scoreColor(p)}">${Math.round(p * 100)}</span>
@@ -1088,6 +1155,8 @@ function histHTML() {
   else {
     const avg = list.filter(a => a.kind === "exam").map(a => a.score / a.total);
     if (avg.length) h += `<div class="stats"><div class="stat glass"><div class="k">練習次數</div><div class="v">${list.length}</div></div><div class="stat glass"><div class="k">平均答對率</div><div class="v">${Math.round(avg.reduce((s, x) => s + x, 0) / avg.length * 100)}%</div></div><div class="stat glass"><div class="k">最佳 Combo</div><div class="v" style="color:var(--gold)">×${Math.max(...list.map(attCombo))}</div></div><div class="stat glass"><div class="k">作答人</div><div class="v">${names.length}</div></div></div>`;
+    const hw = store.histWho || (names.length === 1 ? names[0] : "");
+    if (hw) famRoots(list).forEach(fr => h += skillBarsHTML(fr, list, names.length > 1 ? hw : "", false));
     h += `<div class="glass card hist">${list.map(a => `<div style="display:flex;gap:8px;align-items:center">${histItem(a)}<button class="icon-btn" data-act="del-att" data-id="${esc(a.id)}" aria-label="刪除這筆" style="flex:none;background:transparent;box-shadow:none;color:var(--ink-3)">${I.x}</button></div>`).join("")}</div>`;
   }
   h += `
@@ -1139,6 +1208,12 @@ document.addEventListener("click", e => {
     case "multi": sel.multi = !sel.multi; if (!sel.multi && sel.banks.length > 1) { sel.banks = sel.banks.slice(-1); toast("已改回單選，只保留最後選的範圍"); } save(); rerenderKeep(); break;
     case "gmock": sel.gMock = +d.v; sel.mode = +d.v ? "exam" : "custom"; save(); rerenderKeep(); break;
     case "gpart": sel.gPart = +d.v; save(); rerenderKeep(); break;
+    case "skill-go": {   // 從進度條直接練某一部分：隨機組卷、只勾這部分的題型
+      const b = bankById(d.b); if (!b) break;
+      sel.banks = [b.id]; sel.gMock = 0; sel.mode = "custom"; sel.tags = Object.keys(b.tags).filter(t => skillOf(b, t) === d.k);
+      save(); rerenderKeep(); setTimeout(() => { const c = document.querySelector(".bank .check.on"); if (c) c.closest(".bank").scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "start" }); }, 60);
+      toast(`已選好 ${b.title} 的 ${SKILLS.find(x => x[0] === d.k)[2]} 題型，可以按開始作答`); break;
+    }
     case "exam-pick": {
       const b = bankById(d.id); const own = Object.keys(b.tags);
       sel.tags = sel.tags.filter(t => !own.includes(t)).concat(d.i === "all" ? own : b.exams[+d.i].tags);
@@ -1203,8 +1278,10 @@ document.addEventListener("click", e => {
     case "selfok": case "selfpts": { const a = S.ans[S.idx], X = getQ(S.idx), v = d.v === undefined ? maxPts(X.q, X.bank) : +d.v; a.pts = v; a.correct = v >= passPts(X.q, X.bank); a.self = true; save(); rerenderKeep(); break; }
     case "opick": { const w2 = work(S.idx); const p = w2.pick || (w2.pick = []); const k = +d.k; const i = p.indexOf(k); if (i >= 0) p.splice(i); else p.push(k); save(); rerenderKeep(); break; }
     case "order-reset": work(S.idx).pick = []; save(); rerenderKeep(); break;
-    case "tile": { const w2 = work(S.idx); (w2.seq || (w2.seq = [])).push(+d.k); save(); rerenderKeep(); break; }
-    case "slot": { const w2 = work(S.idx); w2.seq.splice(+d.k, 1); save(); rerenderKeep(); break; }
+    case "tile": { const w2 = work(S.idx), q2 = getQ(S.idx).q, sq = w2.seq || (w2.seq = []), h0 = sq.indexOf(null);
+      if (q2.frame && h0 >= 0) sq[h0] = +d.k; else if (sq.length < q2.tiles.length) sq.push(+d.k); save(); rerenderKeep(); break; }
+    case "slot": { const w2 = work(S.idx), q2 = getQ(S.idx).q;
+      if (q2.frame) { w2.seq[+d.k] = null; while (w2.seq.length && w2.seq[w2.seq.length - 1] === null) w2.seq.pop(); } else w2.seq.splice(+d.k, 1); save(); rerenderKeep(); break; }
     case "scr-reset": work(S.idx).seq = []; save(); rerenderKeep(); break;
     case "m-left": { const w2 = work(S.idx); const k = +d.k; if (w2.pairs[k] !== undefined && w2.pairs[k] !== null) { delete w2.pairs[k]; w2.selL = null; } else w2.selL = w2.selL === k ? null : k; save(); rerenderKeep(); break; }
     case "m-right": {
@@ -1229,7 +1306,8 @@ document.addEventListener("click", e => {
     case "drill-att": { const att = findAtt(d.id); startDrill(Object.values(att.words || {}), "單字練習・" + att.title.split("・")[0], att.who); break; }
     case "retry-wrong": {
       const att = findAtt(d.id);
-      const refs = att.qs.filter((r, i) => !(att.ans[i] && att.ans[i].correct));
+      const refs = att.qs.filter((r, i) => !(att.ans[i] && att.ans[i].correct) && getQ(i, att));   // 已從題庫刪除的題目不能重練
+      if (!refs.length) { toast("這些錯題已經從題庫移除了"); break; }
       newSession(refs, { kind: "exam", who: att.who, title: "錯題重練・" + att.title.split("・")[0], banks: att.banks });
       break;
     }
@@ -1293,6 +1371,10 @@ render = function () { if (view === "quiz" && S) prepWork(S.idx); _render(); };
 /* ================= 啟動 ================= */
 function start(data) {
   if (data && data.sessions && !store.sessions.length) store.sessions = data.sessions;
+  // 題庫改版後，暫存裡有已刪除題目的那一份無法繼續作答，直接移除
+  const ok = r => typeof r !== "string" || QX[r], n0 = store.sessions.length;
+  store.sessions = store.sessions.filter(x => (x.qs || []).every(ok) && (x.adaptive || []).every(p => ["router", "lower", "upper"].every(k => (p[k] || []).every(ok))));
+  if (store.sessions.length !== n0) save(true);
   fxInit();
   render();
 }

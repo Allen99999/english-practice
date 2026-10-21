@@ -29,24 +29,48 @@ const listenImages = b => b.items.forEach(it => { if (it.type === "listen" && (i
 
 /* ===== 托福（2026 新制）出題工具 ===== */
 /* Complete the Words：text 裡用 字首{缺的字母} 標出空格，例如 "manu{scripts}"；每個空格算一題 */
-const CT = (id, tag, title, text, exp) => {
+const CT = (id, tag, title, text, exp, alts) => {
   const qs = []; let k = 0;
-  text.replace(/([A-Za-z'-]*)\{([A-Za-z'-]+)\}/g, (m, pre, miss) => { k++; qs.push({ id: id + "-" + k, type: "cword", blank: k, pre, miss, ans: pre + miss, exp: exp || "" }); return m; });
+  text.replace(/([A-Za-z'-]*)\{([A-Za-z'-]+)\}/g, (m, pre, miss) => { k++; qs.push({ id: id + "-" + k, type: "cword", blank: k, pre, miss, ans: pre + miss, alt: (alts || {})[pre + miss], exp: exp || "" }); return m; });
   return { id, type: "group", tag, kind: "ctest", title, passage: [text], qs };
 };
+/* Complete the Words（自動挖空，照 ETS 的 C-test 規則）：第一句完整；從第二句起每隔一個字挖掉後半（保留前 ⌊n/2⌋ 個字母），共 10 格；
+   輪到的字如果是大寫（專有名詞、句首）、單一字母或有連字號，就順延到下一個字 */
+const ctGaps = (text, n = 10) => {
+  const cut = text.search(/[.!?]\s+[A-Z]/) + 1; let k = 0, par = 0;
+  return text.slice(0, cut) + text.slice(cut).replace(/[A-Za-z][A-Za-z'’-]*/g, w => {
+    if (k >= n || par++ % 2 === 0) return w;
+    if (!/^[a-z]{2,}$/.test(w)) { par--; return w; }
+    k++; const h = Math.floor(w.length / 2); return w.slice(0, h) + "{" + w.slice(h) + "}";
+  });
+};
+/* alts：也算對的其他字，例如 { their: ["these"] }（同樣長度、前後文也通的字） */
+const CTW = (id, tag, title, text, alts, exp) => CT(id, tag, title, ctGaps(text), exp, alts);
 /* 聽力題組：一段錄音後接幾題（題目和選項印出來）；script 用 "W: " "M: " "N: "（旁白）"WB: "（英國腔）… */
 const LG = (id, tag, title, script, qs) => ({ id, type: "group", tag, kind: "listening", title, passage: script, qs,
   v2: [...id].reduce((s, c) => s + c.charCodeAt(0), 0) % 2 === 1 });
-/* Build a Sentence：ctx = 對方說的話；pre / post = 固定的開頭結尾；tiles 照正確順序；extra = 多出來不用的干擾字卡 */
-const BS = (id, tag, ctx, pre, tiles, post, extra, exp) => ({ id, type: "scramble", tag, zh: "", ctx, pre, post, tiles, extra: extra || [], ans: tiles.join(" "), hint: "", exp });
+/* Build a Sentence：ctx = 對方說的話；frame = 回應句，_ 是要放字卡的空格（固定的字可以在任何位置，例如 "Do you know if _ _ _ _?"）；
+   tiles 照正確順序；extra = 多出來不用的干擾字卡；alt = 其他也對的排法（字卡用空白連起來） */
+const BS = (id, tag, ctx, frame, tiles, extra, exp, alt) => {
+  if ((frame.match(/_/g) || []).length !== tiles.length) console.warn("Build a Sentence 空格數和字卡數不符：", id);
+  return { id, type: "scramble", tag, zh: "", ctx, frame, tiles, extra: extra || [], ans: tiles.join(" "), alt, hint: "", exp };
+};
+/* Read in Daily Life（kind notice：第一行粗體）／Academic Passage（uline = 詞彙題要畫底線的字） */
+const DL = (id, tag, title, lines, qs) => ({ id, type: "group", tag, kind: "notice", title, passage: lines, qs });
+const AP = (id, tag, title, paras, uline, qs) => ({ id, type: "group", tag, kind: "article", title, passage: paras, uline: uline || [], qs });
+/* 句子插入題：文章裡用 ■ 標出四個位置（畫面會自動編號 1～4）；ans = 0～3。選項順序固定 */
+const INS = (id, sentence, ans, exp) => ({ id, type: "mc", ins: sentence, fixedOrder: true,
+  stem: "Look at the four squares [■] in the passage. Where would the following sentence best fit?", box: [sentence],
+  opts: ["Square 1", "Square 2", "Square 3", "Square 4"], ans, hint: "看插入句的代名詞、連接詞，和前後句的邏輯。", exp });
 /* Write an Email／Academic Discussion：自評＋範文 */
-const EMAIL_CHECK = ["寫到情境要求的每一個重點", "開頭稱呼、結尾署名都有，語氣有禮貌", "大約 80～120 字，段落清楚", "用了連接詞（First, Also, However, Therefore…）", "文法、拼字、標點檢查過"];
-const DISC_CHECK = ["清楚表達自己的立場", "至少一個理由，並用例子或細節支持", "回應或提到其他同學的觀點", "至少 100 字", "用了轉折或連接詞（However, For example, In addition…）"];
-const EM = (id, tag, scenario, bullets, model, exp) => ({ id, type: "essay", tag, label: "Write an Email", minWords: 80, check: EMAIL_CHECK,
-  prompt: "You will read some information and use the information to write an email. You will have 7 minutes to write the email.", scenario, bullets, model, exp, keywords: null });
+const EMAIL_CHECK = ["三個要求都寫到了，而且每一點都有具體細節（時間、原因、例子）", "有稱呼、開頭說明來意、結尾與署名，語氣符合收件人的身分", "建議 120 字以上（7 分鐘內盡量多寫完整的句子）", "句型有變化（I was wondering if…／Since…／so that…），不是一直用簡單句", "文法、拼字、標點都檢查過"];
+const DISC_CHECK = ["第一句就清楚回答教授的問題", "提出自己的新理由，不只是重複同學說過的話", "用具體例子、數據或親身經驗支持", "至少 100 字（高分回答多在 120～180 字）", "用了轉折與連接詞（While…／Admittedly…／For instance…）"];
+const EM = (id, tag, scenario, bullets, to, subject, model, exp) => ({ id, type: "essay", tag, label: "Write an Email", minWords: 120, check: EMAIL_CHECK,
+  prompt: "You will read some information and use the information to write an email. You will have 7 minutes to write the email. Write as much as you can and in complete sentences.",
+  scenario, bullets, mail: { to, subject }, model, exp, keywords: null });
 const AD = (id, tag, course, professor, posts, model, exp) => ({ id, type: "essay", tag, label: "Academic Discussion", minWords: 100, check: DISC_CHECK,
-  prompt: `Your professor is teaching a class on ${course}. Write a post responding to the professor's question. In your response, express and support your opinion and make a contribution to the discussion in your own words. An effective response will contain at least 100 words. You have 10 minutes.`,
+  prompt: `Your professor is teaching a class on ${course}. Write a post responding to the professor's question. In your response, you should express and support your opinion and make a contribution to the discussion in your own words. An effective response will contain at least 100 words. You have 10 minutes to write.`,
   posts: [professor].concat(posts), model, exp, keywords: null });
 /* 口說：Listen and Repeat（聽一句、照著說）／Take an Interview（回答訪問的問題） */
-const SR = (id, tag, scenario, line, exp) => ({ id, type: "speak", mode: "repeat", tag, scenario, script: [line], text: line.replace(/^[A-Z]{1,2}\d?: /, ""), exp: exp || "重點：完整、正確地照原句說出來，注意重音和語調。", secs: 12 });
+const SR = (id, tag, scenario, line, exp) => ({ id, type: "speak", mode: "repeat", tag, scenario, script: [line], text: line.replace(/^[A-Z]{1,2}\d?: /, ""), exp: exp || "重點：完整、正確地照原句說出來，注意重音和語調。", secs: Math.max(8, Math.ceil(line.split(/\s+/).length * 0.75)) });
 const SI = (id, tag, scenario, question, model, exp) => ({ id, type: "speak", mode: "interview", tag, scenario, script: [question], text: question.replace(/^[A-Z]{1,2}\d?: /, ""), model, exp, secs: 45 });

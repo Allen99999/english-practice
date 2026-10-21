@@ -92,6 +92,7 @@ function teacherHTML() {
   <div class="stat glass"><div class="k">平均答對率</div><div class="v" style="color:${scoreColor(avg / 100)}">${exams.length ? avg + "%" : "—"}</div></div>
   <div class="stat glass"><div class="k">最佳成績</div><div class="v">${exams.length ? best + "%" : "—"}</div></div>
   <div class="stat glass"><div class="k">總練習時間</div><div class="v">${fmtTime(mine.reduce((s, a) => s + (a.duration || 0), 0))}</div></div></div>`;
+  famRoots(mine).forEach(fr => h += skillBarsHTML(fr, mine, "", false));
 
   /* 成績走勢：單一數列長條圖（舊→新） */
   const trend = exams.slice(0, 12).reverse();

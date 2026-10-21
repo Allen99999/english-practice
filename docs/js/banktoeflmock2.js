@@ -1,221 +1,259 @@
 /* ================================ TOEFL 正式模擬卷 2 ================================ */
 toeflMock(2, [
-/* ===== Reading：第一階段 ===== */
-RT(CT("rc1","r1","Rainforest Layers","Tropical rainforests are often described as having several distinct layers. T{he} tallest tr{ees} form t{he} emergent la{yer}, rising ab{ove} the den{se} canopy be{low}. The can{opy} itself bl{ocks} most sunlight, so pla{nts} on the forest floor must survive with very little light.")),
-RT(G("rd1","r2","notice","Notice: Printing Credits",[
-  "IT Services Update",
-  "Starting this semester, every student receives 300 free printing credits. Black-and-white pages use one credit, and color pages use five. Unused credits do not carry over to the next semester. Additional credits can be purchased at any library help desk."
-],[["credit","點數"],["carry over","延續到下次"]],[
-  Q("rd1a","How many credits does a ten-page color document require?",["50","10","5","300"],0,"","彩色一頁 5 點 × 10 頁 = 50。"),
-  Q("rd1b","What happens to credits that are not used by the end of the semester?",["They expire.","They are refunded.","They are added to next semester.","They can be given to friends."],0,"","不會延續到下學期 → 作廢。")
+/* ===== Reading：第一階段（router） ===== */
+RT(CTW("m2c1","r1","Echolocation in Bats","Most bats hunt at night, when their eyes are of little use. Instead, they emit high-pitched calls and listen for the echoes that bounce back from objects around them. By analyzing these echoes, bats can determine the size, shape, and distance of insects with remarkable precision. Some species can even detect a single strand of human hair in complete darkness.")),
+RT(DL("m2d1","r2","Read a social media post.",[
+  "Campus Film Society · posted 2 hours ago",
+  "Change of plans! Because of the storm warning, tonight's outdoor screening of The Long Road Home on the main lawn is moving indoors to Lecture Hall B. Seating is limited to 120, so arrive early. The director's video Q&A will still happen after the film.",
+  "If you reserved free snacks online, you can pick them up at the door. Just show your confirmation email. We'll reschedule the opening night of our outdoor series for next Friday, weather permitting!"
+],[
+  Q("m2d1a","Why was the location of the screening changed?",["Bad weather was expected.","The lawn was being repaired.","Too many people had reserved seats.","The director asked for a larger room."],0,"","Because of the storm warning。"),
+  Q("m2d1b","What can be inferred about tonight's event?",["Some people who want to attend may not get a seat.","The Q&A session has been canceled.","Snacks will be sold at the door.","The outdoor series will open tonight."],0,"","座位只有 120 個，要早點到 → 可能有人沒位子。Q&A 照常；點心是免費預約的。")
 ])),
-RT(G("rd2","r2","notice","Email: Club Meeting",[
-  "Hi everyone,",
-  "Our Film Club meeting this Thursday will be held in the Media Room instead of Room 210, which is being painted. We'll be watching a short documentary and voting on next month's theme. If you have suggestions for the theme, please send them to me by Wednesday night so I can add them to the ballot.",
-  "— Daniel (Club President)"
-],[["ballot","選票"],["theme","主題"]],[
-  Q("rd2a","Why is the meeting location changing?",["Room 210 is being painted.","The Media Room is larger.","The documentary requires special equipment.","More members joined the club."],0,"",""),
-  Q("rd2b","What will members do at the meeting?",["Watch a film and vote on a theme","Paint Room 210","Elect a new president","Make a documentary"],0,"",""),
-  Q("rd2c","What should members do if they have theme ideas?",["Send them to Daniel by Wednesday night","Bring them on Thursday","Post them in the Media Room","Write them on the ballot"],0,"","")
+RT(DL("m2d2","r2","Read an email.",[
+  "From: Lena Fischer, Human Resources, Northwind Analytics",
+  "To: Jordan Reyes",
+  "Subject: Summer internship offer",
+  "Dear Jordan,",
+  "We are pleased to offer you a position as a Data Analysis Intern for the summer, from June 2 to August 22. The position pays $22 per hour for 30 hours per week. Interns typically work in our downtown office on Mondays and Wednesdays and remotely on the other days; however, during the first two weeks, all interns are required to be in the office every day for training.",
+  "Please note that this offer depends on our receiving an official copy of your transcript by May 1. To accept, sign the attached agreement and return it within ten days. If you have questions about housing, our intern coordinator, Mark Ellis, can share a list of short-term rentals near the office.",
+  "Best regards, Lena Fischer"
+],[
+  Q("m2d2a","What is the main purpose of the email?",["To offer a position and explain its conditions","To invite Jordan to an interview","To ask Jordan for a recommendation","To describe housing options downtown"],0,"","錄取通知＋工作條件。"),
+  Q("m2d2b","What is true about the first two weeks of the internship?",["Interns must work in the office every day.","Interns work only from home.","Interns are not paid during training.","Interns work 40 hours per week."],0,"","前兩週訓練期間每天都要進辦公室。"),
+  Q("m2d2c","What can be inferred about the offer?",["It could be withdrawn if a document does not arrive in time.","Jordan has already accepted it.","It includes free housing near the office.","It was sent by Jordan's future supervisor."],0,"","offer depends on our receiving an official copy of your transcript by May 1。住宿只是提供名單。")
 ])),
-RT(G("ra1","r3","article","The Invention of Paper",[
-  "Paper was invented in China, and historical records traditionally credit its development to Cai Lun, an official of the Han court, around the year 105. Cai Lun is said to have made paper from tree bark, old rags, and fishing nets, which were soaked, beaten into pulp, and spread thin to dry. Archaeological discoveries, however, suggest that simpler forms of paper existed somewhat earlier, so Cai Lun may have improved the process rather than invented it.",
-  "Before paper became common, Chinese writers used bamboo strips or silk. Bamboo was cheap but heavy, while silk was light but expensive. Paper combined the advantages of both, and it gradually became the standard writing material in China.",
-  "The technique spread slowly. Papermaking reached Korea and Japan by the seventh century and the Islamic world by the eighth century, where cities such as Baghdad became major centers of production. From there it eventually reached Europe, where it would later make the printing revolution possible."
-],[["credit ... to","歸功於"],["pulp","紙漿"],["archaeological","考古的"]],[
-  Q("ra1a","According to paragraph 1, what materials did Cai Lun reportedly use?",["Bark, rags, and fishing nets","Bamboo and silk","Wood and stone","Cotton and wool"],0,"",""),
-  Q("ra1b","What do archaeological discoveries suggest about Cai Lun?",["He may have improved paper rather than invented it.","He never existed.","He invented printing as well.","He worked in Baghdad."],0,"",""),
-  Q("ra1c","According to paragraph 2, why did paper become the standard writing material?",["It was both light and inexpensive.","It was more beautiful than silk.","Bamboo became difficult to find.","The government banned silk."],0,"","結合竹簡的便宜與絲的輕便。"),
-  Q("ra1d","The word \"gradually\" in paragraph 2 is closest in meaning to",["slowly","suddenly","officially","rarely"],0,"",""),
-  Q("ra1e","Why does the author mention Europe in paragraph 3?",["To show that paper later supported the development of printing","To argue that Europe invented paper","To compare Baghdad with European cities","To explain why papermaking stopped in China"],0,"","")
+RT(AP("m2a1","r3","The Dust Bowl",[
+  "During the 1930s, a series of severe dust storms swept across the southern Great Plains of the United States, a disaster that became known as the Dust Bowl. Winds lifted millions of tons of topsoil into the air, creating clouds so dark that streetlights had to be turned on at midday. Some storms carried dust all the way to the East Coast, more than two thousand kilometers away.",
+  "Although a prolonged drought triggered the storms, historians emphasize that human decisions had made the region vulnerable. ■ In the preceding decades, high wheat prices and new tractors encouraged farmers to plow up vast areas of native grassland. ■ The deep roots of prairie grasses had held the soil in place for thousands of years, even during dry periods. ■ When the drought arrived and crops failed, nothing remained to anchor the exposed earth. ■",
+  "The federal government responded by creating the Soil Conservation Service in 1935. The agency paid farmers to adopt techniques such as contour plowing, in which furrows follow the natural curves of the land, and planting rows of trees as windbreaks. These practices reduced erosion considerably, and by the early 1940s, when rains returned, the worst of the storms had ended. The Dust Bowl remains a frequently cited example of how environmental damage can result from the interaction of natural conditions and economic incentives."
+],["anchor"],[
+  Q("m2a1a","According to paragraph 1, what is true about the dust storms?",["Some of them reached places far from the Great Plains.","They occurred mainly at night.","They lasted only a few days in total.","They were caused by volcanic activity."],0,"","有些沙塵一路吹到兩千多公里外的東岸。"),
+  INS("m2a1b","By 1930, millions of acres that had once been grassland were planted with wheat.",1,"接在「農夫大量開墾原生草原」之後，說明開墾的規模＝第 2 個方塊。"),
+  Q("m2a1c","The word \"anchor\" in the passage is closest in meaning to",["hold in place","dry out","cover up","carry away"],0,"","anchor the exposed earth＝把土壤固定住。"),
+  Q("m2a1d","According to paragraph 2, why do historians say human decisions made the region vulnerable?",["Farmers removed grasses whose roots had protected the soil.","Farmers used too much water during the drought.","New tractors damaged the roots of wheat plants.","Falling wheat prices caused farmers to abandon their land."],0,"","草的深根原本固定土壤，被犁掉後就沒有東西保護。小麥價格是「高」，不是下跌。"),
+  Q("m2a1e","Why does the author describe contour plowing and windbreaks?",["To give examples of practices that helped reduce erosion","To explain what caused the drought to end","To show how farmers increased wheat production","To contrast farming in the East and the West"],0,"","水土保持局推廣的做法，大幅減少侵蝕。")
 ])),
-/* ===== Reading：第二階段（較基礎） ===== */
-LO(CT("rc2","r1","City Bicycles","Many cities now offer bicycles that people can rent for short trips. Us{ers} pick u{p} a bi{ke} at o{ne} station a{nd} return i{t} at ano{ther}. Th{is} system i{s} cheap a{nd} good for the environment, and it helps reduce traffic in busy downtown areas.")),
-LO(G("rd3","r2","notice","Poster: Book Sale",[
-  "Used Book Sale — Student Center Lobby",
-  "Friday and Saturday, 10 a.m. – 4 p.m.",
-  "All books $2 each, or 3 for $5. Money raised will buy new books for the children's hospital. We accept cash only."
-],[["raise money","募款"]],[
-  Q("rd3a","Where is the book sale?",["In the Student Center lobby","At the children's hospital","In the library","Online"],0,"",""),
-  Q("rd3b","How much do three books cost?",["$5","$6","$2","$3"],0,"",""),
-  Q("rd3c","What will the money be used for?",["Buying books for a hospital","Repairing the Student Center","Paying the volunteers","Buying new library computers"],0,"","")
+/* ===== Reading：第二階段・較基礎（lower） ===== */
+LO(CTW("m2c2","r1","Recycling Paper","Paper is one of the easiest materials to recycle. Used paper is first mixed with water to make a soft pulp, and then the ink is removed. After that, the clean pulp is pressed and dried into new sheets. However, paper fibers become shorter each time they are recycled, so most paper can only be recycled five to seven times.",{ that: ["this"] })),
+LO(DL("m2d3","r2","Read a notice.",[
+  "Notice to All Residents: Laundry Room Changes",
+  "From October 1, the laundry room on the ground floor will accept card payments only. Coins will no longer be accepted. Laundry cards can be bought at the front office for $10 and refilled using the machine next to the laundry room door.",
+  "The laundry room will also be open from 7 a.m. to 10 p.m. instead of 24 hours a day. Please remove your clothes as soon as the machine stops so that others can use it."
+],[
+  Q("m2d3a","What change will happen on October 1?",["Residents will have to pay with a card.","The laundry room will move to another floor.","Washing clothes will become free.","The laundry room will be open all night."],0,"","只收卡片，不收硬幣。"),
+  Q("m2d3b","Where can residents buy a laundry card?",["At the front office","In the laundry room","Online","At a bank"],0,"","can be bought at the front office。"),
+  Q("m2d3c","What are residents asked to do?",["Take out their clothes as soon as the machine stops","Bring their own detergent","Use the machines only on weekends","Report broken machines by email"],0,"","remove your clothes as soon as the machine stops。")
 ])),
-LO(G("ra2","r3","article","Why We Yawn",[
-  "Almost everyone yawns, but scientists are still not completely sure why. For a long time, people believed that yawning brought more oxygen into the body when we were tired. However, experiments have shown that breathing extra oxygen does not make people yawn less, so this explanation is probably wrong.",
-  "A newer idea is that yawning helps cool the brain. When we yawn, we take in a large breath of air, and the movement of the jaw increases blood flow to the head. Some studies found that people yawn more often when their brains are warm and less often in cold weather.",
-  "Yawning is also contagious. When we see or even read about someone yawning, we often yawn ourselves. Interestingly, people are more likely to \"catch\" a yawn from family members and close friends than from strangers. Some researchers think this shows that contagious yawning is connected to empathy, the ability to understand how others feel."
-],[["contagious","會傳染的"],["empathy","同理心"]],[
-  Q("ra2a","According to paragraph 1, why is the oxygen explanation probably wrong?",["Breathing more oxygen does not reduce yawning.","People yawn only when they are hungry.","Yawning reduces oxygen in the body.","Scientists have never tested it."],0,"",""),
-  Q("ra2b","According to paragraph 2, when do people yawn less often?",["In cold weather","When they are tired","After exercise","In the morning"],0,"",""),
-  Q("ra2c","The word \"contagious\" in paragraph 3 is closest in meaning to",["spreading from one person to another","dangerous to health","difficult to stop","very loud"],0,"",""),
-  Q("ra2d","From whom are people most likely to catch a yawn?",["Family members and close friends","Strangers","Animals","Teachers"],0,"",""),
-  Q("ra2e","What is the passage mainly about?",["Possible explanations for yawning","The dangers of being tired","How the brain controls breathing","Why animals yawn"],0,"","")
+LO(AP("m2a2","r3","Lichens: Life on Bare Rock",[
+  "Lichens are unusual living things. Although they often look like a single plant, each lichen is actually a partnership between two very different organisms: a fungus and a tiny alga or bacterium that can make food from sunlight. The fungus provides shelter and collects water and minerals, while its partner produces sugars that feed both of them. This cooperation allows lichens to survive in places where neither partner could live alone.",
+  "Lichens can grow on bare rock, tree bark, and even old gravestones. They are especially important in harsh environments such as deserts, mountaintops, and the Arctic. ■ Because they can survive with very little water and no soil, lichens are often the first living things to appear on newly exposed rock, for example after a glacier melts or a volcano erupts. ■ Over time, they release acids that slowly break down the rock surface. ■ When lichens die, their remains mix with these tiny rock particles to form a thin layer of soil, which allows mosses and small plants to grow. ■",
+  "Lichens are also useful to scientists. Many species are very sensitive to air pollution, especially a gas called sulfur dioxide. When the air in a city becomes cleaner, sensitive lichens often return to trees and walls. As a result, researchers sometimes count lichens to measure changes in air quality."
+],["sensitive"],[
+  Q("m2a2a","According to paragraph 1, what does the fungus provide in a lichen?",["Shelter, water, and minerals","Sugars made from sunlight","Seeds for reproduction","Protection from air pollution"],0,"","The fungus provides shelter and collects water and minerals。糖是另一個夥伴做的。"),
+  INS("m2a2b","Few other living things can survive such extreme conditions.",0,"接在「沙漠、山頂、北極這類嚴苛環境」之後＝第 1 個方塊。"),
+  Q("m2a2c","According to paragraph 2, how do lichens help other plants grow?",["They help create soil on bare rock.","They provide shade for young plants.","They kill insects that eat plants.","They carry seeds to new places."],0,"","分解岩石、死後和岩屑形成薄薄一層土壤。"),
+  Q("m2a2d","The word \"sensitive\" in the passage is closest in meaning to",["easily affected","very strong","brightly colored","slow-growing"],0,"","sensitive to air pollution＝容易受污染影響。"),
+  Q("m2a2e","Why do researchers sometimes count lichens in cities?",["To learn whether air quality is changing","To discover new kinds of fungi","To decide where to plant trees","To study the effects of melting glaciers"],0,"","空氣變乾淨，敏感的地衣就會回來 → 用來衡量空氣品質。")
 ])),
-/* ===== Reading：第二階段（較難） ===== */
-UP(CT("rc3","r1","Language Extinction","Linguists estimate that roughly half of the world's approximately seven thousand languages may disappear by the end of this century. Wh{en} a lang{uage} loses i{ts} last fl{uent} speakers, communi{ties} lose mo{re} than vocab{ulary}; they a{lso} lose knowl{edge} about lo{cal} plants, history, and ways of seeing the world.")),
-UP(G("rd4","r2","notice","Email: Study Abroad Program",[
-  "Dear students,",
-  "Applications for next year's exchange program with the University of Edinburgh are now open. Applicants must have completed at least three semesters of full-time study and maintained a cumulative GPA of 3.0 or higher. Please note that, unlike previous years, the program will no longer cover housing costs; however, participants remain eligible for the Global Travel Grant, which can be applied toward either airfare or accommodation. Applications are due March 1.",
-  "International Programs Office"
-],[["cumulative","累計的"],["eligible","有資格的"],["accommodation","住宿"]],[
-  Q("rd4a","Who is eligible to apply?",["Students with three semesters of study and a GPA of at least 3.0","All first-year students","Students who have visited Edinburgh","Students with a GPA below 3.0"],0,"",""),
-  Q("rd4b","What change from previous years is mentioned?",["Housing costs are no longer covered.","The program is now in Edinburgh.","The grant has been canceled.","Applications are due earlier."],0,"",""),
-  Q("rd4c","What can be inferred about the Global Travel Grant?",["It could help students pay for housing.","It covers only airfare.","It is available only to first-year students.","It replaces the exchange program."],0,"","可以用在機票或住宿 → 能幫忙付住宿。")
+/* ===== Reading：第二階段・較難（upper） ===== */
+UP(CTW("m2c3","r1","Antibiotic Resistance","Antibiotics have saved countless lives since their widespread introduction in the 1940s. Their effectiveness, however, is steadily declining because bacteria can evolve resistance through mutation and by exchanging genetic material with one another. Whenever antibiotics are overused or taken incorrectly, susceptible bacteria are eliminated while resistant strains survive and multiply. Public health experts therefore urge physicians to prescribe these drugs only when they are genuinely necessary.")),
+UP(DL("m2d4","r2","Read an editorial from a student newspaper.",[
+  "Editorial: Before We Ban Laptops, Let's Look at the Evidence",
+  "Last week, the faculty senate proposed banning laptops in all first-year lectures, citing studies showing that students who type their notes remember less than those who write by hand. The concern is understandable. Anyone who has sat behind a classmate scrolling through social media knows how distracting screens can be.",
+  "But a blanket ban ignores students who rely on laptops for legitimate reasons, including those with disabilities that make handwriting difficult. The proposal does allow exceptions, but only for students who formally register with the disability office, a process that can take weeks and that many students prefer to avoid. Moreover, the research the senate cites compared note-taking methods, not policies. A more targeted approach, such as designated laptop sections at the back of lecture halls, would reduce distraction without forcing anyone to reveal personal information."
+],[
+  Q("m2d4a","What is the main purpose of the editorial?",["To argue for an alternative to a proposed rule","To support a ban on all electronic devices","To report the results of a new study","To explain how to register with the disability office"],0,"","反對全面禁止，提出「筆電專區」的替代方案。"),
+  Q("m2d4b","What does the writer imply about the exception for students with disabilities?",["It may not be practical for the students who need it.","It will be removed from the final proposal.","It applies to all first-year students.","It was suggested by the student newspaper."],0,"","要正式登記、可能要好幾週，很多學生也不想公開 → 不實用。"),
+  Q("m2d4c","Why does the writer point out that the research \"compared note-taking methods, not policies\"?",["To suggest that the studies do not directly support a ban","To show that handwriting is less effective than typing","To criticize the researchers for using small samples","To explain why students prefer laptops"],0,"","研究比較的是做筆記方式，不代表「禁止」這個政策有效。")
 ])),
-UP(G("ra3","r3","article","Urban Wildlife",[
-  "Cities are often regarded as hostile to wildlife, yet a growing number of species not only survive in urban environments but thrive there. Raccoons, coyotes, peregrine falcons, and certain songbirds have established populations in some of the world's largest cities. Researchers increasingly view these environments not as ecological dead zones but as novel habitats that exert their own distinctive selective pressures.",
-  "One striking example concerns urban birds. Studies of great tits in European cities have found that these birds sing at a higher pitch than their rural counterparts, apparently so their songs are not masked by low-frequency traffic noise. Similarly, some urban populations of lizards in Puerto Rico have developed longer limbs and stickier toe pads, traits that help them grip smooth surfaces such as walls and windows.",
-  "Such findings have led some scientists to argue that cities are accelerating evolution. Critics caution, however, that many observed differences may reflect individual flexibility rather than genetic change. A bird might simply adjust its song in a noisy environment, much as a person raises his or her voice in a crowded room. Distinguishing between these possibilities requires long-term genetic studies, which remain relatively rare."
-],[["hostile","不友善的"],["thrive","興盛"],["novel","新穎的"],["pitch","音高"],["mask","掩蓋"]],[
-  Q("ra3a","According to paragraph 1, how do researchers increasingly view cities?",["As new kinds of habitats with their own pressures","As places where no animals can survive","As less important than rural areas","As dangerous only to birds"],0,"",""),
-  Q("ra3b","Why do great tits in cities sing at a higher pitch?",["So that traffic noise does not cover their songs","To attract birds from the countryside","Because city air is warmer","To warn other birds of predators"],0,"",""),
-  Q("ra3c","Why does the author mention lizards in Puerto Rico?",["To give another example of animals adapting to cities","To show that lizards avoid buildings","To compare lizards with birds' songs","To explain how lizards became extinct"],0,"",""),
-  Q("ra3d","The word \"caution\" in paragraph 3 is closest in meaning to",["warn","agree","prove","celebrate"],0,"",""),
-  Q("ra3e","What is the critics' main point in paragraph 3?",["Some differences may not be caused by genetic change.","Cities do not affect animals at all.","Long-term genetic studies are unnecessary.","Birds cannot change their songs."],0,"","")
+UP(AP("m2a3","r3","The Anchoring Effect",[
+  "In a famous experiment, the psychologists Amos Tversky and Daniel Kahneman spun a wheel of fortune that had been secretly rigged to stop at either 10 or 65. Participants were then asked whether the percentage of African nations in the United Nations was higher or lower than the number on the wheel and, afterward, to estimate the actual percentage. Remarkably, those who had seen 65 gave estimates substantially higher than those who had seen 10, even though the wheel's number was obviously irrelevant to the question.",
+  "This tendency for an initial value to bias later judgments is known as anchoring, and its effects extend well beyond the laboratory. ■ In negotiations, the first offer frequently shapes the final agreement, which is why experienced negotiators often try to make the opening proposal themselves. ■ Similarly, retailers may display a high original price beside a discounted one, making the sale price appear more attractive than it would on its own. ■ Even experts are not immune: in one study, experienced real estate agents who were shown different listing prices for the same house produced appraisals that differed markedly, yet most denied that the listing price had influenced them. ■",
+  "Researchers have proposed two mechanisms to explain anchoring. According to the adjustment account, people start from the anchor and adjust away from it but typically stop too soon. According to the selective accessibility account, the anchor prompts people to recall information consistent with it, which then colors their final estimate. The two accounts are not mutually exclusive, and evidence suggests that each may operate under different conditions. Efforts to reduce the bias, such as simply warning people about it, have produced only modest results, although deliberately considering reasons why the anchor might be inappropriate appears somewhat more effective."
+],["immune"],[
+  Q("m2a3a","Why does the author mention that the wheel had been \"secretly rigged\"?",["To show that the researchers controlled which number participants saw","To suggest that the experiment was unfair to participants","To explain why participants distrusted the wheel","To indicate that the results could not be repeated"],0,"","研究者控制輪盤只停在 10 或 65，才能比較兩組。"),
+  INS("m2a3b","This finding suggests that anchoring can operate without people's awareness.",3,"接在「房仲否認受到影響」之後，說明錨定可能在不自覺中發生＝第 4 個方塊。"),
+  Q("m2a3c","The word \"immune\" in the passage is closest in meaning to",["unaffected","experienced","skeptical","unaware"],0,"","not immune＝也會受影響。"),
+  Q("m2a3d","According to paragraph 3, how do the two accounts of anchoring differ?",["One focuses on insufficient adjustment, while the other focuses on what information comes to mind.","One applies to experts, while the other applies to students.","One has been disproven, while the other has been confirmed.","One explains negotiations, while the other explains retail prices."],0,"","adjustment：調整不夠；selective accessibility：錨點讓人想起一致的資訊。兩者不互斥。"),
+  Q("m2a3e","What can be inferred about efforts to reduce anchoring?",["Simply knowing about the bias is not enough to prevent it.","Warnings eliminate the bias in most people.","Experts are better at avoiding it than other people.","Considering reasons against the anchor makes the bias stronger."],0,"","警告的效果有限 → 光知道偏誤並不夠。")
 ])),
 
-/* ===== Listening：第一階段 ===== */
-RT(L("lr01","l1","cr",["MA: Do you know when the next train to the city leaves?"],["In about ten minutes, from platform three.","I took the train last week.","The city is very crowded.","It's a fast train."],0,"","")),
-RT(L("lr02","l1","cr",["W: I left my notes at home. Could I look at yours?"],["Sure, let's share them.","I wrote them yesterday.","My home is near campus.","Notes are important."],0,"","")),
-RT(L("lr03","l1","cr",["M: Have you heard back from the internship you applied for?"],["Not yet, but they said within two weeks.","I applied online.","The internship is in marketing.","I heard it on the radio."],0,"","")),
-RT(L("lr04","l1","cr",["WB: Isn't the seminar supposed to start at two?"],["It was moved to three because of a meeting.","I'm supposed to go home.","The seminar is about art.","Two of my friends are coming."],0,"","")),
-RT(L("lr05","l1","cr",["M: Which of these two jackets do you think looks better?"],["The gray one suits you more.","They're both on sale.","I bought a jacket last winter.","It looks like rain."],0,"","")),
-RT(L("lr06","l1","cr",["W: The heater in our classroom isn't working again."],["Let's ask the department to send someone.","It's getting warmer outside.","I don't have a heater at home.","The classroom is on the first floor."],0,"","")),
-RT(L("lr07","l1","cr",["MC: How many people signed up for the trip?"],["Around thirty so far.","On Saturday morning.","It's a three-day trip.","I signed it yesterday."],0,"","")),
-RT(L("lr08","l1","cr",["W: Would you mind proofreading my cover letter?"],["Not at all. Send it over.","I wrote a letter to my aunt.","It's covered in dust.","I don't mind the cold."],0,"","")),
-RT(LG("lv1","l2","Listen to a conversation between two students.",[
-  "M: Did you get a ticket for the music festival this weekend?",
-  "W: I tried, but they sold out in an hour.",
-  "M: Oh no. You know, the student union sometimes releases extra tickets on the day before. You should check their website on Friday morning.",
-  "W: Thanks. I'll set a reminder."
+/* ===== Listening：第一階段（router） ===== */
+RT(L("m2r01","l1","cr",["M: Did you get a chance to look over my draft?"],["I've only gotten through the first page.","The draft was due on Monday.","I looked over the fence.","My chances are pretty good."],0,"","間接回答：只看了第一頁 → 還沒看完。")),
+RT(L("m2r02","l1","cr",["WB: The heating in the lecture hall still isn't working."],["Maybe we should bring jackets tomorrow.","The lecture was about global warming.","I'm still working on it.","The hall is in the east building."],0,"","回應問題並提出因應方式。")),
+RT(L("m2r03","l1","cr",["M: Do you know if the pharmacy on campus is open on weekends?"],["Only on Saturday mornings.","I bought some medicine there.","The weekend went by quickly.","The campus is very large."],0,"","加上條件的回答。")),
+RT(L("m2r04","l1","cr",["W: You look exhausted."],["I was up all night finishing my lab report.","Thanks, I bought it yesterday.","I'll look for it later.","The car's exhaust is terrible."],0,"","解釋為什麼累。")),
+RT(L("m2r05","l1","cr",["MA: I can't decide whether to major in biology or chemistry."],["Why not talk to students in both departments?","Biology is the study of living things.","I decided to have pizza.","Both buildings are on Main Street."],0,"","給建議。")),
+RT(L("m2r06","l1","cr",["W: Weren't you supposed to give your presentation today?"],["Professor Kim had to postpone it.","Yes, I was given a present.","The presentation was about energy.","Today is Tuesday."],0,"","否定問句，回答原本該做但沒做的原因。")),
+RT(L("m2r07","l1","cr",["MC: Could you save me a seat if you get there first?"],["Sure, I'll put my bag on the one next to me.","I saved some money last month.","The seats are very comfortable.","I got there first yesterday."],0,"","答應並說明怎麼做。")),
+RT(L("m2r08","l1","cr",["W: I thought the reading for this week was supposed to be short."],["So did I, until I saw it was sixty pages.","I read it last week.","The reading room is quiet.","Short stories are my favorite."],0,"","So did I＝我也以為。")),
+RT(LG("m2v1","l2","Listen to a conversation between a student and a technology help desk worker.",[
+  "M: Hi, my laptop won't turn on, and I have a paper due tomorrow morning.",
+  "W: Oh no. When did it stop working?",
+  "M: This morning. I spilled a little coffee on the keyboard last night, but it seemed fine after I dried it off.",
+  "W: Liquid damage sometimes takes a few hours to show up. We can send it to the repair center, but that usually takes about a week. Was your paper saved anywhere else?",
+  "M: I think the university account backs up my documents folder automatically?",
+  "W: It does, if you turned the sync feature on. Let's check from this computer. Yes, here's your paper, saved at eleven last night.",
+  "M: That's a relief! But I still need something to work on.",
+  "W: We have loaner laptops. You can borrow one for up to two weeks. You'll just need to sign this form and show your student ID."
 ],[
-  Q("lv1a","What is the woman's problem?",["The festival tickets are sold out.","She lost her ticket.","She doesn't like music festivals.","The festival was canceled."],0,"",""),
-  Q("lv1b","What does the man suggest?",["Checking the student union website on Friday","Buying tickets from a stranger","Going to a different festival","Asking the man for his ticket"],0,"","")
+  Q("m2v1a","What happened to the man's laptop?",["It stopped working after liquid was spilled on it.","It was stolen from the library.","It was damaged in a fall.","It ran out of storage space."],0,"","前一晚灑了咖啡，今天早上開不了機。"),
+  Q("m2v1b","Why is the man relieved?",["A recent copy of his paper had been saved online.","His laptop can be repaired the same day.","The deadline for his paper has been extended.","He does not need to sign any forms."],0,"","學校帳號自動備份了他昨晚 11 點的報告。")
 ])),
-RT(LG("lv2","l2","Listen to a conversation at the campus health center.",[
-  "W: Hi, I'd like to get a flu shot. Do I need an appointment?",
-  "MB: Not this week. We're running a walk-in clinic until Friday. You just need to show your student ID and fill out a short form.",
-  "W: Is there a charge?",
-  "MB: It's free for students who have the university health plan."
+RT(LG("m2v2","l2","Listen to a conversation between two students.",[
+  "W: Have you registered for next semester yet?",
+  "M: Almost. I'm stuck between two seminars, Urban Ecology and Media Law. They meet at the same time.",
+  "W: I took Urban Ecology last year. It's a lot of fieldwork. You're outside every Thursday, collecting samples around the city.",
+  "M: That actually sounds fun. What's the downside?",
+  "W: The final project. You have to present it to the city planning department, and they ask really tough questions. But honestly, it's the class I learned the most from.",
+  "M: Hmm. Media Law would be more useful for my journalism major, though.",
+  "W: True. But you could take Media Law next fall. It's offered every year. Urban Ecology only runs in the spring, and Professor Grant is retiring after this year.",
+  "M: Oh, I didn't know that. That kind of settles it, then."
 ],[
-  Q("lv2a","Why does the student visit the health center?",["To get a flu shot","To renew her health plan","To see a doctor about a cold","To pick up medicine"],0,"",""),
-  Q("lv2b","What is true about the walk-in clinic?",["No appointment is needed.","It costs money for everyone.","It is open only on Friday.","Students need a doctor's note."],0,"","")
+  Q("m2v2a","What is the man's problem?",["Two courses he wants are scheduled at the same time.","He missed the registration deadline.","He does not meet the requirements for a seminar.","He cannot decide on a major."],0,"","They meet at the same time。"),
+  Q("m2v2b","What will the man most likely do?",["Take Urban Ecology this spring","Take Media Law this spring","Take both seminars next fall","Change his major to ecology"],0,"","Media Law 每年都有；Urban Ecology 只在春天開而且教授要退休 → That kind of settles it。")
 ])),
-RT(LG("ln1","l3","Listen to an announcement in a sociology class.",[
-  "W: Quick update on the midterm. It will be held next Tuesday during our regular class time, but not in this room. We'll be in Hall C, which has more space. The exam covers chapters one through six. You may bring one page of handwritten notes, but no textbooks or electronic devices."
+RT(LG("m2n1","l3","Listen to an announcement from the university writing center.",[
+  "W: Hi, everyone. The writing center wants to let you know about a series of research skills workshops this month. Each workshop lasts one hour and takes place on Wednesdays at four in the library's media room.",
+  "W: The first session, on finding scholarly articles, is designed mainly for first-year students, but anyone is welcome. The second focuses on citation software, which can save you hours of formatting at the end of a project. So if you're starting a thesis, I'd especially recommend it.",
+  "W: Seats are limited to twenty-five per session, and last semester several sessions filled up within a day, so register on the writing center's website as soon as possible. The sessions won't be recorded, because they're hands-on, so please bring your own laptop."
 ],[
-  Q("ln1a","Where will the midterm take place?",["In Hall C","In the regular classroom","Online","In the library"],0,"",""),
-  Q("ln1b","What are students allowed to bring?",["One page of handwritten notes","Their textbooks","A laptop","Printed slides"],0,"",""),
-  Q("ln1c","What does the exam cover?",["Chapters one through six","Only chapter six","All chapters in the book","The professor's lectures only"],0,"","")
+  Q("m2n1a","What is the main purpose of the announcement?",["To inform students about upcoming workshops","To announce new library hours","To explain changes to citation rules","To recruit tutors for the writing center"],0,"","介紹這個月的研究技巧工作坊。"),
+  Q("m2n1b","Who does the speaker especially recommend attend the second workshop?",["Students who are beginning a thesis","First-year students","Students without laptops","Students who missed last semester's sessions"],0,"","if you're starting a thesis, I'd especially recommend it。"),
+  Q("m2n1c","Why does the speaker suggest registering soon?",["The sessions may fill up quickly.","Registration closes this afternoon.","Early registrants receive free software.","Only registered students can watch the recordings."],0,"","名額 25 人，上學期一天內就額滿。")
 ])),
-RT(LG("lk1","l4","Listen to a talk in an astronomy class.",[
-  "MB: Today we'll talk about why the Moon always shows us the same face. You might think the Moon doesn't rotate at all, but it does. It turns once on its axis in exactly the same amount of time it takes to orbit the Earth, about twenty-seven days. Astronomers call this tidal locking. Long ago, the Moon probably rotated faster, but the Earth's gravity pulled slightly on the Moon's shape, creating a small bulge. Over millions of years, that pull gradually slowed the Moon's rotation until it matched its orbit. Interestingly, many moons in our solar system are tidally locked to their planets."
+RT(LG("m2l1","l4","Listen to part of a talk in an astronomy class.",[
+  "MB: How do astronomers find planets around other stars? In most cases, these planets are far too dim to see directly, because the light from their star overwhelms them. So astronomers rely on indirect methods. The most productive one is called the transit method.",
+  "MB: Here's how it works. If a planet's orbit happens to be lined up with our view, then once every orbit, the planet passes in front of its star and blocks a tiny fraction of the star's light. A planet the size of Jupiter might dim a Sun-like star by about one percent; an Earth-sized planet, by less than one hundredth of a percent. Space telescopes like Kepler monitored the brightness of more than a hundred thousand stars continuously, looking for these small, regular dips.",
+  "MB: The transit method tells us quite a lot. The depth of the dip reveals the planet's size relative to the star, and the time between dips gives us the length of its year. But it has limitations. Most planetary systems aren't lined up with us, so we miss them entirely. And a single dip could be caused by something else, like a dark spot on the star's surface. That's why astronomers usually want to see at least three transits, evenly spaced, before they're confident a planet is there.",
+  "MB: To learn the planet's mass, astronomers combine transits with another technique that measures how the star wobbles as the planet's gravity pulls on it. Size plus mass gives us density, which tells us whether a planet is rocky like Earth or mostly gas like Jupiter."
 ],[
-  Q("lk1a","What is the talk mainly about?",["Why we always see the same side of the Moon","How the Moon was formed","Why the Moon has craters","How tides affect the oceans"],0,"",""),
-  Q("lk1b","What misunderstanding does the professor correct?",["That the Moon does not rotate","That the Moon orbits the Sun","That the Moon is a planet","That the Moon has no gravity"],0,"",""),
-  Q("lk1c","According to the professor, what slowed the Moon's rotation?",["The pull of the Earth's gravity","Collisions with asteroids","The Sun's heat","The Moon's own gravity"],0,"",""),
-  Q("lk1d","What does the professor say about other moons?",["Many of them are also tidally locked.","None of them rotate.","They all orbit faster than our Moon.","They do not have bulges."],0,"","")
+  Q("m2l1a","What is the talk mainly about?",["A method for detecting planets through changes in starlight","How to photograph planets directly","Why some stars have dark spots","The history of the Kepler telescope"],0,"","transit method：行星經過恆星前方時亮度變暗。"),
+  Q("m2l1b","According to the professor, what does the depth of a dip indicate?",["The planet's size compared with its star","The planet's distance from Earth","The planet's temperature","The planet's mass"],0,"","The depth of the dip reveals the planet's size relative to the star。"),
+  Q("m2l1c","Why do astronomers want to observe several evenly spaced transits?",["To rule out other possible causes of a dip","To measure the star's temperature","To find out whether the planet has moons","To calculate the planet's mass"],0,"","單一次變暗可能是恆星黑子造成的。"),
+  Q("m2l1d","Why does the professor mention density?",["To explain how scientists learn what a planet is made of","To show why Earth-sized planets are hard to detect","To compare stars of different sizes","To explain why most systems are not lined up with us"],0,"","密度能判斷是岩石行星還是氣體行星。")
 ])),
-/* ===== Listening：第二階段（較基礎） ===== */
-LO(L("ll01","l1","cr",["W: Where is the nearest bus stop?"],["Right across the street.","I take the bus every day.","The bus is late.","It's a big bus."],0,"","")),
-LO(L("ll02","l1","cr",["M: Can you help me carry these chairs?"],["Of course.","They're wooden chairs.","I carried them yesterday.","Please sit down."],0,"","")),
-LO(L("ll03","l1","cr",["W: What did you think of the movie?"],["It was really funny.","I saw it on Friday.","It's at the new theater.","About two hours."],0,"","")),
-LO(L("ll04","l1","cr",["MA: How much is a coffee here?"],["About three dollars.","I drink it every morning.","It's very hot.","At the counter."],0,"","")),
-LO(L("ll05","l1","cr",["W: Are you coming to the party tonight?"],["Yes, I'll be there around eight.","It was a great party.","My friend is having a party.","Tonight is cold."],0,"","")),
-LO(L("ll06","l1","cr",["M: Did you finish the homework?"],["Almost. Just one question left.","The homework is on page ten.","I'll finish my dinner first.","Homework is boring."],0,"","")),
-LO(LG("lv3","l2","Listen to a conversation between two classmates.",[
-  "M: Hi, Anna. Do you want to study for the math test together?",
-  "W: Sure. When are you free?",
-  "M: How about tomorrow afternoon in the library?",
-  "W: I have a piano lesson tomorrow afternoon. Can we meet in the evening instead?",
-  "M: Okay, seven o'clock works for me."
+/* ===== Listening：第二階段・較基礎（lower） ===== */
+LO(L("m2r09","l1","cr",["M: What time does the library close tonight?"],["At eleven, I think.","It's next to the cafeteria.","I closed the window.","Tonight is very cold."],0,"","問時間，回答時間。")),
+LO(L("m2r10","l1","cr",["W: Have you met our new roommate yet?"],["Yes, she seems really nice.","I'll meet you at noon.","Our room is on the fifth floor.","The room is very new."],0,"","回答見過了沒，並補充感想。")),
+LO(L("m2r11","l1","cr",["MB: How long does it take to walk to the stadium?"],["About fifteen minutes.","It's a very long game.","I walked there with my brother.","The stadium holds fifty thousand people."],0,"","How long＝多久。")),
+LO(L("m2r12","l1","cr",["W: Could you help me carry these chairs?"],["Of course. Where do they go?","The chairs are made of wood.","I carried my bag.","I helped him last week."],0,"","答應並詢問細節。")),
+LO(L("m2r13","l1","cr",["M: Is it going to rain tomorrow?"],["The forecast says it'll be sunny.","It rained yesterday.","I'm going tomorrow.","Rain is good for plants."],0,"","用天氣預報回答。")),
+LO(L("m2r14","l1","cr",["W: Where did you buy that jacket?"],["At a small shop downtown.","It was on sale.","I bought it last winter.","The jacket is blue."],0,"","問地點；on sale、last winter 都沒回答「哪裡」。")),
+LO(LG("m2v3","l2","Listen to a conversation between a student and a mail room employee.",[
+  "M: Hi, I got an email saying I have a package, but I don't have the tracking number with me.",
+  "W: That's fine. Can I see your student ID?",
+  "M: Here you go.",
+  "W: Thanks. Hmm, it looks like your package is too large for our shelves, so it's in the storage room downstairs. It'll take a few minutes to bring it up.",
+  "M: No problem. Actually, could my roommate pick up packages for me in the future? I have class when you're open.",
+  "W: Yes, but you need to fill out a permission form online first. After that, your roommate just needs to show their own ID.",
+  "M: Great. I'll do that tonight."
 ],[
-  Q("lv3a","Why can't the woman meet in the afternoon?",["She has a piano lesson.","She has to work.","The library is closed.","She is going to a party."],0,"",""),
-  Q("lv3b","When will they study together?",["Tomorrow at seven","Tomorrow afternoon","Today at seven","Next week"],0,"","")
+  Q("m2v3a","Why does the man have to wait?",["His package is being brought from another room.","He forgot his student ID.","His package has not arrived yet.","He needs a tracking number."],0,"","包裹太大，放在樓下儲藏室。"),
+  Q("m2v3b","What does the man need to do so that his roommate can pick up his packages?",["Complete a form online","Give his ID card to his roommate","Call the mail room","Pay a small fee"],0,"","fill out a permission form online first。")
 ])),
-LO(LG("ln2","l3","Listen to an announcement in a cafeteria.",[
-  "M: Good afternoon, everyone. Today's special is chicken curry with rice. Because the coffee machine is broken, hot drinks are free today. Please remember to return your trays to the counter near the exit. Thank you, and enjoy your lunch."
+LO(LG("m2n2","l3","Listen to an announcement about a campus event.",[
+  "M: Hi, everyone! This Saturday, the international student club is holding a food festival on the main lawn from noon to five. Students from more than twenty countries will be cooking traditional dishes. Tickets are five dollars, and each ticket gets you three small plates. All the money will go to a local children's hospital.",
+  "M: If it rains, the festival will move to the gym. We still need a few volunteers to help set up tables in the morning, so if you're interested, please email the club."
 ],[
-  Q("ln2a","What is today's special?",["Chicken curry with rice","Fish and chips","Beef noodles","Vegetable soup"],0,"",""),
-  Q("ln2b","Why are hot drinks free today?",["The coffee machine is broken.","It is a holiday.","The cafeteria is closing.","It is a special event."],0,"",""),
-  Q("ln2c","What should people do with their trays?",["Return them near the exit","Leave them on the tables","Wash them","Take them home"],0,"","")
+  Q("m2n2a","What is the announcement about?",["A food festival","A cooking class","A sports competition","A new restaurant"],0,"","國際學生社團的美食節。"),
+  Q("m2n2b","What will happen to the money from ticket sales?",["It will be given to a hospital.","It will pay the cooks.","It will be used for a club trip.","It will buy new tables."],0,"","All the money will go to a local children's hospital。"),
+  Q("m2n2c","What will happen if it rains?",["The event will be held indoors.","The event will be canceled.","The event will start later.","Tickets will be cheaper."],0,"","下雨就移到體育館。")
 ])),
-LO(LG("lk2","l4","Listen to a talk in a health class.",[
-  "W: Today I want to talk about why drinking enough water is important. About sixty percent of the human body is water. We lose water every day when we breathe, sweat, and go to the bathroom. If we don't replace it, we can become dehydrated. Even mild dehydration can make you feel tired and make it harder to concentrate. A simple way to check is to look at the color of your urine. If it's pale yellow, you're probably drinking enough. Remember that we also get water from foods like fruit and soup."
+LO(LG("m2l2","l4","Listen to part of a talk in a music class.",[
+  "W: Has a song ever gotten stuck in your head for hours? Scientists call this an earworm. Almost everyone experiences earworms, and they usually involve just a short part of a song, often the chorus, repeating over and over.",
+  "W: Researchers have found that certain kinds of songs are more likely to become earworms. These songs are usually fast, with a simple melody that's easy to sing. They often have a surprising part, such as an unusual jump between notes, that makes the tune stand out.",
+  "W: When do earworms happen? Often when our minds are not very busy, like when we're walking or doing chores. Hearing a song many times, or being reminded of it by a word or a place, can also start one.",
+  "W: So how can you get rid of an earworm? Some studies suggest that chewing gum helps, because it uses some of the same muscles we use for singing. Another trick is to listen to the whole song from beginning to end. It seems the brain likes to finish things, so hearing the song's ending can help it let go."
 ],[
-  Q("lk2a","What is the talk mainly about?",["The importance of drinking enough water","How to make healthy soup","Why people sweat","The best fruits to eat"],0,"",""),
-  Q("lk2b","According to the speaker, what can mild dehydration cause?",["Tiredness and poor concentration","Fever","Weight gain","Better sleep"],0,"",""),
-  Q("lk2c","What simple way to check is mentioned?",["Looking at the color of urine","Measuring body weight","Counting heartbeats","Checking the skin"],0,"",""),
-  Q("lk2d","Besides drinks, where else can we get water?",["From foods like fruit and soup","Only from tea","From the air we breathe","From vitamins"],0,"","")
+  Q("m2l2a","What is an earworm?",["A part of a song that keeps repeating in someone's mind","A song that is difficult to remember","A type of musical instrument","A song that people dislike"],0,"","歌的一小段在腦中不停重複。"),
+  Q("m2l2b","What kind of song is likely to become an earworm?",["A fast song with a simple melody","A slow song with many instruments","A long song with no chorus","A song with complicated lyrics"],0,"","fast, with a simple melody。"),
+  Q("m2l2c","When do earworms often happen?",["When people are doing simple activities","When people are concentrating hard","Only at night","While people are sleeping"],0,"","腦袋不忙的時候，例如走路、做家事。"),
+  Q("m2l2d","According to the professor, why might listening to the whole song help?",["The brain may let go of a song once it hears the ending.","It makes the song less interesting.","It uses the same muscles as singing.","It helps people learn the lyrics."],0,"","大腦喜歡把事情完成，聽到結尾就放下了。用到唱歌肌肉的是嚼口香糖。")
 ])),
-/* ===== Listening：第二階段（較難） ===== */
-UP(L("lu01","l1","cr",["W: I'm surprised you're not taking the advanced seminar this term."],["It conflicts with my lab hours, unfortunately.","I was surprised by the results too.","The seminar is very advanced.","I'm taking the bus this term."],0,"","")),
-UP(L("lu02","l1","cr",["MC: Do you think we should include the pilot study in our final report?"],["Only if we explain why its sample was so small.","The pilot flew to Chicago.","Our report is final.","I studied for it last night."],0,"","")),
-UP(L("lu03","l1","cr",["W: Professor Hale's comments on my draft were pretty harsh."],["He's like that with everyone, but his advice is usually useful.","I drafted it last week.","Professor Hale teaches history.","Comments are due tomorrow."],0,"","")),
-UP(L("lu04","l1","cr",["MB: I don't suppose you've seen the updated schedule?"],["It was posted on the department board this morning.","I suppose so.","The schedule was very busy.","I've seen that movie."],0,"","")),
-UP(L("lu05","l1","cr",["W: Wouldn't it make more sense to survey graduate students as well?"],["That would make our sample more representative.","Graduate students study hard.","It makes no sense to me.","I graduated last year."],0,"","")),
-UP(L("lu06","l1","cr",["M: The grant committee wants a revised budget by Friday."],["Then we'd better cut the travel costs first.","The committee meets every month.","I revised for my exam.","Friday is my day off."],0,"","")),
-UP(LG("lv4","l2","Listen to a conversation between a student and a professor.",[
-  "W: Professor Okafor, I'd like to write my thesis on social media and political participation, but I'm worried the topic is too broad.",
-  "M: It is broad. What if you focused on one platform and one age group? For example, how university students use short-video apps to follow elections.",
-  "W: That sounds much more manageable. Would I need to collect my own data?",
-  "M: Ideally, yes. A small survey would strengthen your argument considerably, and our department has funding for that kind of project."
+/* ===== Listening：第二階段・較難（upper） ===== */
+UP(L("m2r15","l1","cr",["W: I can't believe they're making us read the whole novel over the break."],["At least it's one of the shorter ones on the list.","I believe the break starts on Friday.","They made the novel into a film.","Reading is my favorite hobby."],0,"","對方抱怨，回應找出好的一面。")),
+UP(L("m2r16","l1","cr",["MB: You wouldn't happen to have a charger I could borrow, would you?"],["Only one for a different kind of phone, unfortunately.","I happen to live nearby.","Charges are added every month.","Yes, I borrowed it from you."],0,"","間接拒絕：有，但不合他的手機。")),
+UP(L("m2r17","l1","cr",["W: The committee's decision isn't final until the dean signs off on it."],["So there's still a chance it could change.","The dean's office is upstairs.","I signed my name on the form.","The committee meets on Fridays."],0,"","理解言外之意：還沒定案 → 還可能改變。")),
+UP(L("m2r18","l1","cr",["M: I'd go to the concert if it weren't on a weeknight."],["They're repeating it on Saturday, actually.","I went to a concert last night.","Weeknights are usually quiet.","The concert hall is very modern."],0,"","與現在事實相反的假設：因為是平日晚上所以不去 → 回應提供週末場次。")),
+UP(L("m2r19","l1","cr",["WA: Didn't Professor Lin say the final would be cumulative?"],["Only the essay section covers the whole term.","The final is in the gym.","Professor Lin teaches two classes.","I didn't say anything."],0,"","cumulative＝涵蓋整學期。回應修正細節：只有申論部分是。")),
+UP(L("m2r20","l1","cr",["M: Tell me you didn't forget to reserve the van for the field trip."],["It's parked right outside.","The field trip is next Tuesday.","I told you about the van.","I forgot my umbrella."],0,"","Tell me you didn't…＝你該不會忘了吧？用「車已經停在外面」間接表示沒忘。")),
+UP(LG("m2v4","l2","Listen to a conversation between a student and her professor.",[
+  "W: Professor Abbott, I wanted to ask about your comments on my thesis proposal. You wrote that my argument relies too heavily on a single voice.",
+  "MB: Right. You're arguing that factory workers in the 1840s generally supported the new labor laws, and your main evidence is the diary of Thomas Reed.",
+  "W: It's a really detailed diary, though. He writes about the laws almost every week.",
+  "MB: It's a wonderful source. I'm not suggesting you drop it. But Reed was a foreman, not an ordinary worker. He had reasons to see the laws differently from the people he supervised. If you want to make a claim about workers in general, you need evidence from people in different positions.",
+  "W: The problem is that most ordinary workers didn't leave diaries.",
+  "MB: True, but they left other traces: petitions, letters to newspapers, union records. Those are less personal, but together they can show whether Reed's views were typical or unusual.",
+  "W: And if they turn out to be unusual?",
+  "MB: Then you have a different, and maybe more interesting, thesis."
 ],[
-  Q("lv4a","What is the student concerned about?",["Her thesis topic is too broad.","She has no interest in politics.","She missed the deadline.","She cannot find a supervisor."],0,"",""),
-  Q("lv4b","What does the professor imply about collecting data?",["Funding may be available to support it.","It is not allowed for theses.","It would weaken her argument.","She should use only published data."],0,"","")
+  Q("m2v4a","What is the professor's main concern about the student's proposal?",["Her conclusion about a large group is based on one person's account.","Her main source is not detailed enough.","Her topic has already been studied too much.","She has misread parts of Reed's diary."],0,"","用一個工頭的日記推論「工人普遍支持」。"),
+  Q("m2v4b","What does the professor imply when he says, \"Then you have a different, and maybe more interesting, thesis\"?",["Evidence that contradicts her expectation could still lead to a valuable project.","She should give up the project if Reed's views were unusual.","She should write only about foremen.","Her current thesis is not interesting at all."],0,"","如果 Reed 的觀點不具代表性，這本身就可以是更有趣的論文主題。")
 ])),
-UP(LG("ln3","l3","Listen to an announcement in an engineering class.",[
-  "M: About the design competition: the judging criteria have been revised. Originally, cost accounted for half the score. Now cost, environmental impact, and originality will each count for one third. Teams that have already submitted proposals may revise them until the twentieth, but any revision must be accompanied by a short note explaining what was changed and why."
+UP(LG("m2n3","l3","Listen to an announcement in a history class.",[
+  "MA: Before we get started, I want to explain the department's updated policy on AI writing tools, since it affects your term papers. You may use these tools for limited purposes: brainstorming topics, checking grammar, or finding sources to read. However, any text that appears in your paper must be written by you, and every source you cite must be one you have actually read.",
+  "MA: If you use an AI tool at any stage, you'll need to include a short statement at the end of your paper describing how you used it. That statement won't lower your grade. In fact, we're asking for it precisely so that honest use isn't confused with misconduct.",
+  "MA: What will be treated as a violation is submitting generated text as your own, or citing sources that don't exist, which, unfortunately, we saw several times last year. If you're unsure whether something is allowed, ask me before you submit, not after."
 ],[
-  Q("ln3a","What has changed about the competition?",["How the designs will be scored","The deadline for proposals","The size of the teams","The prize money"],0,"",""),
-  Q("ln3b","How much of the score is now based on cost?",["One third","One half","All of it","None of it"],0,"",""),
-  Q("ln3c","What must teams include if they revise their proposals?",["A note explaining the changes","A new budget","A list of team members","A cost estimate"],0,"","")
+  Q("m2n3a","What is the main purpose of the announcement?",["To clarify how students may use AI tools in their papers","To ban AI tools from all coursework","To introduce a new grammar-checking program","To announce penalties given last year"],0,"","說明系上對 AI 寫作工具的新規定。"),
+  Q("m2n3b","Why does the speaker say that the statement will not lower students' grades?",["To encourage students to be open about how they used the tools","To explain that the statement is optional","To show that AI tools improve writing quality","To reassure students that grammar errors are acceptable"],0,"","讓誠實使用不被誤認為違規 → 鼓勵坦白說明。"),
+  Q("m2n3c","What can be inferred from the speaker's mention of last year?",["Some students cited sources that did not exist.","The policy was stricter last year.","Students were not allowed to brainstorm with AI.","Most students wrote statements about AI use."],0,"","citing sources that don't exist, which… we saw several times last year。")
 ])),
-UP(LG("lk3","l4","Listen to a talk in a linguistics class.",[
-  "WB: Let's consider how children acquire language. One influential view, associated with Noam Chomsky, holds that humans are born with an innate capacity for grammar. Supporters point out that children produce sentences they have never heard and that they acquire complex rules remarkably quickly, despite hearing incomplete or imperfect input. More recently, however, usage-based researchers have argued that children learn grammar gradually by detecting statistical patterns in the speech around them. Experiments show that even infants can track how often certain sounds follow one another. Many linguists now believe the truth lies somewhere in between: children may have certain learning biases, but they rely heavily on the language they actually hear."
+UP(LG("m2l3","l4","Listen to part of a talk in a linguistics class.",[
+  "WC: Linguists estimate that roughly seven thousand languages are spoken today, and that around forty percent of them are endangered. A language is generally considered endangered when children are no longer learning it at home. Once that happens, the number of speakers can decline quickly, because each generation has fewer people to pass the language on to.",
+  "WC: Why do families stop passing on their language? Often it isn't a simple choice. When a dominant language is associated with jobs, education, and social status, parents may decide, understandably, that their children will be better off speaking it. Historically, governments sometimes made the situation worse by punishing children for speaking minority languages at school.",
+  "WC: But language loss isn't always permanent. The most famous case of revival is Hebrew, which for centuries was used mainly in religious and written contexts and had no native speakers. In the late nineteenth and early twentieth centuries, families and schools began using it in everyday life, and today it has millions of native speakers. That case is unusual, though, because it had strong ideological support and a huge written tradition to draw on.",
+  "WC: More typical are efforts like the Maori language nests in New Zealand, which started in the 1980s. These are preschools where young children are immersed entirely in Maori, often with elders who are fluent speakers. The key insight is that revival depends less on documenting a language in dictionaries than on creating situations where people actually need to use it. A language that's recorded but not spoken is preserved, perhaps, but not alive."
 ],[
-  Q("lk3a","What is the main topic of the talk?",["Different explanations of how children learn grammar","The life of Noam Chomsky","Why some children speak late","How adults learn second languages"],0,"",""),
-  Q("lk3b","What evidence supports the idea of an innate capacity for grammar?",["Children produce sentences they have never heard.","Infants prefer their mother's voice.","Adults speak more slowly to children.","Children forget words quickly."],0,"",""),
-  Q("lk3c","According to usage-based researchers, how do children learn grammar?",["By detecting patterns in the speech they hear","By memorizing rules from parents","Through formal instruction","Only after learning to read"],0,"",""),
-  Q("lk3d","What view do many linguists hold now?",["Both inborn tendencies and language input matter.","Grammar is entirely innate.","Input plays no role in learning.","Children cannot learn complex rules."],0,"","")
+  Q("m2l3a","According to the professor, when is a language generally considered endangered?",["When children are no longer learning it at home","When fewer than a thousand people speak it","When it has no written form","When the government stops using it"],0,"","when children are no longer learning it at home。"),
+  Q("m2l3b","What does the professor imply about parents who stop passing on their language?",["Their decision is often based on concern for their children's future.","They usually do not speak the language well.","They are required to do so by law.","They prefer languages with long written traditions."],0,"","主流語言連結工作、教育和地位 → 父母為孩子著想（understandably）。"),
+  Q("m2l3c","Why does the professor say that the Hebrew case is unusual?",["It had advantages that most endangered languages lack.","It was revived without the help of schools.","It had never been written down.","It was revived by a government agency in the 1980s."],0,"","有強大的理念支持和大量文字傳統，一般瀕危語言沒有。"),
+  Q("m2l3d","What is the professor's main point about the language nests?",["Revival requires creating real situations in which the language is used.","Elders should write dictionaries for young people.","Preschools are less effective than universities.","Documenting a language is the most important step."],0,"","revival depends less on documenting… than on creating situations where people actually need to use it。")
 ])),
 
 /* ===== Writing ===== */
-BS("w01","w1","I'm going camping this weekend.","",["Have","you","checked","the","weather"],"forecast?",["check"],""),
-BS("w02","w1","I started learning Spanish last month.","",["Why","did","you","decide","to learn"],"it?",["deciding"],""),
-BS("w03","w1","My brother just got his driver's license.","",["Is","he","going","to","buy","a car"],"?",["does"],""),
-BS("w04","w1","I'm organizing a picnic for our class.","",["Do","you","need","any","help","with"],"it?",["helping"],""),
-BS("w05","w1","I watched a great documentary last night.","",["What","was","it","about"],"?",["did"],""),
-BS("w06","w1","My phone battery dies very quickly.","",["How","old","is","your","phone"],"?",["does"],""),
-BS("w07","w1","The professor recommended a new textbook.","",["Do","you","know","where","we","can","buy"],"it?",["can we"],""),
-BS("w08","w1","I've been feeling tired all week.","",["Have","you","been","getting","enough"],"sleep?",["got"],""),
-BS("w09","w1","My cousin is visiting from Canada.","",["How","long","is","she","staying"],"?",["does"],""),
-BS("w10","w1","I joined the university orchestra.","",["Which","instrument","do","you","play"],"?",["are"],""),
-EM("w11","w2","You are a member of a study group that meets every Monday evening. Starting next month, you will have a part-time job on Monday evenings. Write an email to the other members of the group.",
-  ["Explain your situation","Suggest a different time to meet","Offer a way to stay involved if the time cannot change"],
-  "Hi everyone,\nI wanted to let you know that I've just accepted a part-time job at the campus bookstore, and starting next month I'll be working on Monday evenings. I've really enjoyed our study sessions, so I hope we can find a way to keep meeting together. Would it be possible to move our meetings to Tuesday or Wednesday evening instead? I'm free on both days after six. If those times don't work for most of you, I completely understand. In that case, I could share my notes with the group before each meeting and join the discussion online for the first half hour on my break. Please let me know what you think.\nBest,\nSam",
-  "說明情況、提出新時間、再提供備案；語氣友善、有彈性。"),
-AD("w12","w3","business",
-  ["Dr. Morales","Many companies now allow employees to work from home several days a week. Some managers believe this improves productivity, while others think it harms teamwork. In your opinion, is working from home good for companies? Why?"],
-  [["Leo","Working from home is great for productivity. Employees save time on commuting and can focus without office distractions."],
-   ["Sara","I think it hurts teamwork. It's much harder to solve problems quickly or build trust when people rarely see each other."]],
-  "I believe that allowing employees to work from home part of the week is good for companies, as long as it is balanced with time in the office. Leo is right that remote work saves commuting time, which can make employees less stressed and more productive. However, Sara also makes an important point about teamwork. That's why I think a hybrid system works best. For example, my aunt's company asks everyone to come in on Tuesdays and Thursdays for meetings and group projects, while the other days are for focused individual work at home. Since this change, her team has met more deadlines, and people still feel connected. A balanced approach gives companies the benefits of both.",
-  "可以提出折衷（hybrid）立場，同時回應兩位同學，用具體例子支持。"),
+BS("m2b01","w1","The bookstore said my order would arrive on Tuesday.","Did they say _ _ _ _ _ _ _?",["whether","you","could","pick","it","up","early"],["did"],"間接問句 whether＋主詞＋could＋原形；pick it up（代名詞放中間）。"),
+BS("m2b02","w1","Why didn't Professor Moore hold office hours today?","She _ _ _ _ _ _ a conference.",["had","to","leave","early","to","attend"],["attending"],"had to leave early to attend…：不定詞表目的。"),
+BS("m2b03","w1","Did you like the documentary we watched in class?","Honestly, _ _ _ _ _ _ I expected.",["it","wasn't","nearly","as","interesting","as"],["more"],"not nearly as＋形容詞＋as＝遠不如。"),
+BS("m2b04","w1","What did the landlord want to know?","He asked _ _ _ _ _ _ the lease.",["whether","we","were","planning","to","renew"],["are"],"轉述問句時態後退：whether we were planning to renew。"),
+BS("m2b05","w1","Is the new science building finished?","_ _ _ _ _ _ until the fall.",["It","won't","be","open","to","students"],["didn't"],"won't…until＝要到…才。"),
+BS("m2b06","w1","How did your team prepare for the debate?","We _ _ _ _ _ _ arguments the other team might use.",["spent","hours","thinking","about","the","strongest"],["think"],"spend＋時間＋V-ing。"),
+BS("m2b07","w1","Do you need any help with your move this weekend?","That's kind of you, but _ _ _ _ _ _ _ already.",["my","brother","has","offered","to","help","me"],["offering"],"has offered to＋原形動詞。"),
+BS("m2b08","w1","Where should I put these lab samples?","Put them in _ _ _ _ _ _ the window.",["the","refrigerator","that","is","next","to"],["where"],"關係子句 that is next to the window 修飾 refrigerator。"),
+BS("m2b09","w1","Have the results of the student election been announced?","Not yet. _ _ _ _ _ _ will be announced.",["Nobody","knows","exactly","when","the","winner"],["know"],"Nobody＋單數動詞；間接問句 when the winner will be announced。",["Nobody exactly knows when the winner"]),
+BS("m2b10","w1","Why did you choose this university?","_ _ _ _ _ _ was its marine biology program.",["What","attracted","me","most","to","it"],["Which"],"名詞子句 What attracted me most to it 當主詞。",["What attracted me to it most"]),
+EM("m2e1","w2","You are a member of a university book club. The club's meetings are currently held on Friday evenings, but attendance has been dropping. Write an email to the club organizer, Olivia. In your email, do the following:",
+  ["Explain why you think attendance has dropped.","Suggest a different meeting time or format.","Explain how your suggestion would help."],
+  "Olivia","Ideas for increasing book club attendance",
+  "Hi Olivia,\nI've noticed that fewer people have been coming to our book club meetings lately, and I wanted to share a few thoughts. I think the main reason is the timing. Friday evening is when many students go home for the weekend, work part-time jobs, or simply want to relax after a long week. Several members have told me they would like to come but always have other plans on Fridays.\nI'd like to suggest moving our meetings to Wednesday at lunchtime, from 12:00 to 1:00, in the student union. We could also try a hybrid format, so members who are off campus can join online.\nI think this would help in two ways. First, most students are already on campus in the middle of the week, so it would be much easier for them to attend. Second, a shorter lunchtime meeting feels like less of a commitment, which might attract new members who are curious but busy.\nLet me know what you think. I'd be happy to create a quick survey to see which time works best for everyone.\nBest,\nNoah",
+  "分析原因要具體（週五回家、打工）；建議要有時間、地點、形式；說明好處用 First / Second，最後主動提出協助。"),
+AD("m2x1","w3","public health",
+  ["Dr. Patel","Some schools now require students to lock their phones away for the entire school day. Supporters say this improves concentration and encourages face-to-face interaction, while critics argue that students need to learn to manage their phone use on their own. Do you think schools should ban phones for the whole school day? Why or why not?"],
+  [["Grace","I support the ban. Even when phones are just on the desk, students keep checking them. Without phones, students pay more attention in class and actually talk to each other at lunch."],
+   ["Daniel","I don't think a full-day ban is a good idea. Students will have phones for the rest of their lives, so school should teach them self-control. Also, parents want to be able to reach their kids in an emergency."]],
+  "I think a full-day ban is reasonable for younger students but less appropriate for older teenagers. Grace makes an important point: phones are designed to capture our attention, and expecting a twelve-year-old to resist constant notifications during class is unrealistic. Removing phones entirely gives younger students a break from that pressure and protects their focus during the years when study habits are formed. However, Daniel is right that self-control has to be learned eventually, and high school is a better place to learn it than college, where no one will check. For older students, a gradual approach would work better, such as banning phones during lessons but allowing them during lunch. As for emergencies, schools already have office phones, so parents can still reach their children. In short, the policy should match students' age, moving from strict limits toward greater responsibility.",
+  "提出「依年齡調整」的折衷立場；分別吸收兩位同學的論點，並反駁緊急聯絡的疑慮，最後總結。"),
 
 /* ===== Speaking ===== */
-SR("s01","s1","You are volunteering at a university open day. Listen to the coordinator and repeat what he says.","MC: Thank you for volunteering today."),
-SR("s02","s1","You are volunteering at a university open day. Listen to the coordinator and repeat what he says.","MC: Visitors should sign in at the welcome tent."),
-SR("s03","s1","You are volunteering at a university open day. Listen to the coordinator and repeat what he says.","MC: Campus tours leave every thirty minutes."),
-SR("s04","s1","You are volunteering at a university open day. Listen to the coordinator and repeat what he says.","MC: Maps are available at the information booth."),
-SR("s05","s1","You are volunteering at a university open day. Listen to the coordinator and repeat what he says.","MC: Please wear your name badge where people can see it."),
-SR("s06","s1","You are volunteering at a university open day. Listen to the coordinator and repeat what he says.","MC: Lunch for volunteers will be served in the student lounge at noon."),
-SR("s07","s1","You are volunteering at a university open day. Listen to the coordinator and repeat what he says.","MC: If a visitor asks a question you can't answer, please send them to a staff member."),
-SI("s08","s2","A researcher is interviewing you about technology and daily life.","W: Which piece of technology do you use most every day, and why?",
-  "The piece of technology I use most is my smartphone. I use it to check my schedule, read the news, and message my classmates about assignments. It's also my main way of listening to music on the bus. Because it does so many things, I would find it very hard to get through a day without it.",""),
-SI("s09","s2","A researcher is interviewing you about technology and daily life.","W: Some people say technology makes us less patient. Do you agree? Why or why not?",
-  "I partly agree. Because we can get information and entertainment instantly, many people now feel frustrated when they have to wait, even for a few seconds. For example, I notice that I get annoyed if a video takes too long to load. However, technology can also teach patience, for example when people use apps to practice a skill every day for months. So it depends on how we use it.",""),
-SI("s10","s2","A researcher is interviewing you about technology and daily life.","W: Should children under twelve be allowed to have their own smartphones? Explain.",
-  "I don't think children under twelve should have their own smartphones. At that age, it's hard to control how much time they spend on games and social media, and they may see content that isn't suitable for them. If parents need to contact their children, a simple phone that can only make calls and send messages would be a better choice.",""),
-SI("s11","s2","A researcher is interviewing you about technology and daily life.","W: How do you think artificial intelligence will change the way students learn in the future?",
-  "I think artificial intelligence will make learning much more personalized. For example, an AI tutor could notice which grammar points a student keeps getting wrong and give extra practice on exactly those points. This would help students learn faster. However, students will still need teachers to guide discussions and to teach skills like critical thinking, which AI can't fully replace.","")
+SR("m2s1","s1","You are volunteering at a city marathon. Listen to the event organizer and repeat what she says.","WB: Water stations are every three kilometers."),
+SR("m2s2","s1","You are volunteering at a city marathon. Listen to the event organizer and repeat what she says.","WB: Please wear your orange vest at all times."),
+SR("m2s3","s1","You are volunteering at a city marathon. Listen to the event organizer and repeat what she says.","WB: Runners must show their number to enter the starting area."),
+SR("m2s4","s1","You are volunteering at a city marathon. Listen to the event organizer and repeat what she says.","WB: The medical tent is located next to the finish line."),
+SR("m2s5","s1","You are volunteering at a city marathon. Listen to the event organizer and repeat what she says.","WB: If a runner looks unwell, contact the nearest medical volunteer immediately."),
+SR("m2s6","s1","You are volunteering at a city marathon. Listen to the event organizer and repeat what she says.","WB: Remind spectators to stay behind the barriers while the race is in progress."),
+SR("m2s7","s1","You are volunteering at a city marathon. Listen to the event organizer and repeat what she says.","WB: After the last runner passes your station, help collect the empty cups and take them to the recycling truck."),
+SI("m2i1","s2","A researcher is studying how university students balance work and study. He will ask you some questions.","M: To start, have you ever had a part-time job? What did you do, and what did you learn from it?",
+  "Yes, last year I worked at a small bakery near my apartment on weekends. I mostly served customers and helped close the shop in the evening. I learned a lot about dealing with people, especially when the store was busy and customers were impatient. I had to stay calm and polite even when I was stressed. I also learned how to manage money, because I had to count the cash register at the end of each shift. Those skills have actually helped me in group projects at school, because I'm better at staying patient when things get difficult.",
+  "說出工作內容，再具體說明學到的兩件事，最後連結到現在的生活。"),
+SI("m2i2","s2","A researcher is studying how university students balance work and study. He will ask you some questions.","M: Some students work many hours while studying. In your opinion, what is a reasonable number of hours for a full-time student to work each week? Why?",
+  "I think around ten to fifteen hours a week is reasonable for most full-time students. A full course load already takes about forty hours if you include classes, reading, and assignments, so working more than fifteen hours would leave very little time for sleep and rest. When I worked about twenty hours one semester, my grades dropped, and I was tired all the time. On the other hand, a few hours of work each week can actually help students manage their time better, because they know they can't waste their free hours. So I'd say a moderate amount is best.",
+  "給出明確數字，用時間計算與自身經驗支持，再補充適量工作的好處。"),
+SI("m2i3","s2","A researcher is studying how university students balance work and study. He will ask you some questions.","M: Some people think unpaid internships are a valuable way to gain experience, while others think they're unfair. What's your view?",
+  "I think unpaid internships can be valuable, but overall they're unfair. They do give students real experience and connections, which can be very helpful when applying for jobs later. The problem is that only students whose families can support them can afford to work for free. Students who need to earn money for rent or tuition have to turn these opportunities down, even if they're very talented. As a result, unpaid internships can make it harder for students from lower-income families to enter certain careers. I think companies should pay at least a basic wage, or universities should offer grants to support interns.",
+  "先承認優點，再說明不公平的原因與影響，最後提出解決方法。"),
+SI("m2i4","s2","A researcher is studying how university students balance work and study. He will ask you some questions.","M: Finally, do you think universities should do more to help students find jobs related to their majors? What could they do?",
+  "Yes, I think universities should do more, because many students graduate without knowing how to connect their studies to a career. One thing universities could do is invite alumni to talk about their jobs and offer mentoring, so students can see realistic career paths. Another idea is to build internships directly into degree programs, so students gain experience before they graduate. For example, my friend's engineering program requires a six-month placement at a company, and most of her classmates received job offers from those companies. Programs like that make the transition from school to work much smoother.",
+  "表態後提出兩個具體做法，再用朋友的例子證明有效。")
 ]);

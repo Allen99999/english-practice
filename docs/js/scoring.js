@@ -95,6 +95,8 @@ function applyMarks(att, marks) {
     } else { a.correct = a.auto; a.pts = a.autoPts; delete a.tmark; }
   });
   if (att.origScore === undefined) { att.origScore = att.score; att.origTotal = att.total; }
-  const P = attPoints(att); att.score = P.s; att.total = P.t; att.regrade = changes;
+  // 題庫改版後已刪除的題目算不出分數：保留原本的成績，不要重算
+  if ((att.qs || []).every((_, i) => getQ(i, att))) { const P = attPoints(att); att.score = P.s; att.total = P.t; }
+  att.regrade = changes;
   return changes;
 }

@@ -103,13 +103,26 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
   - 正式考模擬卷的題目不可以抄官方或出版社的真題（網站是公開的）；官方真題請學生到 GEPT i學網。
 - **有正式模擬卷的題庫（英檢、托福）**：題庫設 `mockPapers`；首頁選這個題庫時，「正式模擬卷 N」＝模擬段考、「隨機組卷」＝自訂練習（不顯示「模式」切換）。
   模擬卷題庫設 `hidden`、`fixed`、`exams`（可考的部分）、`partNotes`、`timeLimits`、`blind`（不顯示對錯的部分）。
-- **托福（2026 新制）**：練習題在 `banktoefl.js`（閱讀）、`banktoefl2.js`（聽力、寫作、口說）；正式模擬卷在 `banktoeflmock.js`、`banktoeflmock2.js`。
-  - 出題工具（helpers.js）：CT 補字母（`manu{scripts}`）、LG 聽力題組、L(...,"cr",...) 聽一句選回應、BS Build a Sentence、EM Email、AD Academic Discussion、SR／SI 口說。
+- **托福（2026 新制）**：練習題在 `banktoefl.js`（題庫設定＋閱讀）、`banktoefl2.js`（聽力、寫作、口說），共約 236 題；正式模擬卷在 `banktoeflmock.js`、`banktoeflmock2.js`（各 128 題）。
+  - 2026-10 依「多次元托福 10/25 全科預測」的難度全部重寫（B2～C1）：學術文章約 230～290 字、5 題（推論、字義、EXCEPT、作者目的、句子插入）；Choose a Response 以間接回應為主。
+    預測題本放在 `多次元托福*/`（已 gitignore），只能當難度與格式參考，內容不可照搬到網站。
+  - 出題工具（helpers.js）：
+    - `CTW(id, tag, title, 原文, alts)` Complete the Words：自動挖空（第一句完整，之後每隔一字挖掉後半，共 10 格；遇到大寫、單一字母、連字號就順延）。
+      `alts` 是同樣長度、前後文也通的其他答案，例如 `{ their: ["these"] }`。改原文會改變挖空位置，改完用 node 印出來檢查。
+    - `DL` Read in Daily Life（第一行粗體，可放 From/To/Subject 或表單欄位）；`AP(id, tag, title, 段落, uline, qs)` 學術文章（`uline` 是字義題要畫底線的字）。
+    - `INS(id, 插入句, ans)` 句子插入題：文章裡放四個 ■（畫面自動編號 1～4），答案 0～3 不會被自動平衡，要自己分散；答完會把句子放進文章。
+    - `BS(id, tag, 對方的話, frame, tiles, extra, 解析, alt)` Build a Sentence：frame 裡的 `_` 是空格，固定的字可以放在任何位置（例如 `"Do you know _ _ _ _?"`）。
+    - `EM(id, tag, 情境, bullets, 收件人, 主旨, 範文, 解析)`、`AD` Academic Discussion、`LG` 聽力題組、`L(...,"cr",...)` 聽一句選回應、`SR`／`SI` 口說。
   - 聽力 script 的說話者：W/M 美國腔、WB/MB 英國腔、WA/MA 澳洲腔、WC/MC 加拿大腔、N 旁白（聲音設定在 config.js 的 `TTS.accents`）。
   - Reading、Listening 是兩階段適應性：題目加 `stage`（router／lower／upper），模擬卷的 `adaptive` 設定切分點（第一階段答對率 ≥ 60% 進 upper）。執行邏輯在 `toefl.js`。
-  - 語音只做聽力和口說（build_tts_jobs.mjs 會跳過托福的閱讀、寫作和 dict7.js 的單字），托福頁面也不顯示「念題目／朗讀全文」。
-  - 寫作、口說是自評＋範文；口說可錄音（只存在學生裝置，不上傳）。結果頁會顯示依答對率估算的 1～6 級分。
+    每份卷：Reading router 20／lower 18／upper 18；Listening router 19／lower 15／upper 15；Writing 10 BS＋Email＋Discussion；Speaking 7 句＋4 題。
+  - 語音只做聽力和口說（build_tts_jobs.mjs 會跳過托福的閱讀、寫作和 dict7.js、dict8.js 的單字），托福頁面也不顯示「念題目／朗讀全文」。
+  - 托福題目用到的字收在 `dict7.js`、`dict8.js`（點字時用瀏覽器內建語音）；題目裡不要用 é、ā 這類字母（點字查詢會拆錯），寫成 cafe、resume、Maori。
+  - 寫作、口說是自評＋範文；口說錄音在學生自評後上傳給老師（見下方「口說錄音」）。結果頁會顯示依答對率估算的 1～6 級分。
   - Allen 提供的「新托福模擬小題本」只當格式參考，內容含 ETS 官方題，不可照搬到網站。
+- **聽說讀寫進度條**（app.js 的 `skillBarsHTML`）：有正式模擬卷的題庫（托福、英檢）＋它的模擬卷算一組，依 tag 名稱開頭（Reading／閱讀、Listening／聽力…）分成聽說讀寫。
+  長條＝這個學生做過的題目佔該部分總題數（同一題只算一次），顏色＝最近一次的得分率，最弱的部分標「建議加強」。
+  出現在首頁（選了托福或英檢、有輸入名字時，可按「練這部分」直接選好題型）、紀錄頁（選了某位學生時）、老師總覽的個人詳細。
 - **網站名稱與分享預覽**：名稱 Apex English；分享預覽圖是 `docs/og-v2.png`（換圖時改新檔名，避免 LINE/FB 快取舊圖）（1200×630，用 Chrome headless 從 HTML 截圖產生），index.html 有 og:／twitter: 標籤。
   新題目裡沒收錄的字要加到 `dict*.js`（格式 `word|詞性|中文`）。
 - **改完之後**：`node tools/build_tts_jobs.mjs && .venv/bin/python tools/gen_audio.py`，再 `git add -A && git commit && git push`

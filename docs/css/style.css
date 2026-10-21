@@ -648,3 +648,29 @@ details.script summary{cursor:pointer;font-weight:650;color:var(--ink-2)}
 :root[data-theme="dark"]{--glass:rgba(18,18,22,.42);--glass-hi:rgba(255,255,255,.14);--glass-lo:rgba(18,18,22,.30)}
 .pend-item,.pend-row,.rv{-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3)}
 :root[data-theme="dark"] .pend-item,:root[data-theme="dark"] .pend-row{background:rgba(16,16,20,.62)}
+/* Build a Sentence：回應句的固定字＋空格 */
+.bs-line.frame{gap:10px 6px;padding:12px 14px;border-radius:var(--r-lg);background:var(--glass-lo);box-shadow:inset 0 0 0 1.5px var(--edge);min-height:66px}
+.bs-line.frame .tile{background:var(--accent-soft);color:var(--accent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 35%,transparent)}
+.bs-blank{display:inline-block;width:64px;height:38px;border-bottom:2px solid var(--ink-3);opacity:.7}
+.bs-fix.punct{margin-left:-4px}
+/* 句子插入題 */
+.ins-mk{display:inline-flex;align-items:center;gap:3px;margin:0 4px;padding:1px 8px;border-radius:8px;background:var(--accent);color:var(--bg);font-size:.78em;line-height:1.5;font-weight:800;vertical-align:1px;white-space:nowrap}
+.ins-mk small{font-size:1em;font-weight:800}
+.ins-sent{background:color-mix(in srgb,var(--good) 18%,transparent);box-shadow:inset 0 -2px 0 var(--good);padding:1px 3px;border-radius:4px;margin-right:3px}
+/* Email 的收件人、主旨 */
+.mailhead{display:flex;flex-direction:column;gap:6px;padding:10px 14px;border-radius:var(--r-md);background:var(--glass-lo);box-shadow:inset 0 0 0 1px var(--edge);font-size:15.5px}
+.mailhead span{display:inline-block;min-width:68px;font-weight:750;color:var(--ink-3);font-size:13px}
+/* 聽說讀寫進度 */
+.skills{display:flex;flex-direction:column;gap:14px}
+.sk-row{display:grid;grid-template-columns:96px minmax(0,1fr);gap:4px 12px;align-items:center}
+.sk-name{display:flex;align-items:baseline;gap:6px;grid-row:span 2}
+.sk-name b{font-size:22px;font-family:var(--round);font-weight:850}
+.sk-name span{font-size:12px;color:var(--ink-3);font-weight:700}
+.sk-bar{position:relative;height:14px;border-radius:99px;background:var(--glass-lo);box-shadow:inset 0 0 0 1px var(--edge);overflow:hidden}
+.sk-bar i{position:absolute;inset:0 auto 0 0;border-radius:99px;transition:width .8s var(--spring,ease)}
+.sk-meta{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;font-size:13px;color:var(--ink-2)}
+.sk-meta .tag{font-size:11.5px;padding:2px 8px}
+.sk-meta .tag.weak{background:var(--bad);color:#fff}
+.sk-meta .tag.none{background:var(--glass-hi);color:var(--ink-3)}
+.sk-tip{font-size:13.5px;padding:10px 12px;border-radius:var(--r-md);background:var(--accent-soft)}
+@media (max-width:520px){.sk-row{grid-template-columns:62px minmax(0,1fr)}.sk-name{flex-direction:column;gap:0}}
