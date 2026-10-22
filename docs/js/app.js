@@ -532,10 +532,11 @@ function homeHTML() {
   <p class="subtitle">全方位英語訓練平台。選好範圍就開始，點題目裡不會的單字，交卷後自動整理成單字表。</p></div>
   <div class="row" style="gap:10px;flex-wrap:nowrap"><button class="icon-btn theme-btn" data-act="theme" aria-label="${curTheme() === "dark" ? "切換成淺色模式" : "切換成深色模式"}" title="${curTheme() === "dark" ? "淺色模式" : "深色模式"}">${curTheme() === "dark" ? I.sun : I.moon}</button>
   <button class="icon-btn" data-act="sound" aria-label="音效開關" title="音效">${store.settings.sound ? I.sound : I.mute}</button></div></div>`;
-  h += `<div class="glass card who-card"><div class="opt-block"><label for="who">作答人</label>
+  const hc = typeof homeCardHTML === "function" ? homeCardHTML() : "";   // 個人名片（card.js）：寬螢幕時和作答人並排
+  h += `<div class="home-top ${hc ? "has-card" : ""}">${hc}<div class="glass card who-card"><div class="opt-block"><label for="who">作答人</label>
     <div class="who-row"><input id="who" class="field" placeholder="輸入你的名字" autocomplete="off" value="${esc(store.who)}" maxlength="20"></div>
     ${typeof syncHomeHTML === "function" ? syncHomeHTML() : ""}
-    ${store.names.length ? `<div class="chips">${store.names.map(n => `<button class="chip" data-act="pick-who" data-n="${esc(n)}" aria-pressed="${n === store.who}">${esc(n)}</button>`).join("")}</div>` : ""}</div></div>`;
+    ${store.names.length ? `<div class="chips">${store.names.map(n => `<button class="chip" data-act="pick-who" data-n="${esc(n)}" aria-pressed="${n === store.who}">${esc(n)}</button>`).join("")}</div>` : ""}</div></div></div>`;
   const fr = store.who && sel.banks.length === 1 && famRoot(sel.banks[0]);
   if (fr) h += skillBarsHTML(fr, store.attempts.filter(a => (a.who || "未署名") === store.who), store.who, true);
   if (sess.length) {
@@ -1200,9 +1201,11 @@ function histHTML() {
   const list = store.attempts.filter(a => !store.histWho || (a.who || "未署名") === store.histWho);
   let h = `<section class="view"><div><div class="eyebrow">History</div><h1 class="large-title">作答紀錄</h1><p class="subtitle">點任何一筆就能看完整解析和當次的生字表。</p></div>`;
   if (names.length > 1) h += whoChips("hist-who", store.histWho, names);
-  if (!list.length) h += `<div class="glass card empty"><b>還沒有紀錄</b>完成第一次練習後，成績和解析都會存在這裡。</div>`;
+  if (!list.length) { if (store.who && typeof dashboardHTML === "function") h += dashboardHTML(store.who, []); h += `<div class="glass card empty"><b>還沒有紀錄</b>完成第一次練習後，成績和解析都會存在這裡。</div>`; }
   else {
-    const avg = list.filter(a => a.kind === "exam").map(a => a.score / a.total);
+    const hw0 = store.histWho || (names.length === 1 ? names[0] : "");
+    if (hw0 && typeof dashboardHTML === "function") h += dashboardHTML(hw0, list);   // 個人 Dashboard（card.js）
+    const avg = hw0 && typeof dashboardHTML === "function" ? [] : list.filter(a => a.kind === "exam").map(a => a.score / a.total);
     if (avg.length) h += `<div class="stats"><div class="stat glass"><div class="k">練習次數</div><div class="v">${list.length}</div></div><div class="stat glass"><div class="k">平均答對率</div><div class="v">${Math.round(avg.reduce((s, x) => s + x, 0) / avg.length * 100)}%</div></div><div class="stat glass"><div class="k">最佳 Combo</div><div class="v" style="color:var(--gold)">×${Math.max(...list.map(attCombo))}</div></div><div class="stat glass"><div class="k">作答人</div><div class="v">${names.length}</div></div></div>`;
     const hw = store.histWho || (names.length === 1 ? names[0] : "");
     if (hw) famRoots(list).forEach(fr => h += skillBarsHTML(fr, list, names.length > 1 ? hw : "", false));
@@ -1307,7 +1310,7 @@ document.addEventListener("click", e => {
     case "resume": S = store.sessions.find(x => x.id === d.id); if (S) { if (S.who) store.who = S.who; wordMode = false; showHint = false; go("quiz"); } break;
     case "discard": sheet(`<h3>刪除這份存檔？</h3><p class="muted" style="margin:0 0 16px">還沒交卷的答案和生字都不會保存。</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="close-sheet">取消</button><button class="btn danger" data-act="discard-now" data-id="${d.id}">刪除</button></div>`); break;
     case "discard-now": store.sessions = store.sessions.filter(x => x.id !== d.id); save(true); closeSheet(); render(); break;
-    case "pick-who": store.who = d.n; save(); rerenderKeep(); break;
+    case "pick-who": store.who = d.n; save(); rerenderKeep(); if (typeof openCardEditor === "function" && !cardOf(d.n)) openCardEditor(d.n, true); break;
     case "save-now": S.saved = Date.now(); save(true); toast("已存檔，下次在首頁「繼續作答」接著做"); break;
     case "hist-who": store.histWho = d.n; save(); rerenderKeep(); break;
     case "vocab-who": store.vocabWho = d.n; save(); rerenderKeep(); break;
@@ -1438,11 +1441,14 @@ function start(data) {
   if (store.sessions.length !== n0) save(true);
   fxInit();
   render();
+  window.dispatchEvent(new Event("apex-ready"));   // 開場動畫（intro.js）等這個訊號再收起
 }
 if (window.claude && window.claude.hot) {
   window.claude.hot.snapshot && window.claude.hot.snapshot(() => ({ sessions: store.sessions }));
 }
-window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+// 等後面的模組（toefl、aigrade、card…）都載入完再畫第一個畫面
+const boot = () => window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", boot, { once: true }) : boot();
 /* 背景視差：滑鼠移動或手機傾斜時，背景跟著微微移動 */
 (() => {
   const el = document.querySelector(".bg-photo"); if (!el || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
