@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Intro Lab</title>
+<link rel="stylesheet" href="css/style.css?v=lab1">
+<script>try{var t=((JSON.parse(localStorage.getItem("glassquiz.v1")||"{}").settings)||{}).theme;document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){document.documentElement.dataset.theme="light"}</script>
+<style>
+  body{margin:0;background:var(--bg)}
+  #site{position:fixed;inset:0;width:100%;height:100%;border:0}
+  .lab-bar{position:fixed;z-index:100;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;gap:6px;padding:6px;border-radius:999px;
+    background:color-mix(in srgb,var(--bg) 70%,transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 10px 30px -12px var(--shadow),inset 0 0 0 1px var(--edge)}
+  .lab-bar button{padding:9px 14px;border-radius:999px;font-weight:700;font-size:14px;white-space:nowrap}
+  .lab-bar button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+  .lab-note{position:fixed;z-index:100;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);font-size:12.5px;color:var(--ink-2);padding:6px 12px;border-radius:999px;background:color-mix(in srgb,var(--bg) 70%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+  /* 變化版用的字塊 */
+  .lt{position:absolute;left:0;top:0;display:grid;place-items:center;border-radius:22%;font-family:var(--round);font-weight:850;line-height:1;color:color-mix(in srgb,var(--ink) 78%,transparent);
+    background:color-mix(in srgb,var(--ink) 4%,var(--bg));box-shadow:inset 0 1.5px 0 var(--rim),inset 0 0 0 1px var(--edge),0 14px 28px -16px var(--shadow);will-change:transform}
+  .lt.solid{background:var(--ink);color:var(--bg)}
+  .lt.ghost{background:none;box-shadow:none;color:var(--ink)}
+  .shake{animation:labShake .32s cubic-bezier(.36,.07,.19,.97)}
+  @keyframes labShake{20%{transform:translate(0,7px)}45%{transform:translate(0,-3px)}70%{transform:translate(0,2px)}100%{transform:none}}
+  .intro.lab{animation:none}
+  .intro-mark{z-index:5}
+  .mark-veil{position:absolute;z-index:4;left:50%;top:41%;width:min(560px,92vw);height:min(260px,40vw);transform:translate(-50%,-50%);border-radius:50%;
+    background:radial-gradient(closest-side,color-mix(in srgb,var(--bg) 92%,transparent),transparent);pointer-events:none;opacity:0}
+</style>
+</head>
+<body>
+<iframe id="site" src="./?nointro=1" title="網站"></iframe>
+<div class="lab-note">開場動畫試驗頁：選一個版本看效果（點畫面可跳過）</div>
+<div class="lab-bar">
+  <button data-v="A">A 物理堆疊</button><button data-v="B">B 巨字牆</button><button data-v="C">C 景深字雨</button><button data-v="0">目前版本</button>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<script>
+(function () {
+  const AZ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", rnd = (a, b) => a + Math.random() * (b - a), pick = s => s[Math.floor(Math.random() * s.length)];
+  const ease = { gravity: "cubic-bezier(.45,0,.9,.55)", out: "cubic-bezier(.16,1,.3,1)" };
+  let stopFn = null;
+
+  /* 主標題：和網站目前的動畫一模一樣（不更動） */
+  function titleAnim(el, H) {
+    const mark = document.createElement("div"); mark.className = "intro-mark";
+    const word = (txt, cls) => `<span class="${cls}">${[...txt].map(c => `<span class="il">${c}</span>`).join("")}</span>`;
+    mark.innerHTML = `${word("Apex", "iw1")}${word("English", "iw2")}<span class="intro-line"></span><span class="intro-by">Created and designed by Allen L.</span>`;
+    el.appendChild(mark);
+    mark.querySelectorAll(".il").forEach((l, k) => {
+      const big = l.parentNode.classList.contains("iw1"), d = big ? 240 + k * 85 : 520 + (k - 4) * 55;
+      l.animate([
+        { transform: `translateY(${-H * .55}px) rotate(${(Math.random() - .5) * 24}deg)`, opacity: 0, filter: "blur(6px)" },
+        { opacity: 1, filter: "blur(0)", offset: .45 },
+        { transform: "translateY(0) rotate(0)", offset: .82, easing: "ease-out" },
+        { transform: "translateY(-2px)", offset: .91 },
+        { transform: "none", opacity: 1, filter: "blur(0)" }
+      ], { duration: big ? 760 : 680, delay: d, easing: ease.gravity, fill: "both" });
+    });
+    mark.querySelector(".intro-line").animate([{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }], { duration: 600, delay: 1050, easing: ease.out, fill: "both" });
+    mark.querySelector(".intro-by").animate([{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }], { duration: 500, delay: 1200, easing: ease.out, fill: "both" });
+    return mark;
+  }
+  function overlay() {
+    if (stopFn) stopFn();
+    document.querySelectorAll(".intro").forEach(x => x.remove());
+    const el = document.createElement("div"); el.className = "intro lab"; document.body.appendChild(el);
+    return el;
+  }
+  function finish(el, mark, d, extra) {
+    if (el._out) return; el._out = true;
+    if (extra) extra();
+    mark.animate([{ opacity: 1, transform: "translate(-50%,-50%)", filter: "blur(0)" }, { opacity: 0, transform: "translate(-50%,calc(-50% - 8px)) scale(.97)", filter: "blur(8px)" }], { duration: d, easing: "ease-in", fill: "forwards" });
+    el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: d + 200, delay: 120, easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards" }).onfinish = () => el.remove();
+  }
+  const tile = (ch, s, cls) => { const t = document.createElement("span"); t.className = "lt " + (cls || ""); t.textContent = ch; t.style.width = t.style.height = s + "px"; t.style.fontSize = Math.round(s * .54) + "px"; return t; };
+
+  /* A 物理堆疊：大字塊有重量、會互相碰撞翻滾，堆滿下半部；最後地板打開，字塊全部掉出畫面 */
+  function variantA() {
+    const el = overlay(), W = innerWidth, H = innerHeight, { Engine, Bodies, Composite, Body } = Matter;
+    const base = Math.max(62, Math.min(150, Math.min(W, H) * .17));
+    const engine = Engine.create(); engine.gravity.y = 1.7;
+    const floor = Bodies.rectangle(W / 2, H + 50, W * 3, 100, { isStatic: true }), wl = Bodies.rectangle(-50, H / 2, 100, H * 3, { isStatic: true }), wr = Bodies.rectangle(W + 50, H / 2, 100, H * 3, { isStatic: true });
+    Composite.add(engine.world, [floor, wl, wr]);
+    const n = Math.min(70, Math.round(W * H * .42 / (base * base))), items = [];
+    for (let k = 0; k < n; k++) setTimeout(() => {
+      const s = Math.round(base * rnd(.72, 1.35)), x = rnd(s, W - s), b = Bodies.rectangle(x, -s * rnd(1, 3), s, s, { chamfer: { radius: s * .22 }, restitution: .18, friction: .55, density: .002 });
+      Body.setAngle(b, rnd(-.6, .6)); Body.setAngularVelocity(b, rnd(-.08, .08)); Composite.add(engine.world, b);
+      const t = tile(pick(AZ), s, Math.random() < .16 ? "solid" : ""); el.appendChild(t); items.push({ b, t, s });
+    }, k * 1300 / n + rnd(0, 80));
+    const mark = titleAnim(el, H); let last = performance.now(), raf;
+    const loop = now => { Engine.update(engine, Math.min(32, now - last)); last = now; items.forEach(({ b, t, s }) => t.style.transform = `translate(${b.position.x - s / 2}px,${b.position.y - s / 2}px) rotate(${b.angle}rad)`); raf = requestAnimationFrame(loop); };
+    raf = requestAnimationFrame(loop);
+    const out = () => finish(el, mark, 650, () => { Composite.remove(engine.world, floor); engine.gravity.y = 3; });
+    const tm = setTimeout(out, 2700); el.onpointerdown = out;
+    stopFn = () => { cancelAnimationFrame(raf); clearTimeout(tm); };
+    el.animate([{ opacity: 1 }], { duration: 3700 }).onfinish = () => cancelAnimationFrame(raf);
+  }
+
+  /* B 巨字牆：超大字塊一塊一塊重重落下，拼成整面字牆（落地時畫面輕震）；最後字牆從中間往兩側翻開 */
+  function variantB() {
+    const el = overlay(), W = innerWidth, H = innerHeight, cols = W < 600 ? 3 : W < 1000 ? 5 : 6, gap = Math.round(W * .015);
+    const s = Math.floor((W - gap * (cols + 1)) / cols), rows = Math.ceil((H - gap) / (s + gap)), tiles = [];
+    const veil = document.createElement("div"); veil.className = "mark-veil"; el.appendChild(veil);
+    const order = []; for (let r = rows - 1; r >= 0; r--) for (let c = 0; c < cols; c++) order.push([r, c]);
+    order.forEach(([r, c], k) => {
+      const t = tile(pick(AZ), s, Math.random() < .14 ? "solid" : ""); el.appendChild(t);
+      const x = gap + c * (s + gap), y = H - (rows - r) * (s + gap), d = k * (1150 / order.length) + rnd(0, 60), rot = rnd(-4, 4);
+      t.style.opacity = 0;
+      t.animate([{ transform: `translate(${x}px,${-s * 1.4}px) rotate(${rnd(-14, 14)}deg)`, opacity: 1 }, { transform: `translate(${x}px,${y}px) rotate(${rot}deg)`, opacity: 1, offset: .8, easing: "ease-out" },
+        { transform: `translate(${x}px,${y - 6}px) rotate(${rot * .6}deg)`, opacity: 1, offset: .9 }, { transform: `translate(${x}px,${y}px) rotate(${rot}deg)`, opacity: 1 }], { duration: 520, delay: d, easing: ease.gravity, fill: "both" });
+      if (k % Math.max(3, cols) === 0) setTimeout(() => { el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake"); }, d + 420);
+      tiles.push({ t, x, y, c, rot });
+    });
+    veil.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 300, fill: "both" });
+    const mark = titleAnim(el, H);
+    const out = () => finish(el, mark, 620, () => tiles.forEach(({ t, x, y, c, rot }) => { const dir = c < cols / 2 ? -1 : 1;
+      t.animate([{ transform: `translate(${x}px,${y}px) rotate(${rot}deg)` }, { transform: `translate(${x + dir * W * .7}px,${y + rnd(-H * .1, H * .25)}px) rotate(${rot + dir * rnd(25, 60)}deg)` }], { duration: 620, delay: Math.abs(c - (cols - 1) / 2) * 40, easing: "cubic-bezier(.55,0,.85,.35)", fill: "forwards" }); }));
+    const tm = setTimeout(out, 2700); el.onpointerdown = out; stopFn = () => clearTimeout(tm);
+  }
+
+  /* C 景深字雨：遠、中、近三層字母落過畫面（近的超大、模糊、很快），不在底部堆積，像鏡頭穿過字母雨 */
+  function variantC() {
+    const el = overlay(), W = innerWidth, H = innerHeight, unit = Math.min(W, H);
+    const layers = [{ n: 26, s: [.07, .11], blur: 2.5, op: .35, dur: [1500, 2100] }, { n: 16, s: [.14, .22], blur: 0, op: .85, dur: [1100, 1500] }, { n: 6, s: [.38, .6], blur: 7, op: .28, dur: [700, 950] }];
+    layers.forEach((L, li) => { for (let k = 0; k < L.n; k++) {
+      const s = Math.round(unit * rnd(L.s[0], L.s[1])), t = tile(pick(AZ), s, li === 1 && Math.random() < .2 ? "solid" : li === 0 ? "ghost" : "");
+      t.style.filter = L.blur ? `blur(${L.blur}px)` : ""; t.style.opacity = 0; t.style.zIndex = li === 2 ? 6 : 1; el.appendChild(t);
+      const x = rnd(-s * .3, W - s * .7), r0 = rnd(-40, 40), r1 = r0 + rnd(-30, 30);
+      t.animate([{ transform: `translate(${x}px,${-s * 1.2}px) rotate(${r0}deg)`, opacity: L.op }, { transform: `translate(${x + rnd(-30, 30)}px,${H + s * .2}px) rotate(${r1}deg)`, opacity: L.op }],
+        { duration: rnd(L.dur[0], L.dur[1]), delay: rnd(0, 1900 - L.dur[0] * .4), easing: "cubic-bezier(.4,0,.85,.6)", fill: "both" });
+    } });
+    const mark = titleAnim(el, H);
+    const out = () => finish(el, mark, 600); const tm = setTimeout(out, 2700); el.onpointerdown = out; stopFn = () => clearTimeout(tm);
+  }
+
+  /* 目前網站上的版本 */
+  async function variant0() {
+    overlay().remove();
+    const t = await fetch("js/intro.js?x=" + Date.now()).then(r => r.text());
+    const d = document.createElement("div"); d.id = "intro"; d.className = "intro"; d.style.animation = "none"; document.body.appendChild(d);
+    (0, eval)(t); setTimeout(() => window.dispatchEvent(new Event("apex-ready")), 50);
+  }
+  const run = v => { document.querySelectorAll(".lab-bar button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === v)); ({ A: variantA, B: variantB, C: variantC, 0: variant0 })[v](); };
+  document.querySelector(".lab-bar").addEventListener("click", e => { const b = e.target.closest("button"); if (b) run(b.dataset.v); });
+  setTimeout(() => run("A"), 400);
+})();
+</script>
+</body>
+</html>

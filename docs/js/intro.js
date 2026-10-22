@@ -4,6 +4,7 @@
 (function () {
   const el = document.getElementById("intro");
   if (!el) return;
+  if (/[?&]nointro\b/.test(location.search)) { el.remove(); return; }   // 開場動畫試驗頁（intro-lab.html）內嵌網站時不播
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const W = innerWidth, H = innerHeight, t0 = performance.now();
   const MIN = reduce ? 650 : 2200, MAX = 6000;
