@@ -132,14 +132,23 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
   - 畫面：估分卡（四面向＋封頂規則）、一句診斷、任務檢核、原文標註＋錯誤清單、語域檢查、替換字、錯誤日誌與分數趨勢、5 分鐘限時重寫、C1／C2 範文。
     隨機組卷只計時；正式模擬卷（`S.mock`）每題限時 7 分鐘、時間到自動送出。AI 分數就是這題的分數，老師在待批改改分會覆蓋。
   - Email 題 `EM(..., 收件人, 主旨, C1範文, C2範文, 解析)`。隨機組卷的題數可以選「1 題」（適合專練寫作、口說）。
-- **開場動畫、個人名片、Dashboard（2026-10-22 加入）**：改版前的版本保留在 git tag `v-before-namecard`／分支 `backup-before-namecard`，要退回就把 docs 換回那一版。
-  - 開場動畫 `docs/js/intro.js`（index.html 的 `#intro` 後面同步載入）：玻璃字母方塊落下堆疊＋Apex English 逐字落定，約 2.5 秒，點一下跳過；
-    等 app.js 的 `apex-ready` 事件才收起；CSS 有 3.6 秒保險自動消失；減少動態效果時只淡入品牌字。
-  - 個人名片 `docs/js/card.js`：輸入新名字（Enter 或離開輸入框）或第一次點名字，彈出名片（先放大到接近全螢幕再退回 70%）＋客製化面板。
-    5 種背景在 `docs/img/card/<id>.webp`（Higgsfield Z Image 產生，0.15 點／張），14 種 SVG 小物件可拖曳、縮放、旋轉（最多 8 個）。
-    設定存在 `store.cards[名字]`，交卷時跟著成績上傳（attempt.card），老師總覽顯示學生名片。等級：每份作答 20 XP＋每得 1 分 10 XP。
-  - 紀錄頁選了某位學生時，上方是大的個人 Dashboard（名片、等級環、練習次數、答對率、Combo、連續天數、時間、近 14 天、近 12 次成績）。
+- **開場動畫、角色名片、每日任務、Dashboard（2026-10-22 加入）**：加入名片前的版本保留在 git tag `v-before-namecard`／分支 `backup-before-namecard`，要退回就把 docs 換回那一版。
+  - 開場動畫 `docs/js/intro.js`（index.html 的 `#intro` 後面同步載入）：景深字雨（遠、中、近三層字母落過畫面，不在底部堆積）＋Apex English 逐字落定（這段 Allen 喜歡，不要改），約 2.2 秒，點一下跳過；
+    等 app.js 的 `apex-ready` 事件才收起；CSS 有 3.6 秒保險自動消失；減少動態效果時只淡入品牌字。網址加 `?nointro` 不播。`docs/intro-lab.html` 是當初 A／B／C 三種版本的比較頁（Allen 選 C）。
+  - 角色名片 `docs/js/card.js`：6 位角色（CHARS：Kai、Jaylen、Mateo 男；Yuna、Priya、Freya 女）× 4 套造型（OUTFITS：court 球場、street 街頭、campus 學院、neon 夜城），8 個場景（SCENES）。
+    圖：`docs/img/avatar/<角色>-<造型>.webp`（透明背景 604×900）、`-s` 縮圖、`<角色>-face.webp` 頭像；`docs/img/scene/<場景>.webp`（1600×900）、`-s` 縮圖。
+    畫風是《Call of the Sea》／迪士尼式手繪動畫風（Allen 指定，不要寫實、不要 AI 感），用 Higgsfield `gpt_image_2_5`（透明背景，0.5 點／張）：先畫各角色一張，
+    其他造型用「image_references＝那張的 job_id」只換衣服，臉和身材才會一致；場景用 `z_image`（0.15 點／張）。一次送超過 5 個工作會被限流（429）。
+    名片＝場景＋角色（約名片高度 70%，女生 67%，腳下陰影、依場景的 tint／rim 調色和側光、待機呼吸）＋右下玻璃資訊面板；容器窄於 470px 時改 4:3、隱藏數據列。
+    輸入新名字（Enter 或離開輸入框）或第一次點名字會彈出（先放大到接近全螢幕再退回 70%）＋選角色、造型、場景的面板；首頁還沒有名片時作答人下面有「選一位角色」入口。
+    設定存在 `store.cards[名字]＝{char, outfit, scene}`（舊版只有 bg／stickers 的不算，會請學生重選），交卷時跟著成績上傳（attempt.card），老師總覽顯示學生名片。
+  - 連續練習解鎖場景：court、station、rooftop、sakura 一開始就能用；neon 3 天、alley 7 天、lookout 14 天、camp 30 天（看「最長連續天數」，解鎖後不會再鎖）。
+  - 每日任務（`QUESTS`）：每人每天 3 個（1 個簡單＋2 個進階，依名字＋日期固定抽），每個 +30 XP，全部完成再 +50 XP；首頁作答人下面顯示。
+    經驗值＝每份作答 20 XP＋每得 1 分 10 XP＋每日任務；等級門檻 50·L·(L+1)。
+  - 剛交卷的結果頁（app.js 的 `justFinished`）最上面有結算：獲得 XP、升級、完成的任務、新解鎖的場景（可直接「換上」）。
+  - 紀錄頁選了某位學生時，上方是個人 Dashboard（名片、等級環、練習次數、答對率、Combo、時間、連續天數與場景解鎖進度、近 14 天、近 12 次成績）。
   - app.js 的第一次 render 改成等 DOMContentLoaded（所有模組都載入後），新模組的函式才用得到。
+  - 3D 角色（Meshy image_to_3d）評估過：每個模型 30～38 點、24 套造型約 900 點，檔案也大，所以維持 2D。
 - **聽說讀寫進度條**（app.js 的 `skillBarsHTML`）：有正式模擬卷的題庫（托福、英檢）＋它的模擬卷算一組，依 tag 名稱開頭（Reading／閱讀、Listening／聽力…）分成聽說讀寫。
   長條＝這個學生做過的題目佔該部分總題數（同一題只算一次），顏色＝最近一次的得分率，最弱的部分標「建議加強」。
   出現在首頁（選了托福或英檢、有輸入名字時，可按「練這部分」直接選好題型）、紀錄頁（選了某位學生時）、老師總覽的個人詳細。

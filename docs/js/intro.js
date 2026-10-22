@@ -1,4 +1,4 @@
-/* ===== 開場動畫：玻璃字母方塊從上方輕輕落下、在底部堆疊；品牌字 Apex English 一個字母一個字母落定 =====
+/* ===== 開場動畫：景深字雨（遠、中、近三層字母落過畫面）；品牌字 Apex English 一個字母一個字母落定 =====
    放在 <body> 最前面同步執行（題庫還在載入時就開始播）；點一下或按任意鍵可以跳過；
    減少動態效果時只淡入品牌字。CSS 有保險：就算 JS 出錯，3.5 秒後遮罩也會自動消失。 */
 (function () {
@@ -22,37 +22,21 @@
   if (reduce) {
     anims.push(mark.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, fill: "both" }));
   } else {
-    /* 底部的字母堆：依欄位往上疊，每塊帶一點旋轉，落地時輕輕一沉 */
-    const s = Math.round(Math.max(30, Math.min(52, W / 13)));
-    const cols = Math.max(6, Math.floor(W / (s * 1.06)));
-    const gap = (W - cols * s) / (cols + 1);
-    const heights = new Array(cols).fill(0);
-    const n = Math.min(70, Math.round(cols * 2.4));
-    const A = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const pile = document.createDocumentFragment();
-    for (let k = 0; k < n; k++) {
-      // 中間略高、兩側略低，像自然堆起的小丘
-      let c, tries = 0;
-      do { c = Math.floor(Math.random() * cols); tries++; } while (tries < 4 && heights[c] > 2.6 - Math.abs(c - cols / 2) / (cols / 2) * 1.6 && Math.random() < .8);
-      const level = heights[c]++;
-      const x = gap + c * (s + gap) + (Math.random() - .5) * gap * .8;
-      const y = H - (level + 1) * s * .98 - 6;
-      const r0 = (Math.random() - .5) * 70, r1 = (Math.random() - .5) * 16;
-      const t = document.createElement("span");
-      t.className = "it" + (Math.random() < .14 ? " solid" : "");
+    /* 景深字雨：遠、中、近三層字母落過畫面（近的超大、模糊、很快；遠的小而淡），不在底部堆積 */
+    const unit = Math.min(W, H), A = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", rnd = (a, b) => a + Math.random() * (b - a);
+    const layers = [{ n: 26, s: [.07, .11], blur: 2.5, op: .35, dur: [1500, 2100], cls: "ghost" }, { n: 16, s: [.14, .22], blur: 0, op: .85, dur: [1100, 1500] }, { n: 6, s: [.38, .6], blur: 7, op: .28, dur: [700, 950], z: 6 }];
+    const rain = document.createDocumentFragment();
+    layers.forEach(L => { for (let k = 0; k < L.n; k++) {
+      const s = Math.round(unit * rnd(L.s[0], L.s[1])), t = document.createElement("span");
+      t.className = "it " + (L.cls || (L.z ? "" : Math.random() < .2 ? "solid" : ""));
       t.textContent = A[Math.floor(Math.random() * 26)];
-      t.style.cssText = `width:${s}px;height:${s}px;font-size:${Math.round(s * .5)}px;left:${x}px;top:0`;
-      pile.appendChild(t);
-      const delay = k / n * 900 + Math.random() * 140 + level * 60, dur = 720 + Math.random() * 260;
-      anims.push(t.animate([
-        { transform: `translateY(${-s - 40 - Math.random() * H * .4}px) rotate(${r0}deg)`, opacity: 0 },
-        { opacity: 1, offset: .08 },
-        { transform: `translateY(${y}px) rotate(${r1}deg)`, offset: .86, easing: "ease-out" },
-        { transform: `translateY(${y - 3}px) rotate(${r1 * .7}deg)`, offset: .93 },
-        { transform: `translateY(${y}px) rotate(${r1 * .8}deg)`, opacity: 1 }
-      ], { duration: dur, delay, easing: ease.gravity, fill: "both" }));
-    }
-    el.appendChild(pile);
+      t.style.cssText = `width:${s}px;height:${s}px;font-size:${Math.round(s * .54)}px;left:0;top:0;${L.blur ? `filter:blur(${L.blur}px);` : ""}${L.z ? `z-index:${L.z};` : ""}`;
+      rain.appendChild(t);
+      const x = rnd(-s * .3, W - s * .7), r0 = rnd(-40, 40), r1 = r0 + rnd(-30, 30);
+      anims.push(t.animate([{ transform: `translate(${x}px,${-s * 1.2}px) rotate(${r0}deg)`, opacity: L.op }, { transform: `translate(${x + rnd(-30, 30)}px,${H + s * .2}px) rotate(${r1}deg)`, opacity: L.op }],
+        { duration: rnd(L.dur[0], L.dur[1]), delay: rnd(0, 1900 - L.dur[0] * .4), easing: "cubic-bezier(.4,0,.85,.6)", fill: "both" }));
+    } });
+    el.appendChild(rain);
 
     /* 品牌字母：一個一個落下定位 */
     mark.querySelectorAll(".il").forEach((l, k) => {
@@ -73,8 +57,6 @@
     if (leaving) return; leaving = true;
     const d = fast ? 260 : reduce ? 300 : 520;
     if (!reduce) {
-      el.querySelectorAll(".it").forEach((t, k) => t.animate([{ opacity: 1 }, { transform: getComputedStyle(t).transform + " translateY(" + (H * .35) + "px)", opacity: 0 }],
-        { duration: d, delay: fast ? 0 : (k % 9) * 12, easing: "cubic-bezier(.5,0,.75,0)", fill: "forwards", composite: "replace" }));
       mark.animate([{ opacity: 1, transform: "translate(-50%,-50%)", filter: "blur(0)" }, { opacity: 0, transform: "translate(-50%,calc(-50% - 8px)) scale(.97)", filter: "blur(8px)" }], { duration: d, easing: "ease-in", fill: "forwards" });
     }
     const out = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: d + (reduce ? 0 : 160), easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards" });

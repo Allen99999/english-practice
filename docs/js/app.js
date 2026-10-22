@@ -533,10 +533,11 @@ function homeHTML() {
   <div class="row" style="gap:10px;flex-wrap:nowrap"><button class="icon-btn theme-btn" data-act="theme" aria-label="${curTheme() === "dark" ? "切換成淺色模式" : "切換成深色模式"}" title="${curTheme() === "dark" ? "淺色模式" : "深色模式"}">${curTheme() === "dark" ? I.sun : I.moon}</button>
   <button class="icon-btn" data-act="sound" aria-label="音效開關" title="音效">${store.settings.sound ? I.sound : I.mute}</button></div></div>`;
   const hc = typeof homeCardHTML === "function" ? homeCardHTML() : "";   // 個人名片（card.js）：寬螢幕時和作答人並排
-  h += `<div class="home-top ${hc ? "has-card" : ""}">${hc}<div class="glass card who-card"><div class="opt-block"><label for="who">作答人</label>
+  h += `<div class="home-top ${hc ? "has-card" : ""}">${hc}<div class="home-side"><div class="glass card who-card"><div class="opt-block"><label for="who">作答人</label>
     <div class="who-row"><input id="who" class="field" placeholder="輸入你的名字" autocomplete="off" value="${esc(store.who)}" maxlength="20"></div>
     ${typeof syncHomeHTML === "function" ? syncHomeHTML() : ""}
-    ${store.names.length ? `<div class="chips">${store.names.map(n => `<button class="chip" data-act="pick-who" data-n="${esc(n)}" aria-pressed="${n === store.who}">${esc(n)}</button>`).join("")}</div>` : ""}</div></div></div>`;
+    ${store.names.length ? `<div class="chips">${store.names.map(n => `<button class="chip" data-act="pick-who" data-n="${esc(n)}" aria-pressed="${n === store.who}">${esc(n)}</button>`).join("")}</div>` : ""}
+    ${typeof cardCtaHTML === "function" ? cardCtaHTML() : ""}</div></div>${typeof questCardHTML === "function" ? questCardHTML(store.who) : ""}</div></div>`;   // 今日任務（card.js）
   const fr = store.who && sel.banks.length === 1 && famRoot(sel.banks[0]);
   if (fr) h += skillBarsHTML(fr, store.attempts.filter(a => (a.who || "未署名") === store.who), store.who, true);
   if (sess.length) {
@@ -925,6 +926,7 @@ function streakOf(att) {
   return best;
 }
 function attCombo(att) { return Math.max(att.maxCombo || 0, att.kind === "vocab" ? 0 : streakOf(att)) || att.maxCombo || 0; }
+let justFinished = null;   // 剛交卷的那份：結果頁才顯示經驗值、任務、解鎖（card.js）
 function finish() {
   const P = attPoints(S), total = P.t, ok = P.s;   // 依官方配分：客觀題 1 分、單句寫作 2 分、作文與口說 5 分
   const att = {
@@ -932,7 +934,7 @@ function finish() {
     qs: S.qs, ans: S.ans, words: S.words, maxCombo: Math.max(S.maxCombo, S.blind ? streakOf(S) : 0), score: ok, total,
     hints: Object.values(S.work).filter(w => w.hint).length
   };
-  store.attempts.unshift(att);
+  store.attempts.unshift(att); justFinished = att.id;
   if (typeof onAttemptSaved === "function") { try { onAttemptSaved(att); } catch (e) { } }
   // 單字本
   const VB = store.vocab[att.who] || (store.vocab[att.who] = {});
@@ -1067,6 +1069,7 @@ function resultHTML(id) {
   <div class="stat"><div class="k">生字</div><div class="v">${Object.keys(att.words || {}).length}</div></div></div></div>`;
   if (att.regrade && att.regrade.length && !(typeof isRemote === "function" && isRemote(att) && store.teacherCode)) h += `<div class="glass card regrade-card"><div class="section-h" style="margin:0"><h2>老師的批改</h2><span class="tag regrade-tag">${att.regrade.length} 題分數有調整</span></div>
     ${att.regrade.map(c => { const X = getQ(c.i, att); return `<button class="pend-row" data-act="rv-jump" data-i="${c.i}"><span class="tag">第 ${c.i + 1} 題</span><span style="flex:1;text-align:left;min-width:0">${esc(X ? tagName(X.bank, X.q.tag) : "")}<br><span class="muted" style="font-size:13px">${c.from} 分 → <b style="color:${c.to > c.from ? "var(--good)" : "var(--bad)"}">${c.to} 分</b>（滿分 ${X ? maxPts(X.q, X.bank) : "?"}）</span></span>${I.chevR}</button>`; }).join("")}</div>`;
+  if (att.id === justFinished && typeof questResultHTML === "function") h += questResultHTML(att);
   if (typeof teacherResultBar === "function") h += teacherResultBar(att);
   if (typeof geptWritingHTML === "function") h += geptWritingHTML(att);
   if (typeof toeflBandHTML === "function") h += toeflBandHTML(att);

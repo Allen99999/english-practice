@@ -6,7 +6,7 @@ const CODE_CHARS = "abcdefghjkmnpqrstuvwxyz23456789"; // 拿掉容易看錯的 i
 function newCode() { const r = crypto.getRandomValues(new Uint32Array(6)); return [...r].map(x => CODE_CHARS[x % CODE_CHARS.length]).join(""); }
 function normCode(s) { return String(s || "").trim().toLowerCase(); }
 function validCode(s) { return /^[a-z0-9]{4,12}$/.test(s); }
-function compactAttempt(a) { return { id: a.id, optv: a.optv, who: a.who, kind: a.kind, title: a.title, banks: a.banks, date: a.date, duration: a.duration, qs: a.qs, ans: a.ans, words: a.words, maxCombo: a.maxCombo, score: a.score, total: a.total, hints: a.hints , card: (store.cards || {})[a.who] ? { bg: store.cards[a.who].bg, stickers: store.cards[a.who].stickers } : undefined }; }
+function compactAttempt(a) { return { id: a.id, optv: a.optv, who: a.who, kind: a.kind, title: a.title, banks: a.banks, date: a.date, duration: a.duration, qs: a.qs, ans: a.ans, words: a.words, maxCombo: a.maxCombo, score: a.score, total: a.total, hints: a.hints , card: typeof cardOf === "function" && cardOf(a.who) ? { char: cardOf(a.who).char, outfit: cardOf(a.who).outfit, scene: cardOf(a.who).scene } : undefined }; }
 async function postSync(payload, timeout) {
   const ctl = timeout ? new AbortController() : null; const tm = ctl && setTimeout(() => ctl.abort(), timeout);
   try {

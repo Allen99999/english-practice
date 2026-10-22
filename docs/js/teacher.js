@@ -87,9 +87,9 @@ function teacherHTML() {
   const exams = mine.filter(a => a.kind !== "vocab");
   const best = exams.length ? Math.max(...exams.map(a => pct(a.score, a.total))) : 0;
   const avg = exams.length ? Math.round(exams.reduce((s, a) => s + a.score / a.total, 0) / exams.length * 100) : 0;
-  const cardCfg = (mine.slice().sort((a, b) => (b.date || 0) - (a.date || 0)).find(a => a.card) || {}).card;   // 學生交卷時附上的名片
+  const cardCfg = (mine.slice().sort((a, b) => (b.date || 0) - (a.date || 0)).find(a => a.card && a.card.char) || {}).card;   // 學生交卷時附上的名片
   h += `<div class="section-h"><h2>${esc(who)} 的學習狀況</h2></div>
-  ${typeof dashboardHTML === "function" ? dashboardHTML(who, mine, { cfg: cardCfg || { bg: "arcane", stickers: [] }, readonly: true }) : ""}
+  ${typeof dashboardHTML === "function" ? dashboardHTML(who, mine, { cfg: cardCfg, readonly: true }) : ""}
   <div class="stats" ${typeof dashboardHTML === "function" ? "hidden" : ""}><div class="stat glass"><div class="k">練習次數</div><div class="v">${mine.length}</div></div>
   <div class="stat glass"><div class="k">平均答對率</div><div class="v" style="color:${scoreColor(avg / 100)}">${exams.length ? avg + "%" : "—"}</div></div>
   <div class="stat glass"><div class="k">最佳成績</div><div class="v">${exams.length ? best + "%" : "—"}</div></div>
