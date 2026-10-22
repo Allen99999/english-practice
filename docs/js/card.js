@@ -58,7 +58,8 @@ function streaks(atts) {
   while (has.has(d)) { cur++; d = dayStart(d - 432e5); }
   return { cur, best: Math.max(best, cur) };
 }
-const sceneOpen = (sc, best) => best >= sc.need;
+const UNLOCK_ALL = true;   // 測試用：場景全部先開放；測完改回 false 就恢復「連續練習解鎖」
+const sceneOpen = (sc, best) => UNLOCK_ALL || best >= sc.need;
 
 /* ---------- 每日任務 ---------- */
 const QUESTS = [

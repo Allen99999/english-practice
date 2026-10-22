@@ -143,6 +143,7 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
     輸入新名字（Enter 或離開輸入框）或第一次點名字會彈出（先放大到接近全螢幕再退回 70%）＋選角色、造型、場景的面板；首頁還沒有名片時作答人下面有「選一位角色」入口。
     設定存在 `store.cards[名字]＝{char, outfit, scene}`（舊版只有 bg／stickers 的不算，會請學生重選），交卷時跟著成績上傳（attempt.card），老師總覽顯示學生名片。
   - 連續練習解鎖場景：court、station、rooftop、sakura 一開始就能用；neon 3 天、alley 7 天、lookout 14 天、camp 30 天（看「最長連續天數」，解鎖後不會再鎖）。
+    **目前 Allen 要測試，card.js 的 `UNLOCK_ALL = true` 讓場景全部開放；他說可以時改回 false。**
   - 每日任務（`QUESTS`）：每人每天 3 個（1 個簡單＋2 個進階，依名字＋日期固定抽），每個 +30 XP，全部完成再 +50 XP；首頁作答人下面顯示。
     經驗值＝每份作答 20 XP＋每得 1 分 10 XP＋每日任務；等級門檻 50·L·(L+1)。
   - 剛交卷的結果頁（app.js 的 `justFinished`）最上面有結算：獲得 XP、升級、完成的任務、新解鎖的場景（可直接「換上」）。
