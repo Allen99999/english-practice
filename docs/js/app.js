@@ -1193,21 +1193,24 @@ function histItem(a) {
 }
 function whoChips(act, cur, names) {
   if (names.length < 2 && act === "vocab-who") return "";
-  return `<div class="chips">${act === "hist-who" ? `<button class="chip" data-act="${act}" data-n="" aria-pressed="${!cur}">全部</button>` : ""}${names.map(n => `<button class="chip" data-act="${act}" data-n="${esc(n)}" aria-pressed="${cur === n}">${esc(n)}</button>`).join("")}</div>`;
+  return `<div class="chips">${act === "hist-who" ? `<button class="chip" data-act="${act}" data-n="*" aria-pressed="${!cur}">全部</button>` : ""}${names.map(n => `<button class="chip" data-act="${act}" data-n="${esc(n)}" aria-pressed="${cur === n}">${esc(n)}</button>`).join("")}</div>`;
 }
 function histHTML() {
   const names = [...new Set(store.attempts.map(a => a.who || "未署名"))];
-  if (store.histWho && !names.includes(store.histWho)) store.histWho = "";
-  const list = store.attempts.filter(a => !store.histWho || (a.who || "未署名") === store.histWho);
+  if (store.histWho && store.histWho !== "*" && !names.includes(store.histWho)) store.histWho = "";
+  // 預設看「目前的作答人」（新名字還沒有紀錄也一樣），按「全部」才看所有人（histWho = "*"）
+  const cur = store.histWho === "*" ? "" : store.histWho || store.who || (names.length === 1 ? names[0] : "");
+  if (cur && !names.includes(cur)) names.push(cur);
+  const list = store.attempts.filter(a => !cur || (a.who || "未署名") === cur);
   let h = `<section class="view"><div><div class="eyebrow">History</div><h1 class="large-title">作答紀錄</h1><p class="subtitle">點任何一筆就能看完整解析和當次的生字表。</p></div>`;
-  if (names.length > 1) h += whoChips("hist-who", store.histWho, names);
-  if (!list.length) { if (store.who && typeof dashboardHTML === "function") h += dashboardHTML(store.who, []); h += `<div class="glass card empty"><b>還沒有紀錄</b>完成第一次練習後，成績和解析都會存在這裡。</div>`; }
+  if (names.length > 1) h += whoChips("hist-who", cur, names);
+  if (!list.length) { if (cur && typeof dashboardHTML === "function") h += dashboardHTML(cur, []); h += `<div class="glass card empty"><b>還沒有紀錄</b>完成第一次練習後，成績和解析都會存在這裡。</div>`; }
   else {
-    const hw0 = store.histWho || (names.length === 1 ? names[0] : "");
+    const hw0 = cur;
     if (hw0 && typeof dashboardHTML === "function") h += dashboardHTML(hw0, list);   // 個人 Dashboard（card.js）
     const avg = hw0 && typeof dashboardHTML === "function" ? [] : list.filter(a => a.kind === "exam").map(a => a.score / a.total);
     if (avg.length) h += `<div class="stats"><div class="stat glass"><div class="k">練習次數</div><div class="v">${list.length}</div></div><div class="stat glass"><div class="k">平均答對率</div><div class="v">${Math.round(avg.reduce((s, x) => s + x, 0) / avg.length * 100)}%</div></div><div class="stat glass"><div class="k">最佳 Combo</div><div class="v" style="color:var(--gold)">×${Math.max(...list.map(attCombo))}</div></div><div class="stat glass"><div class="k">作答人</div><div class="v">${names.length}</div></div></div>`;
-    const hw = store.histWho || (names.length === 1 ? names[0] : "");
+    const hw = cur;
     if (hw) famRoots(list).forEach(fr => h += skillBarsHTML(fr, list, names.length > 1 ? hw : "", false));
     h += `<div class="glass card hist">${list.map(a => `<div style="display:flex;gap:8px;align-items:center">${histItem(a)}<button class="icon-btn" data-act="del-att" data-id="${esc(a.id)}" aria-label="刪除這筆" style="flex:none;background:transparent;box-shadow:none;color:var(--ink-3)">${I.x}</button></div>`).join("")}</div>`;
   }
@@ -1310,7 +1313,7 @@ document.addEventListener("click", e => {
     case "resume": S = store.sessions.find(x => x.id === d.id); if (S) { if (S.who) store.who = S.who; wordMode = false; showHint = false; go("quiz"); } break;
     case "discard": sheet(`<h3>刪除這份存檔？</h3><p class="muted" style="margin:0 0 16px">還沒交卷的答案和生字都不會保存。</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="close-sheet">取消</button><button class="btn danger" data-act="discard-now" data-id="${d.id}">刪除</button></div>`); break;
     case "discard-now": store.sessions = store.sessions.filter(x => x.id !== d.id); save(true); closeSheet(); render(); break;
-    case "pick-who": store.who = d.n; save(); rerenderKeep(); if (typeof openCardEditor === "function" && !cardOf(d.n)) openCardEditor(d.n, true); break;
+    case "pick-who": store.who = d.n; store.histWho = ""; save(); rerenderKeep(); if (typeof openCardEditor === "function" && !cardOf(d.n)) openCardEditor(d.n, true); break;
     case "save-now": S.saved = Date.now(); save(true); toast("已存檔，下次在首頁「繼續作答」接著做"); break;
     case "hist-who": store.histWho = d.n; save(); rerenderKeep(); break;
     case "vocab-who": store.vocabWho = d.n; save(); rerenderKeep(); break;
@@ -1411,7 +1414,7 @@ document.addEventListener("click", e => {
 });
 document.addEventListener("mouseover", e => { const p = e.target.closest && e.target.closest(".ph"); document.querySelectorAll(".ph.hov").forEach(x => { if (!p || x.dataset.g !== p.dataset.g) x.classList.remove("hov"); }); if (p) document.querySelectorAll(`[data-g="${p.dataset.g}"]`).forEach(x => x.classList.add("hov")); });
 document.addEventListener("input", e => {
-  if (e.target.id === "who") { store.who = e.target.value.trim(); save(); document.querySelectorAll('[data-act="pick-who"]').forEach(c => c.setAttribute("aria-pressed", c.dataset.n === store.who)); return; }
+  if (e.target.id === "who") { store.who = e.target.value.trim(); store.histWho = ""; save(); document.querySelectorAll('[data-act="pick-who"]').forEach(c => c.setAttribute("aria-pressed", c.dataset.n === store.who)); return; }
   if (!S || view !== "quiz") return;
   const w = work(S.idx);
   if (e.target.id === "spellin" || e.target.id === "transin") { w.val = e.target.value; save(); }

@@ -74,12 +74,12 @@
     if (!reduce) {
       el.querySelectorAll(".it").forEach((t, k) => t.animate([{ opacity: 1 }, { transform: getComputedStyle(t).transform + " translateY(" + (H * .35) + "px)", opacity: 0 }],
         { duration: d, delay: fast ? 0 : (k % 9) * 12, easing: "cubic-bezier(.5,0,.75,0)", fill: "forwards", composite: "replace" }));
-      mark.animate([{ opacity: 1, transform: "none", filter: "blur(0)" }, { opacity: 0, transform: "scale(.97) translateY(-8px)", filter: "blur(8px)" }], { duration: d, easing: "ease-in", fill: "forwards" });
+      mark.animate([{ opacity: 1, transform: "translate(-50%,-50%)", filter: "blur(0)" }, { opacity: 0, transform: "translate(-50%,calc(-50% - 8px)) scale(.97)", filter: "blur(8px)" }], { duration: d, easing: "ease-in", fill: "forwards" });
     }
     const out = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: d + (reduce ? 0 : 160), easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards" });
     out.onfinish = () => { el.remove(); document.documentElement.classList.remove("intro-on"); };
   }
-  const tryLeave = () => { if (ready && performance.now() - t0 >= MIN) leave(false); };
+  const tryLeave = () => { if (!ready) return; const left = MIN - (performance.now() - t0); left <= 20 ? leave(false) : setTimeout(tryLeave, left); };
   window.addEventListener("apex-ready", () => { ready = true; setTimeout(tryLeave, Math.max(0, MIN - (performance.now() - t0))); }, { once: true });
   setTimeout(() => leave(false), MAX);
   const skip = () => leave(true);
