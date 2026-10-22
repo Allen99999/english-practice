@@ -360,5 +360,33 @@ SI("ni07","s2","You are taking part in a survey about public spaces in your city
   "反駁時先承認對方部分有理（網路資訊多），再列出圖書館其他功能，最後用「現在更重要」翻轉論點。"),
 SI("ni08","s2","You are taking part in a survey about public spaces in your city. An interviewer will ask you some questions.","MC: Finally, should cities ban cars from some downtown streets to create pedestrian-only areas? What would be the advantages and disadvantages?",
   "I think it's worth doing on a few streets. The biggest advantage is that pedestrian areas are safer and more pleasant, so people tend to stay longer and spend more money at local shops and cafes. They also reduce noise and air pollution in the busiest part of the city. On the other hand, there are real disadvantages. Businesses that depend on deliveries might have trouble, and people with disabilities or elderly people could find it harder to reach the area. So I'd support it if the city allows delivery vehicles at certain hours and makes sure there's good public transportation and parking nearby."
-  ,"題目要求優點＋缺點，兩邊都要講到，最後給出有條件的結論。")
+  ,"題目要求優點＋缺點，兩邊都要講到，最後給出有條件的結論。"),
+
+/* ---------- 2026-10 追加：從正式模擬卷移過來的 Read in Daily Life ---------- */
+DL("nd10","r2","Read an email.",[
+  "From: Prof. Dana Whitfield",
+  "To: HIST 245 students",
+  "Subject: Thursday's class and the response paper",
+  "Dear all,",
+  "On Thursday, instead of our regular class, we will attend a guest lecture by Dr. Samuel Osei, whose book on West African trade networks we have been reading. The lecture will be held in Hartley Auditorium rather than our usual room, and it starts fifteen minutes earlier, at 10:45, so please plan accordingly.",
+  "Your second response paper, originally due Thursday, is now due the following Monday. You may write about Dr. Osei's lecture instead of the assigned reading if you prefer, but you must still cite at least two chapters from his book. Students who cannot attend should contact me before Thursday to receive an alternative prompt.",
+  "Best, Prof. Whitfield"
+],[
+  Q("nd10a","What is the main purpose of the email?",["To inform students about changes related to a special event","To announce that a lecture has been canceled","To remind students to buy Dr. Osei's book","To explain how response papers will be graded"],0,"","因為客座演講，上課地點、時間、作業期限都有變動。"),
+  Q("nd10b","According to the email, what is true about Thursday's lecture?",["It begins earlier than the class usually does.","It will take place in the usual classroom.","It is optional for students in the course.","It replaces the second response paper."],0,"","starts fifteen minutes earlier, at 10:45。"),
+  Q("nd10c","What can be inferred about students who choose to write about the lecture?",["They still need to refer to Dr. Osei's book.","They may submit their papers after Monday.","They do not need to cite any sources.","They must contact the professor before Thursday."],0,"","寫演講也 must still cite at least two chapters from his book。要先聯絡教授的是「不能出席」的人。")
+]),
+DL("nd11","r2","Read an email.",[
+  "From: Lena Fischer, Human Resources, Northwind Analytics",
+  "To: Jordan Reyes",
+  "Subject: Summer internship offer",
+  "Dear Jordan,",
+  "We are pleased to offer you a position as a Data Analysis Intern for the summer, from June 2 to August 22. The position pays $22 per hour for 30 hours per week. Interns typically work in our downtown office on Mondays and Wednesdays and remotely on the other days; however, during the first two weeks, all interns are required to be in the office every day for training.",
+  "Please note that this offer depends on our receiving an official copy of your transcript by May 1. To accept, sign the attached agreement and return it within ten days. If you have questions about housing, our intern coordinator, Mark Ellis, can share a list of short-term rentals near the office.",
+  "Best regards, Lena Fischer"
+],[
+  Q("nd11a","What is the main purpose of the email?",["To offer a position and explain its conditions","To invite Jordan to an interview","To ask Jordan for a recommendation","To describe housing options downtown"],0,"","錄取通知＋工作條件。"),
+  Q("nd11b","What is true about the first two weeks of the internship?",["Interns must work in the office every day.","Interns work only from home.","Interns are not paid during training.","Interns work 40 hours per week."],0,"","前兩週訓練期間每天都要進辦公室。"),
+  Q("nd11c","What can be inferred about the offer?",["It could be withdrawn if a document does not arrive in time.","Jordan has already accepted it.","It includes free housing near the office.","It was sent by Jordan's future supervisor."],0,"","offer depends on our receiving an official copy of your transcript by May 1。住宿只是提供名單。")
+])
 );

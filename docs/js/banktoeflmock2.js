@@ -10,7 +10,7 @@ RT(DL("m2d1","r2","Read a social media post.",[
   Q("m2d1a","Why was the location of the screening changed?",["Bad weather was expected.","The lawn was being repaired.","Too many people had reserved seats.","The director asked for a larger room."],0,"","Because of the storm warning。"),
   Q("m2d1b","What can be inferred about tonight's event?",["Some people who want to attend may not get a seat.","The Q&A session has been canceled.","Snacks will be sold at the door.","The outdoor series will open tonight."],0,"","座位只有 120 個，要早點到 → 可能有人沒位子。Q&A 照常；點心是免費預約的。")
 ])),
-RT(DL("m2d2","r2","Read an email.",[
+RE(DL("m2d2","r2","Read an email.",[
   "From: Lena Fischer, Human Resources, Northwind Analytics",
   "To: Jordan Reyes",
   "Subject: Summer internship offer",
@@ -255,5 +255,47 @@ SI("m2i3","s2","A researcher is studying how university students balance work an
   "先承認優點，再說明不公平的原因與影響，最後提出解決方法。"),
 SI("m2i4","s2","A researcher is studying how university students balance work and study. He will ask you some questions.","M: Finally, do you think universities should do more to help students find jobs related to their majors? What could they do?",
   "Yes, I think universities should do more, because many students graduate without knowing how to connect their studies to a career. One thing universities could do is invite alumni to talk about their jobs and offer mentoring, so students can see realistic career paths. Another idea is to build internships directly into degree programs, so students gain experience before they graduate. For example, my friend's engineering program requires a six-month placement at a company, and most of her classmates received job offers from those companies. Programs like that make the transition from school to work much smoother.",
-  "表態後提出兩個具體做法，再用朋友的例子證明有效。")
+  "表態後提出兩個具體做法，再用朋友的例子證明有效。"),
+
+/* ===== 2026-10 追加：補到官方題數（Reading 50、Listening 47）。執行時會依題型自動排回正確位置 ===== */
+RT(CTW("m2c4","r1","The Spread of Tea","Tea was first consumed in China thousands of years ago, originally as a medicine. Over time, it became a daily drink, and merchants began carrying it along trade routes to other parts of Asia. By the seventeenth century, European traders had developed a strong demand for tea, which they shipped home in large quantities. Today, tea is the most widely consumed beverage in the world after water.")),
+RT(AP("m2a4","r3","Citizen Science",[
+  "Citizen science refers to scientific research in which members of the public, usually without formal training, help collect or analyze data. The practice is older than it may seem. Since 1900, volunteers in North America have taken part in an annual bird count held around the winter holidays, and the records they have produced now form one of the longest-running sources of information on bird populations.",
+  "The internet has greatly expanded what citizen scientists can do. ■ In 2007, astronomers launched an online project called Galaxy Zoo, which asked volunteers to sort images of galaxies by shape. ■ The researchers had expected the task to take years; instead, volunteers classified hundreds of thousands of galaxies within months. ■ Volunteers have also made discoveries that professionals missed, such as an unusual glowing gas cloud first noticed by a schoolteacher. ■",
+  "Some scientists remain cautious, however. Because volunteers vary in skill and attention, their data may contain more errors than measurements made by trained researchers. Project designers address this problem in several ways. Many tasks are given to multiple volunteers, and the most common answer is accepted; volunteer results are also regularly compared with those of experts. When these safeguards are in place, studies have found that the combined judgments of volunteers can be nearly as accurate as those of professionals."
+],["safeguards"],[
+  Q("m2a4a","What can be inferred from paragraph 1 about the annual bird count?",["It provides information about long-term changes in bird populations.","It began after the internet was invented.","It is carried out only by professional scientists.","It takes place during the summer."],0,"","從 1900 年持續到現在，是最長期的鳥類族群資料之一。"),
+  INS("m2a4b","This enthusiasm surprised even the project's organizers.",2,"This enthusiasm 指「幾個月就分類了幾十萬個星系」，接在那一句之後＝第 3 個方塊。"),
+  Q("m2a4c","The word \"safeguards\" in the passage is closest in meaning to",["protective measures","volunteers","discoveries","rewards"],0,"","safeguards＝保護措施（多人分類、和專家比對）。"),
+  Q("m2a4d","According to paragraph 3, how do project designers deal with volunteers' errors?",["By giving the same task to several volunteers","By training volunteers for several months","By paying volunteers who make no mistakes","By letting only experts analyze the images"],0,"","Many tasks are given to multiple volunteers, and the most common answer is accepted。"),
+  Q("m2a4e","Why does the author mention a schoolteacher in paragraph 2?",["To show that volunteers can make original findings","To argue that teachers make better scientists","To explain how Galaxy Zoo was created","To criticize professional astronomers"],0,"","志工也能發現專家漏掉的東西。")
+])),
+RT(L("m2r21","l1","cr",["M: Have you seen my blue umbrella anywhere?"],["Didn't you leave it in the car yesterday?","It's supposed to rain later.","Blue is my favorite color.","I've seen that movie twice."],0,"","用反問提供線索。")),
+RT(L("m2r22","l1","cr",["WB: The professor's office hours have been changed to Thursday mornings."],["That's going to be a problem with my work schedule.","Her office is on the third floor.","I changed my clothes after class.","Thursday was a holiday last year."],0,"","對改變的反應：和工作時間衝突。")),
+RT(L("m2r23","l1","cr",["W: Why don't we split the cost of the textbook and share it?"],["That works, as long as we agree on who keeps it when.","Because the textbook is expensive.","I split my time between two jobs.","The cost of living keeps rising."],0,"","Why don't we…? 是提議，回應「可以，但要講好」。用 Because 回答是陷阱。")),
+RT(L("m2r24","l1","cr",["MC: I can't believe the semester's already half over."],["I know. It feels like classes just started.","I can believe anything you say.","The semester ends in May.","Half of the class was absent."],0,"","表示同感。")),
+LO(L("m2r25","l1","cr",["W: Which floor is the computer lab on?"],["The second floor, near the stairs.","It has thirty computers.","I sat on the floor.","It opens at eight."],0,"","問樓層，回答樓層。")),
+LO(L("m2r26","l1","cr",["M: Do you want to study together tonight?"],["Sure. What time works for you?","I studied history last year.","It's cold tonight.","We're all together now."],0,"","答應並約時間。")),
+UP(L("m2r27","l1","cr",["WA: You'd better hurry if you want to catch the last bus."],["I'm getting a ride with Marta, actually.","The bus was crowded last time.","I caught a cold last week.","Hurry is my middle name."],0,"","間接表示不需要趕：有人載。")),
+UP(L("m2r28","l1","cr",["M: I'm not sure Professor Grant will accept a paper this long."],["The guidelines only mention a minimum length.","She's been teaching for years.","The paper is in my bag.","I accept your apology."],0,"","用規定反駁對方的擔心：只有規定最少字數。")),
+RT(LG("m2n4","l3","Listen to an announcement in a psychology class.",[
+  "W: Before we begin today, I have an announcement from the psychology department. Researchers are looking for students to take part in a study on sleep and memory. Participants will wear a small device on their wrist for one week and complete short online memory tests every morning. Each test takes about ten minutes.",
+  "W: Students who complete the study will receive twenty dollars and, for those of you in this course, two points of extra credit. You can't take part if you work night shifts, since that would affect the results. If you're interested, sign up through the link I posted on the course website by Friday."
+],[
+  Q("m2n4a","What is the main purpose of the announcement?",["To invite students to take part in a study","To explain the results of a sleep study","To announce a change in course requirements","To recruit research assistants for the department"],0,"","徵求參加睡眠與記憶研究的學生。"),
+  Q("m2n4b","What will participants be asked to do?",["Wear a device and take daily memory tests","Sleep in a laboratory for a week","Write a report on their sleep habits","Attend a short meeting every evening"],0,"","戴手環一週＋每天早上線上記憶測驗。"),
+  Q("m2n4c","Why can't students who work night shifts take part?",["Their sleep patterns would distort the findings.","They cannot take tests in the morning.","They are not eligible for extra credit.","The device does not work at night."],0,"","that would affect the results。")
+])),
+RT(LG("m2l4","l4","Listen to part of a talk in a history class.",[
+  "W: Today it seems obvious that everyone in a region uses the same clock time. But for most of history, that wasn't the case. Towns set their clocks by the sun: noon was when the sun was highest in the sky. Since the sun reaches that point at slightly different times as you move east or west, every town had its own local time. A city a few dozen kilometers to the west might be several minutes behind.",
+  "W: For people who traveled by horse, those differences hardly mattered. Railways changed that. Trains connected distant towns quickly, and railroad companies had to publish schedules. With dozens of local times, schedules became confusing, and errors could even cause collisions on lines with a single track. In Britain, railway companies began using London time across their networks in the 1840s, and it became known as railway time.",
+  "W: In the United States, the problem was even worse because of the country's size. So on November 18, 1883, American and Canadian railroads adopted a system of standard time zones. Many towns changed their clocks that day, and some newspapers called it the day of two noons, because in places that set their clocks back, the clock struck noon twice.",
+  "W: Interestingly, this system was created by private companies, not by the government. It wasn't until 1918 that the U.S. Congress officially made time zones law. In other words, the way we measure time was shaped largely by the practical needs of a new technology."
+],[
+  Q("m2l4a","What is the talk mainly about?",["How railways led to the creation of standard time zones","How sundials were invented","Why Britain built railways before the United States","How Congress regulated train speeds"],0,"","鐵路的需要催生了標準時區。"),
+  Q("m2l4b","Why does the professor mention travel by horse?",["To explain why differences in local time once caused few problems","To compare the speed of horses and trains","To show that riders carried clocks between towns","To describe how towns set their clocks"],0,"","騎馬很慢，各地時間差幾分鐘沒關係。"),
+  Q("m2l4c","Why was November 18, 1883, called the day of two noons?",["Some towns set their clocks back, so noon happened twice.","Trains ran twice as often that day.","Two different calendars were in use.","The sun appeared to rise twice."],0,"","把時鐘往回調的地方，中午 12 點出現兩次。"),
+  Q("m2l4d","What can be inferred about the U.S. government's role?",["It made official a system that was already in use.","It opposed the railroads' time zones.","It created time zones before the railroads did.","It required towns to keep using local time."],0,"","鐵路公司 1883 年先用，國會 1918 年才立法。")
+]))
+
 ]);

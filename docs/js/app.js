@@ -181,10 +181,15 @@ function geptMock(sel) {
   const b = paperBank(sel); if (!b || sel.mode !== "exam") return null;
   const n = sel.gMock ?? 1; if (!n) return null;
   const mb = bankById(b.mockPapers[n - 1]); if (!mb) return null;
-  const pi = Math.min(+sel.gPart || 0, mb.exams.length - 1), ex = mb.exams[pi];
-  const blind = (mb.blind || []).some(t => ex.tags.includes(t));
-  return { bank: mb, n, pi, part: blind ? "lr" : "w", name: ex.name, tags: ex.tags, blind, adaptive: mb.adaptive };
+  const pi = Math.min(+sel.gPart || 0, mb.exams.length - 1);
+  // 複選：可以同時考好幾個部分（例如 Reading＋Listening），照考卷原本的順序接在一起
+  const pis = sel.gMulti && (sel.gParts || []).length ? sel.gParts.filter(k => k < mb.exams.length).sort((a, b) => a - b) : [pi];
+  const exs = pis.map(k => mb.exams[k]), tags = [...new Set(exs.flatMap(e => e.tags))];
+  const blind = (mb.blind || []).some(t => tags.includes(t));
+  return { bank: mb, n, pi: pis[0], pis, part: blind ? "lr" : "w", name: exs.map(e => e.name).join("＋"), tags, blind, adaptive: mb.adaptive };
 }
+/* 模擬卷照題型順序（Reading→Listening→Writing→Speaking，每部分裡照 tag 順序）；同題型維持題庫裡的先後 */
+function byTagOrder(units, b) { const order = Object.keys(b.tags); return units.map((u, k) => [u, k]).sort((x, y) => order.indexOf(x[0].tag) - order.indexOf(y[0].tag) || x[1] - y[1]).map(x => x[0]); }
 function adaptivePlan(gm) { return typeof toeflAdaptivePlan === "function" ? toeflAdaptivePlan(gm) : null; }
 function isFixedSel(sel) { return sel.banks.length > 0 && sel.banks.every(id => (bankById(id) || {}).fixed); }
 /* 做過的題目：從「這個名字」的作答紀錄和暫存即時計算。刪掉紀錄或暫存，那些題目就算沒做過 */
@@ -204,7 +209,7 @@ function buildRefs(sel, countOnly) {
   const mix = countOnly ? (x => x) : (u => freshFirst(u, seen));
   let units = unitsFor(sel);
   const gm = geptMock(sel);
-  if (gm) return unitsFor({ banks: [gm.bank.id], tags: gm.tags, types: TYPE_ORDER }).filter(u => !u.stage || u.stage === "router").flatMap(u => u.refs);   // 正式考卷：整份照原本順序
+  if (gm) return byTagOrder(unitsFor({ banks: [gm.bank.id], tags: gm.tags, types: TYPE_ORDER }).filter(u => !u.stage || u.stage === "router"), gm.bank).flatMap(u => u.refs);   // 正式考卷：照正式考試的題型順序
   if (sel.mode === "exam") {
     // 有自訂配分（例如英檢）的題庫：照它的配分抽
     const mockBanks = sel.banks.map(bankById).filter(b => b && b.mock);
@@ -228,12 +233,43 @@ function buildRefs(sel, countOnly) {
     return mockOut.concat(out).flatMap(u => u.refs);
   }
   units = mix(units);
-  const out = []; let n = 0;
-  for (const u of units) { if (sel.count && n >= sel.count) break; out.push(u); n += u.refs.length; }
+  let out = []; let n = 0;
+  if (sel.count && units.some(u => skillOf(bankById(u.bank), u.tag))) out = balancedPick(units, sel.count);   // 英檢、托福：選到的部分平均出現
+  else for (const u of units) { if (sel.count && n >= sel.count) break; out.push(u); n += u.refs.length; }
   if (sel.order === "type") out.sort((a, b) => TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type));
   return (sel.order === "type" || countOnly ? out : shuffle(out)).flatMap(u => u.refs);   // 選好題目後，完全隨機就再打亂一次
 }
 
+/* 平均抽題：題數平均分給選到的部分（聽／說／讀／寫），每部分裡再輪流抽各題型；
+   題組（例如補字母 10 格）放不下就換下一個，整份最多超出 2 題 */
+function balancedPick(units, count) {
+  const keyOf = u => skillOf(bankById(u.bank), u.tag) || u.tag;
+  const secs = {}; units.forEach(u => { const k = keyOf(u), t = u.tag; ((secs[k] = secs[k] || {})[t] = secs[k][t] || []).push(u); });
+  const keys = shuffle(Object.keys(secs)), base = Math.floor(count / keys.length);
+  const quota = {}; keys.forEach((k, i) => quota[k] = base + (i < count % keys.length ? 1 : 0));
+  const out = [], got = {}, turn = {}; keys.forEach(k => { got[k] = 0; turn[k] = 0; });
+  let total = 0, moved = true;
+  while (moved) {
+    moved = false;
+    for (const k of keys) {
+      const left = quota[k] - got[k]; if (left <= 0) continue;
+      const tags = Object.keys(secs[k]).filter(t => secs[k][t].length); if (!tags.length) continue;
+      const fits = u => u.refs.length <= left || (u.refs.length <= left + 2 && total + u.refs.length <= count + 2);
+      let pick = null;
+      for (let j = 0; j < tags.length && !pick; j++) {
+        const list = secs[k][tags[(turn[k] + j) % tags.length]], i = list.findIndex(fits);
+        if (i >= 0) { pick = list.splice(i, 1)[0]; turn[k] += j + 1; }
+      }
+      if (!pick && !got[k]) {   // 這部分一題都還沒有、但每個題組都太大：放最小的那個
+        const all = tags.flatMap(t => secs[k][t]), min = Math.min(...all.map(u => u.refs.length)), u = all.find(x => x.refs.length === min);
+        const list = secs[k][u.tag]; pick = list.splice(list.indexOf(u), 1)[0];
+      }
+      if (!pick) continue;
+      out.push(pick); got[k] += pick.refs.length; total += pick.refs.length; moved = true;
+    }
+  }
+  return out;
+}
 function newSession(refs, opts = {}) {
   S = {
     id: uid(), optv: OPTV, limit: opts.limit || 0, blind: !!opts.blind, adaptive: opts.adaptive || null, who: opts.who || store.who || "未署名", kind: opts.kind || "exam", title: opts.title || "", banks: opts.banks || [], saved: Date.now(),
@@ -488,7 +524,8 @@ function homeHTML() {
   const sel = store.sel;
   const sess = store.sessions;
   const avail = unitsFor(sel).reduce((n, u) => n + u.refs.length, 0);
-  const examN = sel.mode === "exam" ? buildRefsCount(sel) : Math.min(avail, sel.count || avail);
+  const gm0 = geptMock(sel);   // 適應性模擬卷：第二階段的題數也算進去
+  const examN = sel.mode === "exam" ? buildRefsCount(sel) + (gm0 && gm0.adaptive ? (adaptivePlan(gm0) || []).reduce((t, p) => t + Math.max(p.lower.length, p.upper.length), 0) : 0) : Math.min(avail, sel.count || avail);
   const last = store.attempts[0];
   let h = `<section class="view">
   <div class="hero"><div><div class="eyebrow">國中段考・全民英檢・TOEFL iBT</div><div class="brand-row"><h1 class="large-title brand">Apex English</h1><span class="byline">Created and designed by Allen L.</span></div>
@@ -530,7 +567,7 @@ function homeHTML() {
     <div class="opt-block">${paperBank(sel) ? `<label>${gm ? "正式模擬卷" : "隨機組卷"}</label>` : `<label>模式</label><div class="seg">
       <button data-act="mode" data-v="exam" aria-pressed="${sel.mode === "exam"}">模擬段考</button>
       <button data-act="mode" data-v="custom" aria-pressed="${sel.mode === "custom"}">自訂練習</button></div>`}
-      <div class="muted" style="font-size:13.5px">${gm ? `${esc(gm.bank.title)}・${esc(gm.name)}：${esc((gm.bank.partNotes || [])[gm.pi] || "")}${gm.blind ? "作答時不顯示對錯、沒有提示，聽力每題只播一遍，交卷後才看成績和解析。" : ""}`
+      <div class="muted" style="font-size:13.5px">${gm ? `${esc(gm.bank.title)}・${esc(gm.name)}：${gm.pis.map(k => esc((gm.bank.partNotes || [])[k] || "")).join(" ")}${gm.blind ? "作答時不顯示對錯、沒有提示，聽力每題只播一遍，交卷後才看成績和解析。" : ""}`
       : sel.mode === "exam" ? (sel.banks.some(id => (bankById(id) || {}).mock) ? "依英檢各部分的題數，從練習題隨機抽題組卷" : "照段考配分抽題：單選 15・字典題 1・題組 3 組・文意字彙 10・翻譯 4；範圍小時自動用重組、配對、挑錯補到約 30 題") : sel.banks.length && sel.banks.every(id => (bankById(id) || {}).tagIsType) ? "依上方勾選的題型，隨機抽題" : "依下方題型與題數隨機抽題"}</div></div>
     ${gm || (sel.banks.length && sel.banks.every(id => (bankById(id) || {}).tagIsType)) ? "" : `<div class="opt-block"><label>題型</label><div class="chips">${TYPE_ORDER.map(t => {
       const c = countBy(sel, t); const dis = false; if (!c) return "";
@@ -562,9 +599,10 @@ function bankCardHTML(b, sel, gm) {
       ${b.note ? `<div class="muted" style="font-size:13.5px">${esc(b.note)}</div>` : ""}
       ${papers ? `<div class="opt-block"><label>選擇考卷</label><div class="seg">${b.mockPapers.map((id, i) => `<button data-act="gmock" data-v="${i + 1}" aria-pressed="${!!gm && gm.n === i + 1}">正式模擬卷 ${i + 1}</button>`).join("")}<button data-act="gmock" data-v="0" aria-pressed="${!gm}">隨機組卷</button></div>
       <div class="muted" style="font-size:13px">${gm ? "正式模擬卷＝照官方題型、題數、時間出的完整考卷" : "隨機組卷＝從練習題庫依題型、細項自由抽題"}</div></div>
-      ${gm ? `<div class="opt-block"><label>考哪一部分</label><div class="seg">${gm.bank.exams.map((ex, i) => `<button data-act="gpart" data-v="${i}" aria-pressed="${gm.pi === i}">${esc(ex.name)}</button>`).join("")}</div></div>
+      ${gm ? `<div class="opt-block"><div class="row" style="justify-content:space-between;gap:10px"><label>考哪一部分</label><button class="chip" data-act="gmulti" aria-pressed="${!!sel.gMulti}">${sel.gMulti ? I.check : ""}複選</button></div><div class="seg">${gm.bank.exams.map((ex, i) => `<button data-act="gpart" data-v="${i}" aria-pressed="${gm.pis.includes(i)}">${esc(ex.name)}</button>`).join("")}</div>
+      ${sel.gMulti ? `<div class="muted" style="font-size:13px">複選中：可以同時勾選好幾個部分，會照正式考試的順序接在一起</div>` : ""}</div>
       ${b.officialLinks ? `<div class="muted" style="font-size:13px">想做官方真題：${b.officialLinks.map(([t, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline">${esc(t)}</a>`).join("、")}</div>` : ""}` : chips()}`
-      : `${on && b.exams ? `<div class="opt-block"><label>${b.tagIsType ? "快速選擇" : "段考範圍快選"}</label><div class="seg">${b.exams.map((ex, i) => `<button data-act="exam-pick" data-id="${b.id}" data-i="${i}" aria-pressed="${sameSet(Object.keys(b.tags).filter(t => sel.tags.includes(t)), ex.tags)}">${esc(ex.name)}</button>`).join("")}<button data-act="exam-pick" data-id="${b.id}" data-i="all" aria-pressed="${Object.keys(b.tags).every(t => sel.tags.includes(t))}">${b.tagIsType ? "全部" : "全冊"}</button></div></div>` : ""}
+      : `${on && b.exams ? `<div class="opt-block"><div class="row" style="justify-content:space-between;gap:10px"><label>${b.tagIsType ? "快速選擇" : "段考範圍快選"}</label>${b.tagIsType ? `<button class="chip" data-act="gmulti" aria-pressed="${!!sel.gMulti}">${sel.gMulti ? I.check : ""}複選</button>` : ""}</div><div class="seg">${b.exams.map((ex, i) => `<button data-act="exam-pick" data-id="${b.id}" data-i="${i}" aria-pressed="${b.tagIsType && sel.gMulti ? ex.tags.every(t => sel.tags.includes(t)) : sameSet(Object.keys(b.tags).filter(t => sel.tags.includes(t)), ex.tags)}">${esc(ex.name)}</button>`).join("")}<button data-act="exam-pick" data-id="${b.id}" data-i="all" aria-pressed="${Object.keys(b.tags).every(t => sel.tags.includes(t))}">${b.tagIsType ? "全部" : "全冊"}</button></div></div>` : ""}
       ${on ? chips() : ""}`}
     </div>`;
 }
@@ -588,8 +626,12 @@ function startTick() {
     if (Math.round(S.elapsed) % 5 === 0) save();
   }, 1000);
 }
+/* 總題數：適應性模擬卷還沒接上的第二階段也算進去，題數才不會中途突然變多 */
+function qTotal() { return S.qs.length + (S.adaptive || []).filter(p => !p.done).reduce((t, p) => t + Math.max(p.lower.length, p.upper.length), 0); }
+/* 補字母（Complete the Words）一段 10 格各算 1 題（照官方），但畫面上整段是一頁：回傳這一段的題號範圍 */
+function ctSpan(i) { const X = getQ(i); if (!X || !X.group || X.group.kind !== "ctest") return [i, i]; const idxs = groupIdx(X.group); return [Math.min(...idxs), Math.max(...idxs)]; }
 function qbarHTML() {
-  const last = S.idx === S.qs.length - 1 && !(typeof adaptPending === "function" && adaptPending());
+  const last = ctSpan(S.idx)[1] === S.qs.length - 1 && !(typeof adaptPending === "function" && adaptPending());
   return `<button class="nav" data-act="prev" ${S.idx === 0 ? "disabled" : ""} aria-label="上一題">${I.chevL}<span>上一題</span></button>
   ${S.blind ? "" : `<button class="tb ${showHint ? "on" : ""}" data-act="hint">${I.bulb}提示</button>`}
   <button class="tb" data-act="grid">${I.grid}題號</button>
@@ -603,13 +645,13 @@ function quizHTML() {
   let h = `<section class="view ${wordMode ? "wordmode" : ""}" style="gap:16px">
   <div class="qtop glass pill"><button class="icon-btn" data-act="exit" aria-label="離開">${I.x}</button>
     <button class="save-btn" data-act="save-now" aria-label="存檔">${I.save}<span>存檔</span></button>
-    <div class="progress"><div class="meta"><span>第 ${i + 1} / ${S.qs.length} 題・已答 ${answered}</span><span id="qtime">${S.limit ? "剩 " + fmtTime(S.limit - S.elapsed) : fmtTime(S.elapsed)}</span></div>
-    <div class="bar"><i style="width:${answered / S.qs.length * 100}%"></i></div>
+    <div class="progress"><div class="meta"><span>第 ${ctSpan(i)[0] === ctSpan(i)[1] ? i + 1 : `${ctSpan(i)[0] + 1}–${ctSpan(i)[1] + 1}`} / ${qTotal()} 題・已答 ${answered}</span><span id="qtime">${S.limit ? "剩 " + fmtTime(S.limit - S.elapsed) : fmtTime(S.elapsed)}</span></div>
+    <div class="bar"><i style="width:${answered / qTotal() * 100}%"></i></div>
     ${S.limit ? `<div class="tbar-track" title="剩餘時間"><i id="tbar" class="${S.limit - S.elapsed < 300 ? "low" : ""}" style="width:${Math.max(0, (S.limit - S.elapsed) / S.limit * 100)}%"></i></div>` : ""}</div>
     <div class="combo-mini ${S.combo ? "" : "zero"}" id="combomini">×${S.combo}</div></div>`;
   const passage = X.group ? passageHTML(X, i) : "";
   h += `<div class="qlayout ${passage ? "has-passage" : ""}">${passage}<div class="glass card qcard" id="qcard" data-i="${i}">
-    <div class="qhead"><span class="qnum">Q${i + 1}</span>${["trans", "essay", "listen", "cword", "speak"].includes(q.type) || (X.group && X.group.kind === "listening") || (X.bank && /^toefl/.test(X.bank.id)) || q.zhPrompt || S.blind ? "" : `<button class="speak" data-act="read-q" aria-label="念題目" title="念題目">${I.speaker}</button>`}<span class="tag">${typeLabel}</span>${X.group ? "" : X.bank ? `<span class="tag">${esc(tagName(X.bank, q.tag))}</span>` : ""}</div>
+    <div class="qhead"><span class="qnum">Q${ctSpan(i)[0] === ctSpan(i)[1] ? i + 1 : `${ctSpan(i)[0] + 1}–${ctSpan(i)[1] + 1}`}</span>${["trans", "essay", "listen", "cword", "speak"].includes(q.type) || (X.group && X.group.kind === "listening") || (X.bank && /^toefl/.test(X.bank.id)) || q.zhPrompt || S.blind ? "" : `<button class="speak" data-act="read-q" aria-label="念題目" title="念題目">${I.speaker}</button>`}<span class="tag">${typeLabel}</span>${X.group ? "" : X.bank ? `<span class="tag">${esc(tagName(X.bank, q.tag))}</span>` : ""}</div>
     ${questionBody(X, i, a, false)}
     ${showHint && !a ? `<div class="hintbox">${I.bulb}<div>${esc(q.hint || "這題沒有提示")}</div></div>` : ""}
     ${a ? feedbackHTML(X, a) : ""}
@@ -850,6 +892,8 @@ function rerenderKeep() {
   scrollTo(0, sy);
 }
 function gotoQ(n) {
+  if (n === S.idx + 1) n = ctSpan(S.idx)[1] + 1;        // 補字母整段算一頁：下一題跳過這一段
+  else if (n === S.idx - 1 && n >= 0) n = ctSpan(n)[0]; // 上一題回到那一段的開頭
   if (typeof adaptAdvance === "function" && n > S.idx) adaptAdvance(n);
   if (n < 0 || n >= S.qs.length) return;
   S.idx = n; showHint = false; save(); animNext = true; stopReading();
@@ -1103,7 +1147,7 @@ function famRoots(atts) { const set = new Set(); atts.forEach(a => (a.qs || []).
 function skillStats(root, atts) {
   const ids = [root.id, ...(root.mockPapers || [])], st = {};
   SKILLS.forEach(([k]) => st[k] = { total: 0, done: 0, pts: 0, max: 0, tags: [] });
-  ids.forEach(id => { const b = bankById(id); if (b) b.items.forEach(it => { const k = skillOf(b, it.tag); if (!k) return; st[k].total += it.type === "group" ? it.qs.length : 1; if (id === root.id && !st[k].tags.includes(it.tag)) st[k].tags.push(it.tag); }); });
+  ids.forEach(id => { const b = bankById(id); if (b) b.items.forEach(it => { const k = skillOf(b, it.tag); if (!k || it.stage === "retired") return; st[k].total += it.type === "group" ? it.qs.length : 1; if (id === root.id && !st[k].tags.includes(it.tag)) st[k].tags.push(it.tag); }); });
   const seen = new Set();   // 同一題做過好幾次：只算最近一次
   atts.slice().sort((a, b) => (b.date || 0) - (a.date || 0)).forEach(att => (att.qs || []).forEach((r, i) => {
     if (typeof r !== "string" || seen.has(r) || !ids.includes(r.split(":")[0])) return;
@@ -1207,7 +1251,13 @@ document.addEventListener("click", e => {
     }
     case "multi": sel.multi = !sel.multi; if (!sel.multi && sel.banks.length > 1) { sel.banks = sel.banks.slice(-1); toast("已改回單選，只保留最後選的範圍"); } save(); rerenderKeep(); break;
     case "gmock": sel.gMock = +d.v; sel.mode = +d.v ? "exam" : "custom"; save(); rerenderKeep(); break;
-    case "gpart": sel.gPart = +d.v; save(); rerenderKeep(); break;
+    case "gpart": {
+      const v = +d.v;
+      if (sel.gMulti) { const ps = sel.gParts || (sel.gParts = []), k = ps.indexOf(v); if (k >= 0) { if (ps.length > 1) ps.splice(k, 1); } else ps.push(v); }
+      else sel.gPart = v;
+      save(); rerenderKeep(); break;
+    }
+    case "gmulti": sel.gMulti = !sel.gMulti; if (sel.gMulti) sel.gParts = [+sel.gPart || 0]; else sel.gPart = (sel.gParts || [0])[0]; save(); rerenderKeep(); break;
     case "skill-go": {   // 從進度條直接練某一部分：隨機組卷、只勾這部分的題型
       const b = bankById(d.b); if (!b) break;
       sel.banks = [b.id]; sel.gMock = 0; sel.mode = "custom"; sel.tags = Object.keys(b.tags).filter(t => skillOf(b, t) === d.k);
@@ -1216,6 +1266,12 @@ document.addEventListener("click", e => {
     }
     case "exam-pick": {
       const b = bankById(d.id); const own = Object.keys(b.tags);
+      if (b.tagIsType && sel.gMulti && d.i !== "all") {   // 複選：點一下加入／移除這個部分
+        const ex = b.exams[+d.i].tags, has = ex.every(t => sel.tags.includes(t));
+        const mine = own.filter(t => sel.tags.includes(t));
+        if (has && mine.some(t => !ex.includes(t))) sel.tags = sel.tags.filter(t => !ex.includes(t));
+        else if (!has) sel.tags = sel.tags.filter(t => !own.includes(t) || mine.length !== own.length).concat(ex.filter(t => !sel.tags.includes(t)));
+      } else
       sel.tags = sel.tags.filter(t => !own.includes(t)).concat(d.i === "all" ? own : b.exams[+d.i].tags);
       save(); rerenderKeep(); break;
     }
@@ -1237,7 +1293,7 @@ document.addEventListener("click", e => {
       if (gm) (gm.bank.timeLimits || []).forEach(([tags, min]) => { if (tags.some(t => gm.tags.includes(t))) limit += min * 60; });
       else if (sel.mode === "exam") sel.banks.map(bankById).forEach(b => (b.timeLimits || []).forEach(([tags, min]) => { if (tags.some(t => sel.tags.includes(t))) limit += min * 60; }));
       const blind = !!gm && gm.blind;
-      const opts = { kind: "exam", limit, blind, adaptive: gm && gm.adaptive ? adaptivePlan(gm) : null, title: gm ? `${titles}・正式模擬卷 ${gm.n}・${gm.name.replace(/（.*?）/, "")}` : `${titles}・${sel.mode === "exam" ? (limit ? "模擬測驗" : "模擬段考") : "自訂練習"}`, banks: gm ? [gm.bank.id] : sel.banks.slice() };
+      const opts = { kind: "exam", limit, blind, adaptive: gm && gm.adaptive ? adaptivePlan(gm) : null, title: gm ? `${titles}・正式模擬卷 ${gm.n}・${gm.name.replace(/（.*?）/g, "")}` : `${titles}・${sel.mode === "exam" ? (limit ? "模擬測驗" : "模擬段考") : "自訂練習"}`, banks: gm ? [gm.bank.id] : sel.banks.slice() };
       // 這個名字在這台裝置還沒有個人代碼 → 先登記（名字被別人用了就請他輸入代碼）
       if (typeof ensureCode === "function" && !store.codes[nm]) { act.disabled = true; ensureCode(nm).then(ok => { act.disabled = false; if (ok) newSession(refs, opts); }); }
       else newSession(refs, opts);

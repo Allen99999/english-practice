@@ -3,6 +3,7 @@
    lower 約 B1～B2、router 約 B2、upper 約 C1。Writing、Speaking 是固定題目。
    每份卷的題目照：Reading → Listening → Writing → Speaking 排列。 ===== */
 const TOEFL_TAGS = bank("toefl").tags;
+const RE = it => Object.assign(it, { stage: "retired" });   // 調整題數後不再出現在模擬卷（題目已複製到練習題庫），保留在這裡讓舊紀錄對得上
 const RT = it => Object.assign(it, { stage: "router" }), LO = it => Object.assign(it, { stage: "lower" }), UP = it => Object.assign(it, { stage: "upper" });
 function toeflMock(n, items) {
   const R = ["r1", "r2", "r3"], Li = ["l1", "l2", "l3", "l4"], W = ["w1", "w2", "w3"], Sp = ["s1", "s2"];
@@ -15,10 +16,10 @@ function toeflMock(n, items) {
       { name: "完整一回（約 90 分鐘）", tags: R.concat(Li, W, Sp) }
     ],
     partNotes: [
-      "Complete the Words、Read in Daily Life、Academic Passage。兩階段適應性：第一階段表現決定第二階段的難度。",
-      "Choose a Response、Conversation、Announcement、Academic Talk。兩階段適應性，錄音只播一遍。",
-      "Build a Sentence 10 題＋Write an Email（建議 7 分鐘）＋Academic Discussion（建議 10 分鐘）。自評＋範文。",
-      "Listen and Repeat 7 句＋Take an Interview 4 題。可以錄音重聽，看參考答案自評。",
+      "共 50 題（和官方相同）：Complete the Words 3 段（每格算 1 題，共 30 題）、Read in Daily Life、Academic Passage。兩階段適應性：第一階段 32 題的表現決定第二階段 18 題的難度。",
+      "共 47 題（和官方相同）：Choose a Response、Conversation、Announcement、Academic Talk。兩階段適應性（第一階段 30 題、第二階段 17 題），錄音只播一遍。",
+      "共 12 題（和官方相同）：Build a Sentence 10 題＋Write an Email（建議 7 分鐘）＋Academic Discussion（建議 10 分鐘）。自評＋範文。",
+      "共 11 題（和官方相同）：Listen and Repeat 7 句＋Take an Interview 4 題。可以錄音重聽，看參考答案自評。",
       "照正式考試順序：Reading → Listening → Writing → Speaking。Reading、Listening 作答時不顯示對錯。"
     ],
     timeLimits: [[R, 30], [Li, 29], [W, 23], [Sp, 8]],
@@ -41,7 +42,7 @@ RT(DL("m1d1","r2","Read a notice.",[
   Q("m1d1a","Why is the Arts Center stop being removed?",["Road work has made the stop dangerous.","Few passengers used the stop.","The Arts Center is closed for renovation.","The Green Line is being replaced by a van."],0,"","Construction on Elm Street has made the stop unsafe。"),
   Q("m1d1b","What can be inferred about the van service?",["It does not run during the day.","It is only for passengers with mobility needs.","It runs between the Arts Center and Elm Street.","It replaces the Green Line on weekends."],0,"","只在晚上演出（6 點後）行駛；行動不便者只是「優先」。")
 ])),
-RT(DL("m1d2","r2","Read an email.",[
+RE(DL("m1d2","r2","Read an email.",[
   "From: Prof. Dana Whitfield",
   "To: HIST 245 students",
   "Subject: Thursday's class and the response paper",
@@ -289,5 +290,48 @@ SI("m1i3","s2","You are taking part in a research study about travel and cultura
   "先表態並說明原因（保護古蹟、居民生活），再提出公平性的顧慮與改善方式，讓回答更有深度。"),
 SI("m1i4","s2","You are taking part in a research study about travel and cultural experiences. A researcher will ask you some questions.","W: Finally, some people say that virtual reality could one day replace certain kinds of travel. Do you think that's likely? Please explain.",
   "I think virtual reality could replace some kinds of travel, but not most of them. For example, it might be a great way to visit a museum on the other side of the world, or to see places that are dangerous or impossible to reach, like the deep ocean. It's also much cheaper and better for the environment than flying. But I don't think it can replace the experience of actually being somewhere: tasting the local food, hearing different languages around you, or meeting people by chance. Those unexpected moments are what make travel valuable, and they're very hard to recreate in a virtual world.",
-  "預測題：說明「哪些可以取代、哪些不行」，各舉例子，最後說明真正旅行的獨特價值。")
+  "預測題：說明「哪些可以取代、哪些不行」，各舉例子，最後說明真正旅行的獨特價值。"),
+
+/* ===== 2026-10 追加：補到官方題數（Reading 50、Listening 47）。執行時會依題型自動排回正確位置 ===== */
+RT(CTW("m1c4","r1","Hibernation","Many animals survive the winter by entering a state called hibernation. During this period, their body temperature drops sharply, and their heart rate and breathing slow to a fraction of normal levels. This allows them to survive for months on the fat they stored during the summer. Scientists study hibernation because it may one day help doctors protect patients during long surgeries.",{ this: ["that"] })),
+RT(AP("m1a4","r3","Cooling Cities with Green Roofs",[
+  "On a hot summer afternoon, the center of a large city can be several degrees warmer than the surrounding countryside. This phenomenon, known as the urban heat island effect, occurs largely because cities replace vegetation with dark, impermeable surfaces such as asphalt and roofing tar. These materials absorb sunlight during the day and release the stored heat slowly at night, so urban areas often fail to cool down even after sunset.",
+  "One proposed remedy is the green roof, a rooftop partly or completely covered with soil and plants. ■ Green roofs lower temperatures in two main ways. ■ First, plants release water vapor through their leaves, a process that draws heat from the surrounding air. ■ Second, the layer of soil and vegetation insulates the building, reducing the amount of heat that passes through the roof into the rooms below. ■ Measurements taken on hot days have shown that the surface of a green roof can be dozens of degrees cooler than that of a conventional black roof.",
+  "Despite these benefits, green roofs have not been widely adopted. They cost considerably more to install than conventional roofs, and many older buildings cannot support the extra weight of wet soil without structural reinforcement. In dry climates, the plants may also require regular watering, which raises maintenance costs. For these reasons, some cities have chosen a cheaper alternative: painting roofs white or other light colors, which reflect sunlight rather than absorbing it."
+],["insulates"],[
+  Q("m1a4a","According to paragraph 1, why do cities often stay warm after sunset?",["Surfaces that absorbed heat during the day release it slowly.","Cities produce more light at night than rural areas.","Plants in cities release warm water vapor at night.","Winds from the countryside carry heat into cities."],0,"","柏油等深色表面白天吸熱、晚上慢慢釋放。"),
+  INS("m1a4b","Roofs covered with grass have been used for centuries in some northern countries, where they helped keep homes warm.",0,"這句補充綠屋頂的歷史，接在「綠屋頂的定義」之後、「兩種降溫方式」之前＝第 1 個方塊。"),
+  Q("m1a4c","The word \"insulates\" in the passage is closest in meaning to",["shields","decorates","weakens","connects"],0,"","insulate＝隔絕（熱），保護建築不受熱。"),
+  Q("m1a4d","All of the following are mentioned as drawbacks of green roofs EXCEPT",["they attract insects into buildings","they are expensive to install","older buildings may need to be strengthened","the plants may need watering in dry areas"],0,"","第三段列了成本、重量、澆水；沒提到昆蟲。"),
+  Q("m1a4e","Why does the author mention painting roofs white?",["To describe a less expensive way to reduce heat","To explain why green roofs need watering","To show that white roofs absorb more sunlight","To argue that green roofs should not be built"],0,"","比較便宜的替代方案：淺色屋頂反射陽光。")
+])),
+RT(L("m1r21","l1","cr",["W: Do you have time to look over my cover letter before I send it?"],["Can it wait until after my four o'clock class?","I sent mine last week.","The cover of the book was torn.","Time goes by so quickly."],0,"","間接回答：現在不行，可以等我下課嗎？")),
+RT(L("m1r22","l1","cr",["MB: Is the shuttle still running, or did I miss the last one?"],["There's one more at eleven-fifteen.","I missed you too.","Running is good exercise.","The shuttle is blue and white."],0,"","還有最後一班 → 還沒錯過。")),
+RT(L("m1r23","l1","cr",["W: I heard the chemistry midterm was moved to next week."],["Really? The syllabus still says Friday.","Chemistry is my hardest class.","I moved last weekend.","The midterm was really long."],0,"","對消息表示懷疑，並提出相反的資訊。")),
+RT(L("m1r24","l1","cr",["M: Would you rather meet in the library or at the cafe?"],["The library's usually too quiet for group work.","I'd like to read that book again.","Rather than coffee, I'll have tea.","We met there last semester."],0,"","二選一，用理由間接表示選咖啡廳。")),
+LO(L("m1r25","l1","cr",["W: How often does the campus newspaper come out?"],["Every Wednesday.","It's on the table.","I read it online.","The news was surprising."],0,"","How often＝多久一次。")),
+LO(L("m1r26","l1","cr",["M: Can I borrow your calculator for the exam?"],["Sure, but I need it back after class.","The exam was difficult.","I borrowed a book yesterday.","It cost twenty dollars."],0,"","答應並加上條件。")),
+UP(L("m1r27","l1","cr",["WA: I'm surprised you're not going to the conference. You've been talking about it for months."],["My funding didn't come through.","It's been months since I saw you.","The conference room is booked.","I'm talking to my advisor now."],0,"","說明沒去的原因：經費沒批下來。")),
+UP(L("m1r28","l1","cr",["M: It might not be a bad idea to back up your files before the update."],["Already done. I learned that the hard way.","The update is free.","I'll back the car into the garage.","My files are in the blue folder."],0,"","委婉的建議；回應「早就做了，吃過虧」。")),
+RT(LG("m1n4","l3","Listen to an announcement from a residence hall director.",[
+  "WC: Good evening, residents. I want to let you know about some changes to our guest policy, starting next month. Overnight guests will now need to be registered at the front desk by 10 p.m., and each resident may host a guest for no more than three nights in a row.",
+  "WC: We're making this change because several residents told us they felt uncomfortable with unfamiliar people in the building late at night. Day visitors don't need to register, but they must be accompanied by the resident at all times.",
+  "WC: If you're expecting a family member for a longer stay, for example during exam week, please speak with me in advance, and we'll try to make an exception."
+],[
+  Q("m1n4a","What is the main purpose of the announcement?",["To explain new rules about visitors","To announce new front desk hours","To ask residents to keep noise down at night","To introduce a new residence hall director"],0,"","訪客（過夜）規定的改變。"),
+  Q("m1n4b","Why is the policy being changed?",["Some residents were uneasy about strangers in the building.","Guests had damaged the building.","The front desk did not have enough staff.","Exam week is approaching."],0,"","住戶表示深夜看到陌生人不安。"),
+  Q("m1n4c","What can be inferred about longer visits from family members?",["They may be allowed if arranged in advance.","They are not permitted at all.","They can last up to a week without permission.","They require the guest to register online."],0,"","speak with me in advance, and we'll try to make an exception。")
+])),
+RT(LG("m1l4","l4","Listen to part of a talk in a biology class.",[
+  "MB: Today I want to talk about one of the most remarkable transformations in the insect world: the desert locust. Most of the time, desert locusts live alone. They're green or brown, they avoid each other, and they do relatively little damage. In this solitary phase, you'd hardly notice them.",
+  "MB: But when heavy rains produce a lot of vegetation in desert areas, locust populations can grow quickly. Then, as the plants dry out, the insects are forced into smaller and smaller patches of green, and this crowding triggers a dramatic change. Researchers found that when locusts repeatedly bump into each other, specifically when the hairs on their back legs are touched, their nervous systems release more of a chemical called serotonin. Within hours, they stop avoiding other locusts and start seeking them out. Over time, they even change color, becoming yellow and black.",
+  "MB: These crowd-loving locusts form swarms that can stretch for kilometers and travel long distances on the wind. A single square kilometer of swarm can contain tens of millions of insects, and each one can eat roughly its own weight in plants every day. So you can imagine what that means for farmers.",
+  "MB: Because swarms are so hard to stop once they form, control efforts focus on early warning. Organizations monitor rainfall and vegetation, often using satellite data, to predict where locusts are likely to breed. The goal is to deal with young locusts before they become a swarm."
+],[
+  Q("m1l4a","What is the talk mainly about?",["How crowding transforms desert locusts and why it matters","Why locusts avoid rainy areas","How farmers use locusts to control weeds","Why locusts change color in winter"],0,"","擁擠讓沙漠蝗蟲從獨居變成群聚，以及造成的影響。"),
+  Q("m1l4b","According to the professor, what triggers the change in locust behavior?",["Repeated touching of their back legs","A sudden drop in temperature","Eating a particular kind of plant","Exposure to bright sunlight"],0,"","後腿的毛被反覆碰觸 → 血清素增加。"),
+  Q("m1l4c","Why does the professor mention that each locust can eat its own weight in plants?",["To emphasize the damage swarms can do to crops","To explain why locusts grow so quickly","To compare locusts with other insects","To describe how locusts store food"],0,"","說明蝗群對農作物的破壞有多大。"),
+  Q("m1l4d","What do control efforts mainly focus on?",["Detecting conditions that lead to swarms before they form","Destroying swarms after they reach farms","Moving crops away from deserts","Breeding locusts that cannot fly"],0,"","early warning：監測降雨、植被，在成群前處理。")
+]))
+
 ]);

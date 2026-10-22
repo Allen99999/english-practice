@@ -104,7 +104,7 @@ async function recStart() {
 function toeflAdaptivePlan(gm) {
   return (gm.adaptive || []).filter(sec => sec.tags.some(t => gm.tags.includes(t))).map(sec => {
     const us = unitsFor({ banks: [gm.bank.id], tags: sec.tags, types: TYPE_ORDER });
-    const pick = st => us.filter(u => u.stage === st).flatMap(u => u.refs);
+    const pick = st => byTagOrder(us.filter(u => u.stage === st), gm.bank).flatMap(u => u.refs);
     return { name: sec.name, cut: sec.cut || 0.6, router: pick("router"), lower: pick("lower"), upper: pick("upper"), done: false };
   });
 }

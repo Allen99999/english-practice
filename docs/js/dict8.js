@@ -1,6 +1,6 @@
 /* ===== 字典補充 8：托福（2026 新制）改版後新題目用到的字 ===== */
 ["hadn't", "wouldn't", "shouldn't", "couldn't", "it'll", "that'll", "this'll", "he'd", "she'd", "you'd", "we'd", "they'd", "should've", "would've", "could've", "ma", "mb", "wa", "wb", "wc", "mc"].forEach(w => STOP.add(w));
-Object.assign(IRREG, { arose: "arise", bred: "breed", spun: "spin", swept: "sweep", hid: "hide", mice: "mouse", fungi: "fungus", foremen: "foreman", withdrawn: "withdraw", disproven: "disprove", forgotten: "forget", misread: "misread", misunderstood: "misunderstand", overlooked: "overlook", brightest: "bright", busiest: "busy", easiest: "easy", farthest: "far", safest: "safe", strongest: "strong", dimmer: "dim", closer: "close", healthier: "healthy", trickier: "tricky", safer: "safe", antennae: "antenna", sought: "seek", lain: "lie", undergone: "undergo", lit: "light" });
+Object.assign(IRREG, { arose: "arise", bred: "breed", spun: "spin", swept: "sweep", hid: "hide", mice: "mouse", fungi: "fungus", foremen: "foreman", withdrawn: "withdraw", disproven: "disprove", forgotten: "forget", misread: "misread", misunderstood: "misunderstand", overlooked: "overlook", brightest: "bright", busiest: "busy", easiest: "easy", farthest: "far", safest: "safe", strongest: "strong", dimmer: "dim", closer: "close", healthier: "healthy", trickier: "tricky", safer: "safe", antennae: "antenna", sought: "seek", lain: "lie", undergone: "undergo", lit: "light", struck: "strike" });
 const DICT_RAW8 = `
 abandon|v.|放棄；拋棄
 abbott|n.|人名
@@ -1215,6 +1215,65 @@ yimithirr|n.|語言名（Guugu Yimithirr）
 york|n.|約克（New York 紐約）
 zealand|n.|紐西蘭（New Zealand）
 zero|num.|零
+america|n.|美洲；美國
+apology|n.|道歉
+britain|n.|英國
+calendar|n.|曆法；日曆
+canadian|adj.|加拿大的
+cautious|adj.|謹慎的
+citizen|n.|公民（citizen science 公民科學）
+classify|v.|分類
+congress|n.|（美國）國會
+conventional|adj.|傳統的；一般的
+creation|n.|創造；建立
+crowd-loving|adj.|喜歡群聚的
+decorate|v.|裝飾
+distort|v.|扭曲
+dramatic|adj.|劇烈的
+drawback|n.|缺點
+eleven-fifteen|n.|十一點十五分
+enthusiasm|n.|熱情
+exposure|n.|暴露；接觸
+galaxy|n.|星系
+guideline|n.|規定；準則
+impermeable|adj.|不透水的
+insulate|v.|隔熱；隔絕
+launch|v.|推出；發起
+locust|n.|蝗蟲
+longest-running|adj.|持續最久的
+marta|n.|人名
+minimum|adj.|最少的；n. 最小值
+overnight|adj.|過夜的
+phase|n.|階段；型態
+railroad|n.|鐵路
+railway|n.|鐵路
+rainfall|n.|降雨量
+regulate|v.|管制；規範
+reinforcement|n.|加強；補強
+remedy|n.|解決辦法
+rooftop|n.|屋頂
+safeguard|n.|保護措施
+satellite|n.|衛星
+schoolteacher|n.|學校老師
+seek|v.|尋找
+serotonin|n.|血清素
+shield|v.|保護；遮擋
+solitary|adj.|獨居的
+specifically|adv.|具體來說
+split|v.|分攤
+strike|v.|（鐘）敲響（過去式 struck）
+structural|adj.|結構的
+sundial|n.|日晷
+sunset|n.|日落
+surgery|n.|手術
+swarm|n.|（昆蟲）一大群
+tar|n.|焦油；柏油
+transformation|n.|轉變
+transform|v.|轉變
+uneasy|adj.|不安的
+vapor|n.|蒸氣（water vapor 水蒸氣）
+vegetation|n.|植被；植物
+wrist|n.|手腕
 swirl|n.|漩渦（狀的花紋）
 blotched|adj.|有大塊斑紋的
 aboriginal|adj.|（澳洲）原住民的

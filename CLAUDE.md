@@ -115,7 +115,12 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
     - `EM(id, tag, 情境, bullets, 收件人, 主旨, 範文, 解析)`、`AD` Academic Discussion、`LG` 聽力題組、`L(...,"cr",...)` 聽一句選回應、`SR`／`SI` 口說。
   - 聽力 script 的說話者：W/M 美國腔、WB/MB 英國腔、WA/MA 澳洲腔、WC/MC 加拿大腔、N 旁白（聲音設定在 config.js 的 `TTS.accents`）。
   - Reading、Listening 是兩階段適應性：題目加 `stage`（router／lower／upper），模擬卷的 `adaptive` 設定切分點（第一階段答對率 ≥ 60% 進 upper）。執行邏輯在 `toefl.js`。
-    每份卷：Reading router 20／lower 18／upper 18；Listening router 19／lower 15／upper 15；Writing 10 BS＋Email＋Discussion；Speaking 7 句＋4 題。
+    題數照 ETS 官方：Reading 50（router 32＝補字母 2 段＋生活閱讀 2 題＋學術文章 2 篇；lower／upper 各 18＝補字母 1 段＋生活閱讀 3 題＋學術文章 1 篇）、
+    Listening 47（router 30、lower／upper 各 17）、Writing 12、Speaking 11，完整一回 120 題。畫面上的總題數一開始就包含第二階段。
+    模擬卷執行時依 tag 順序排題（`byTagOrder`），所以新增題目一律加在檔案最後；不再使用的題目用 `RE()`（stage retired）留著，不要刪，舊紀錄和選項平衡才不會亂。
+  - 補字母一段 10 格照官方各算 1 題，但畫面上整段是一頁（`ctSpan`）：題號顯示 Q1–10，「下一題」直接跳過整段。
+  - 隨機組卷有指定題數時用 `balancedPick`：題數平均分給選到的部分（聽說讀寫），每部分裡輪流抽各題型，題組放不下就換下一個（整份最多多 2～3 題）。
+  - 正式模擬卷「考哪一部分」可以按「複選」同時考好幾個部分（`sel.gMulti`／`sel.gParts`）。
   - 語音只做聽力和口說（build_tts_jobs.mjs 會跳過托福的閱讀、寫作和 dict7.js、dict8.js 的單字），托福頁面也不顯示「念題目／朗讀全文」。
   - 托福題目用到的字收在 `dict7.js`、`dict8.js`（點字時用瀏覽器內建語音）；題目裡不要用 é、ā 這類字母（點字查詢會拆錯），寫成 cafe、resume、Maori。
   - 寫作、口說是自評＋範文；口說錄音在學生自評後上傳給老師（見下方「口說錄音」）。結果頁會顯示依答對率估算的 1～6 級分。
