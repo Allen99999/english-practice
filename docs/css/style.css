@@ -872,6 +872,13 @@ html.intro-on body{overflow:hidden}
 .cm-ch.on,.cm-of.on,.cm-sc.on{box-shadow:inset 0 0 0 2.5px var(--accent);background:var(--accent-soft)}
 .cm-ch:active,.cm-of:active,.cm-sc:active{transform:scale(.97)}
 .cm-actions{justify-content:flex-end;gap:10px;margin-top:4px}
+/* 寬螢幕（筆電、桌機）：名片和選單左右並排，不用往下捲；選單先佔好位置，彈出動畫結束後名片不會跳 */
+@media (min-width:1100px) and (min-aspect-ratio:3/2){
+  .cm-scrim{flex-direction:row;align-items:center;justify-content:center;gap:28px}
+  .cm-stage{width:min(50vw,780px)}
+  .cm-panel{width:min(40vw,520px);max-height:calc(100dvh - 56px);overflow-y:auto}
+  .cm-panel[hidden]{display:flex;visibility:hidden}
+}
 @media (max-width:640px){
   .cm-stage{width:92vw}.cm-panel{padding:16px 14px 14px}
   .cm-chars{grid-template-columns:repeat(3,minmax(0,1fr))}
