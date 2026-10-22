@@ -272,7 +272,7 @@ function balancedPick(units, count) {
 }
 function newSession(refs, opts = {}) {
   S = {
-    id: uid(), optv: OPTV, limit: opts.limit || 0, blind: !!opts.blind, adaptive: opts.adaptive || null, who: opts.who || store.who || "未署名", kind: opts.kind || "exam", title: opts.title || "", banks: opts.banks || [], saved: Date.now(),
+    id: uid(), optv: OPTV, limit: opts.limit || 0, blind: !!opts.blind, mock: !!opts.mock, adaptive: opts.adaptive || null, who: opts.who || store.who || "未署名", kind: opts.kind || "exam", title: opts.title || "", banks: opts.banks || [], saved: Date.now(),
     qs: refs, idx: 0, ans: {}, work: {}, words: {}, combo: 0, maxCombo: 0, elapsed: 0, started: Date.now()
   };
   store.sessions.unshift(S);
@@ -369,7 +369,7 @@ function respText(q, a) {
     case "order": return r.map(i => "abcdefgh"[i]).join(" → ");
     case "spell": return spellFull(q, r);
     case "trans": case "rewrite": return r || "（空白）";
-    case "essay": return `${r.text || "（空白）"}（${wcount(r.text)} 字・${typeof r.level === "number" ? `自評 ${r.level} / ${maxPts(q)} 分` : `自評${r.rate === "ok" ? "達到要求" : "還需加強"}`}）`;
+    case "essay": return `${r.text || "（空白）"}（${wcount(r.text)} 字・${typeof r.level === "number" ? `${r.ai ? "AI 評分" : "自評"} ${r.level} / ${maxPts(q)} 分` : `自評${r.rate === "ok" ? "達到要求" : "還需加強"}`}）`;
     case "speak": return typeof r.level === "number" ? `自評 ${r.level} / ${maxPts(q)} 分${a.resp.rec ? "（有錄音）" : ""}` : `自評${r.rate === "ok" ? "達到要求" : "還需加強"}`;
     case "cword": return r || "（空白）";
     case "scramble": { const all = q.tiles.concat(q.extra || []); return q.frame ? bsFill(q, r.map(i => all[i])) : (q.pre ? q.pre + " " : "") + r.map(i => all[i]).join(" ") + (q.post ? " " + q.post : ""); }
@@ -573,7 +573,7 @@ function homeHTML() {
       const c = countBy(sel, t); const dis = false; if (!c) return "";
       return `<button class="chip" data-act="type" data-t="${t}" aria-pressed="${sel.types.includes(t) && !dis}" ${dis ? "disabled style=\"opacity:.4\"" : ""}>${TYPE_LABEL[t]}<span class="n">${c}</span></button>`;
     }).join("")}</div></div>`}
-    ${sel.mode === "custom" ? `<div class="opt-block"><label>題數</label><div class="seg">${[10, 20, 30, 0].map(c => `<button data-act="count" data-v="${c}" aria-pressed="${sel.count === c}">${c || "全部"}</button>`).join("")}</div></div>
+    ${sel.mode === "custom" ? `<div class="opt-block"><label>題數</label><div class="seg">${[1, 10, 20, 30, 0].map(c => `<button data-act="count" data-v="${c}" aria-pressed="${sel.count === c}">${c === 1 ? "1 題" : c || "全部"}</button>`).join("")}</div></div>
     <div class="opt-block"><label>順序</label><div class="seg"><button data-act="order" data-v="type" aria-pressed="${sel.order === "type"}">依題型排列</button><button data-act="order" data-v="random" aria-pressed="${sel.order === "random"}">完全隨機</button></div></div>` : ""}
     <div class="start-bar"><div class="muted tnum">這次共 <b style="color:var(--ink);font-size:18px">${examN}</b> 題${store.who && !gm ? (() => { const seen = seenRefs(store.who), all = unitsFor(sel).flatMap(u => u.refs), left = all.filter(r => !seen.has(r)).length; return `<div style="font-size:12.5px">${esc(store.who)} 在這個範圍還有 ${left} / ${all.length} 題沒做過，會優先出</div>`; })() : ""}</div>
     <button class="btn primary big" data-act="start" ${examN ? "" : "disabled"}>${I.play}開始作答</button></div>
@@ -623,6 +623,7 @@ function startTick() {
       if (tb) { tb.style.width = Math.max(0, left / S.limit * 100) + "%"; tb.classList.toggle("low", left < 300); }
       if (left <= 0) { clearInterval(tick); toast("時間到，自動交卷"); finish(); return; }
     }
+    if (typeof emailTick === "function") emailTick();   // Email：每題計時、限時重寫
     if (Math.round(S.elapsed) % 5 === 0) save();
   }, 1000);
 }
@@ -775,6 +776,7 @@ function questionBody(X, i, a, review) {
   }
   else if (q.type === "cword") h += ctestCardHTML(X, i, a);
   else if (q.type === "speak") h += speakHTML(q, i, a);
+  else if (q.type === "essay" && q.mail && typeof emailHTML === "function") h += emailHTML(X, i, a, st, m);   // 托福 Email：AI 批改
   else if (q.type === "essay") {
     const sub = locked || st.submitted; const txt = locked ? a.resp.text : (st.val || "");
     h += `<div class="eyebrow">${esc(q.label || "段落寫作")}</div><div class="stem" style="font-size:17px">${esc(q.prompt)}</div>
@@ -829,6 +831,7 @@ function questionBody(X, i, a, review) {
 }
 function feedbackHTML(X, a) {
   const q = X.q;
+  if (q.type === "essay" && q.mail && a.resp && a.resp.ai) return "";   // AI 批改結果在題目卡裡
   if (q.type === "speak" || q.type === "essay") { const p = ptsOf(q, X.bank, a), m = maxPts(q, X.bank);
     return `<div class="feedback ${a.correct ? "ok" : "no"}"><span class="fb-ic">${a.correct ? I.check : I.x}</span><div style="min-width:0"><b>自評 ${p} / ${m} 分</b><p>${esc(levelDesc(q, X.bank, p))}</p><p>${esc(q.exp || "")}</p></div></div>`; }
   const extra = (q.type === "trans" || q.type === "rewrite") && !a.correct ? diffHTML(q, a.resp) : "";
@@ -886,9 +889,10 @@ function submitCurrent() {
 }
 function rerenderKeep() {
   const sy = scrollY, keep = {};
-  document.querySelectorAll("#app details").forEach((d, k) => keep[d.id || d.dataset.who || d.dataset.group || "d" + k] = d.open);
+  const keyOf = (d, k) => d.id || d.dataset.key || d.dataset.who || d.dataset.group || "d" + k;
+  document.querySelectorAll("#app details").forEach((d, k) => keep[keyOf(d, k)] = d.open);
   render();
-  document.querySelectorAll("#app details").forEach((d, k) => { const key = d.id || d.dataset.who || d.dataset.group || "d" + k; if (key in keep) d.open = keep[key]; });
+  document.querySelectorAll("#app details").forEach((d, k) => { const key = keyOf(d, k); if (key in keep) d.open = keep[key]; });
   scrollTo(0, sy);
 }
 function gotoQ(n) {
@@ -1098,12 +1102,13 @@ function reviewItem(att, i) {
   else if (X.group && X.group.kind === "ctest") body += `<div class="ptext" style="font-size:15.5px">${esc(X.group.passage[0].replace(/\{([^}]*)\}/g, "$1"))}</div>`;
   else if (X.group) body += `<details class="pfold"><summary><span class="muted">題組：${esc(X.group.title)}（展開文章）</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext ${X.group.kind}" style="margin-top:8px;font-size:15.5px">${insMarks(X.group.passage.map(p => `<p>${esc(p).replace(/\[\[(\d)\]\]/g, '<span class="cz">$1</span>')}</p>`).join(""), X.group, true)}</div></details>`;
   body += `<div>${questionReview(q)}</div>`;
-  body += `<dl class="kv"><dt>你的答案</dt><dd class="${a && a.correct ? "ans-ok" : "ans-no"}" style="${a && a.correct ? "" : "text-decoration:none"}">${esc(respText(q, a))}${a && a.claim ? "（學生反應：我寫的也對）" : ""}${a && (a.self || a.tmark || rubricOf(q, X.bank)) ? `（${a.tmark ? "老師評分" : a.self || q.type === "essay" || q.type === "speak" ? "自評" : "得分"} ${ptsOf(q, X.bank, a)} / ${maxPts(q, X.bank)}）` : ""}${a && a.hint ? ` <span class="tag">用了提示</span>` : ""}</dd>
-  <dt>正確答案</dt><dd class="ans-ok">${esc(correctText(q))}</dd>
+  body += `<dl class="kv"><dt>你的答案</dt><dd class="${a && a.correct ? "ans-ok" : "ans-no"}" style="${a && a.correct ? "" : "text-decoration:none"}">${esc(respText(q, a))}${a && a.claim ? "（學生反應：我寫的也對）" : ""}${a && (a.self || a.tmark || rubricOf(q, X.bank)) ? `（${a.tmark ? "老師評分" : a.resp && a.resp.ai ? "AI 評分" : a.self || q.type === "essay" || q.type === "speak" ? "自評" : "得分"} ${ptsOf(q, X.bank, a)} / ${maxPts(q, X.bank)}）` : ""}${a && a.hint ? ` <span class="tag">用了提示</span>` : ""}</dd>
+  ${q.mail ? "" : `<dt>正確答案</dt><dd class="ans-ok">${esc(correctText(q))}</dd>`}
   ${q.type === "trans" || q.type === "rewrite" ? `<dt>可接受</dt><dd class="muted" style="font-size:14px">${q.ans.map(x => esc(x).replace(/\{([^}]*)\}/g, (m, g) => `[${g.split("|").map(s => s || "∅").join(" / ")}]`)).join("<br>")}</dd>` : ""}
   ${q.exp ? `<dt>解析</dt><dd>${esc(q.exp)}</dd>` : ""}
   ${q.hint ? `<dt>提示</dt><dd class="muted">${esc(q.hint)}</dd>` : ""}</dl>`;
   if ((q.type === "trans" || q.type === "rewrite") && a && !a.correct) body += diffHTML(q, a.resp);
+  if (q.mail && typeof aiReviewHTML === "function") body += aiReviewHTML(q, a, att, i);   // Email：AI 批改結果、重寫、範文
   if (q.type === "speak" && a && store.teacherCode) body += `<button class="btn" data-act="rec-fetch" data-att="${esc(att.id)}" data-i="${i}">${I.play}播放學生錄音</button>`;
   if (typeof gradeButtonsHTML === "function") body += gradeButtonsHTML(att, i);
   const autoOpen = animNext && att.regrade && att.regrade.some(c => c.i === i) && !(typeof isRemote === "function" && isRemote(att) && store.teacherCode);
@@ -1293,7 +1298,7 @@ document.addEventListener("click", e => {
       if (gm) (gm.bank.timeLimits || []).forEach(([tags, min]) => { if (tags.some(t => gm.tags.includes(t))) limit += min * 60; });
       else if (sel.mode === "exam") sel.banks.map(bankById).forEach(b => (b.timeLimits || []).forEach(([tags, min]) => { if (tags.some(t => sel.tags.includes(t))) limit += min * 60; }));
       const blind = !!gm && gm.blind;
-      const opts = { kind: "exam", limit, blind, adaptive: gm && gm.adaptive ? adaptivePlan(gm) : null, title: gm ? `${titles}・正式模擬卷 ${gm.n}・${gm.name.replace(/（.*?）/g, "")}` : `${titles}・${sel.mode === "exam" ? (limit ? "模擬測驗" : "模擬段考") : "自訂練習"}`, banks: gm ? [gm.bank.id] : sel.banks.slice() };
+      const opts = { kind: "exam", limit, blind, mock: !!gm, adaptive: gm && gm.adaptive ? adaptivePlan(gm) : null, title: gm ? `${titles}・正式模擬卷 ${gm.n}・${gm.name.replace(/（.*?）/g, "")}` : `${titles}・${sel.mode === "exam" ? (limit ? "模擬測驗" : "模擬段考") : "自訂練習"}`, banks: gm ? [gm.bank.id] : sel.banks.slice() };
       // 這個名字在這台裝置還沒有個人代碼 → 先登記（名字被別人用了就請他輸入代碼）
       if (typeof ensureCode === "function" && !store.codes[nm]) { act.disabled = true; ensureCode(nm).then(ok => { act.disabled = false; if (ok) newSession(refs, opts); }); }
       else newSession(refs, opts);

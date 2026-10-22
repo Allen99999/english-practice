@@ -1,6 +1,6 @@
 /* ===== 字典補充 8：托福（2026 新制）改版後新題目用到的字 ===== */
 ["hadn't", "wouldn't", "shouldn't", "couldn't", "it'll", "that'll", "this'll", "he'd", "she'd", "you'd", "we'd", "they'd", "should've", "would've", "could've", "ma", "mb", "wa", "wb", "wc", "mc"].forEach(w => STOP.add(w));
-Object.assign(IRREG, { arose: "arise", bred: "breed", spun: "spin", swept: "sweep", hid: "hide", mice: "mouse", fungi: "fungus", foremen: "foreman", withdrawn: "withdraw", disproven: "disprove", forgotten: "forget", misread: "misread", misunderstood: "misunderstand", overlooked: "overlook", brightest: "bright", busiest: "busy", easiest: "easy", farthest: "far", safest: "safe", strongest: "strong", dimmer: "dim", closer: "close", healthier: "healthy", trickier: "tricky", safer: "safe", antennae: "antenna", sought: "seek", lain: "lie", undergone: "undergo", lit: "light", struck: "strike" });
+Object.assign(IRREG, { arose: "arise", bred: "breed", spun: "spin", swept: "sweep", hid: "hide", mice: "mouse", fungi: "fungus", foremen: "foreman", withdrawn: "withdraw", disproven: "disprove", forgotten: "forget", misread: "misread", misunderstood: "misunderstand", overlooked: "overlook", brightest: "bright", busiest: "busy", easiest: "easy", farthest: "far", safest: "safe", strongest: "strong", dimmer: "dim", closer: "close", healthier: "healthy", trickier: "tricky", safer: "safe", antennae: "antenna", sought: "seek", lain: "lie", undergone: "undergo", lit: "light", struck: "strike", noisiest: "noisy" });
 const DICT_RAW8 = `
 abandon|v.|放棄；拋棄
 abbott|n.|人名
@@ -1215,6 +1215,14 @@ yimithirr|n.|語言名（Guugu Yimithirr）
 york|n.|約克（New York 紐約）
 zealand|n.|紐西蘭（New Zealand）
 zero|num.|零
+firsthand|adv.|親身地；第一手地
+five-dollar|adj.|五美元的
+glad|adj.|樂意的；高興的
+invitation|n.|邀請
+noisy|adj.|吵鬧的（最高級 noisiest）
+ortega|n.|人名
+second-year|adj.|二年級的
+semester-long|adj.|為期一學期的
 america|n.|美洲；美國
 apology|n.|道歉
 britain|n.|英國

@@ -125,6 +125,13 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
   - 托福題目用到的字收在 `dict7.js`、`dict8.js`（點字時用瀏覽器內建語音）；題目裡不要用 é、ā 這類字母（點字查詢會拆錯），寫成 cafe、resume、Maori。
   - 寫作、口說是自評＋範文；口說錄音在學生自評後上傳給老師（見下方「口說錄音」）。結果頁會顯示依答對率估算的 1～6 級分。
   - Allen 提供的「新托福模擬小題本」只當格式參考，內容含 ETS 官方題，不可照搬到網站。
+- **AI 批改（目前只有托福 Write an Email）**：前端 `docs/js/aigrade.js`，後端 `apps-script/Ai.gs`（評分指令＝`新制托福 Write an Email 評分與回饋系統.md` 的標準）。
+  - 後端用部署者（Allen）帳號的授權（`ScriptApp.getOAuthToken`＋`cloud-platform` scope）呼叫 Vertex AI，費用記在 `Secrets.gs` 的 `VERTEX_PROJECT`（Google Cloud 試用額度）。
+    模型 `gemini-3.1-pro-preview`，被限流就改用 `gemini-2.5-pro`；一篇約 30～90 秒。服務帳戶金鑰被 Google 預設安全政策擋住，所以不用金鑰。
+  - 防濫用：學生要名字＋個人代碼（老師可用老師代碼），每人 6 小時 40 篇、全站 300 篇。aigrade 不進 doPost 的鎖。
+  - 畫面：估分卡（四面向＋封頂規則）、一句診斷、任務檢核、原文標註＋錯誤清單、語域檢查、替換字、錯誤日誌與分數趨勢、5 分鐘限時重寫、C1／C2 範文。
+    隨機組卷只計時；正式模擬卷（`S.mock`）每題限時 7 分鐘、時間到自動送出。AI 分數就是這題的分數，老師在待批改改分會覆蓋。
+  - Email 題 `EM(..., 收件人, 主旨, C1範文, C2範文, 解析)`。隨機組卷的題數可以選「1 題」（適合專練寫作、口說）。
 - **聽說讀寫進度條**（app.js 的 `skillBarsHTML`）：有正式模擬卷的題庫（托福、英檢）＋它的模擬卷算一組，依 tag 名稱開頭（Reading／閱讀、Listening／聽力…）分成聽說讀寫。
   長條＝這個學生做過的題目佔該部分總題數（同一題只算一次），顏色＝最近一次的得分率，最弱的部分標「建議加強」。
   出現在首頁（選了托福或英檢、有輸入名字時，可按「練這部分」直接選好題型）、紀錄頁（選了某位學生時）、老師總覽的個人詳細。

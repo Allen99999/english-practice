@@ -63,11 +63,12 @@ const INS = (id, sentence, ans, exp) => ({ id, type: "mc", ins: sentence, fixedO
   stem: "Look at the four squares [■] in the passage. Where would the following sentence best fit?", box: [sentence],
   opts: ["Square 1", "Square 2", "Square 3", "Square 4"], ans, hint: "看插入句的代名詞、連接詞，和前後句的邏輯。", exp });
 /* Write an Email／Academic Discussion：自評＋範文 */
-const EMAIL_CHECK = ["三個要求都寫到了，而且每一點都有具體細節（時間、原因、例子）", "有稱呼、開頭說明來意、結尾與署名，語氣符合收件人的身分", "建議 120 字以上（7 分鐘內盡量多寫完整的句子）", "句型有變化（I was wondering if…／Since…／so that…），不是一直用簡單句", "文法、拼字、標點都檢查過"];
+const EMAIL_CHECK = ["三個要求都寫到了，而且每一點都有具體細節（時間、原因、例子）", "有稱呼、開頭說明來意、結尾與署名，語氣符合收件人的身分", "建議 100～130 字（低於 80 字通常細節不夠，超過 150 字容易出錯）", "句型有變化（I was wondering if…／Since…／so that…），不是一直用簡單句", "文法、拼字、標點都檢查過"];
 const DISC_CHECK = ["第一句就清楚回答教授的問題", "提出自己的新理由，不只是重複同學說過的話", "用具體例子、數據或親身經驗支持", "至少 100 字（高分回答多在 120～180 字）", "用了轉折與連接詞（While…／Admittedly…／For instance…）"];
-const EM = (id, tag, scenario, bullets, to, subject, model, exp) => ({ id, type: "essay", tag, label: "Write an Email", minWords: 120, check: EMAIL_CHECK,
+/* Email：c1、c2 是兩個等級的範文（作答後一起顯示）；AI 批改見 aigrade.js */
+const EM = (id, tag, scenario, bullets, to, subject, c1, c2, exp) => ({ id, type: "essay", tag, label: "Write an Email", minWords: 100, check: EMAIL_CHECK,
   prompt: "You will read some information and use the information to write an email. You will have 7 minutes to write the email. Write as much as you can and in complete sentences.",
-  scenario, bullets, mail: { to, subject }, model, exp, keywords: null });
+  scenario, bullets, mail: { to, subject }, model: c1, models: { C1: c1, C2: c2 }, exp, keywords: null, secs: 420 });
 const AD = (id, tag, course, professor, posts, model, exp) => ({ id, type: "essay", tag, label: "Academic Discussion", minWords: 100, check: DISC_CHECK,
   prompt: `Your professor is teaching a class on ${course}. Write a post responding to the professor's question. In your response, you should express and support your opinion and make a contribution to the discussion in your own words. An effective response will contain at least 100 words. You have 10 minutes to write.`,
   posts: [professor].concat(posts), model, exp, keywords: null });

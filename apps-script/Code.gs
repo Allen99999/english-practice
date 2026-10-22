@@ -6,6 +6,7 @@
  * - 修改代碼：POST {action:"setcode", name, code, newCode}
  * - 老師讀取：GET ?action=list&teacherCode=...（含學生代碼，學生忘記時可以查）
  * 個人代碼存在「students」工作表；CLASS_CODE 留空就不檢查班級代碼。
+ * - AI 批改：POST {action:"aigrade", ...}（見 Ai.gs）
  * 代碼放在 Secrets.gs（不會上傳到 GitHub）
  */
 const SHEET_NAME = "attempts";
@@ -60,6 +61,7 @@ function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
     if (CLASS_CODE && String(body.classCode || "").trim() !== CLASS_CODE) return json_({ ok: false, error: "wrong class code" });
+    if (body.action === "aigrade") return aiGrade_(body);   // AI 批改要跑幾十秒，不佔用鎖（見 Ai.gs）
     const lock = LockService.getScriptLock(); lock.waitLock(10000);
     try {
       switch (body.action) {
