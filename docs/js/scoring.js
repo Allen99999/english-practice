@@ -57,6 +57,23 @@ function rubricButtonsHTML(q, bank, act, cur, extra) {
     `<button class="rb ${cur === lv ? "on" : ""}" data-act="${act}" data-v="${lv}" title="${esc(d)}" ${extra || ""}><b>${lv}</b>${short[lv] ? `<span>${short[lv]}</span>` : ""}</button>`).join("")}</div>
   <div class="muted rb-desc">${cur === null || cur === undefined ? `${esc(r.name)}・把滑鼠移到按鈕上可以看說明` : `${cur} 分：${esc(levelDesc(q, bank, cur))}`}</div></div>`;
 }
+/* 英檢初級初試（聽力＋閱讀）成績：官方是量尺分數、各科滿分 120，
+   通過標準＝兩科總和 160 分以上，且任一科不低於 72 分（LTTC）。這裡依答對率估算：答對率 × 120。 */
+function geptLRHTML(att) {
+  const P = { l: [0, 0], r: [0, 0] };
+  (att.qs || []).forEach((_, i) => {
+    const X = getQ(i, att); if (!X || !X.bank || !/^gept/.test(X.bank.id)) return;
+    const k = X.q.type === "listen" ? "l" : /^(g[123]|r[123])$/.test(X.q.tag || (X.group && X.group.tag) || "") ? "r" : null; if (!k) return;
+    P[k][1]++; if ((att.ans || {})[i] && att.ans[i].correct) P[k][0]++;
+  });
+  if (!P.l[1] && !P.r[1]) return "";
+  const sc = k => P[k][1] ? Math.round(P[k][0] / P[k][1] * 120) : null, L = sc("l"), R = sc("r"), both = L !== null && R !== null;
+  const pass = both && L + R >= 160 && L >= 72 && R >= 72, full = P.l[1] === 30 && P.r[1] === 30;
+  const cell = (name, v, p) => v === null ? "" : `<div class="stat"><div class="k">${name}</div><div class="v" style="color:${v >= 72 ? "var(--good)" : "var(--bad)"}">${v}<span class="muted" style="font-size:15px"> / 120</span></div><div class="muted" style="font-size:12.5px">答對 ${p[0]} / ${p[1]} 題${v < 72 ? "・低於 72" : ""}</div></div>`;
+  return `<div class="glass card" style="display:flex;flex-direction:column;gap:14px"><div class="section-h" style="margin:0"><h2>英檢初試成績（估算）</h2>${both ? `<span class="tag" style="background:${pass ? "var(--good)" : "var(--bad)"};color:#fff">${pass ? "達到通過標準" : "未達通過標準"}</span>` : ""}</div>
+  <div class="stats">${cell("聽力", L, P.l)}${cell("閱讀", R, P.r)}${both ? `<div class="stat"><div class="k">兩科總和</div><div class="v" style="color:${L + R >= 160 ? "var(--good)" : "var(--bad)"}">${L + R}<span class="muted" style="font-size:15px"> / 240</span></div><div class="muted" style="font-size:12.5px">${L + R >= 160 ? "已達 160" : `差 ${160 - L - R} 分到 160`}</div></div>` : ""}</div>
+  <div class="muted" style="font-size:12.5px">通過標準：聽力＋閱讀總和 160 分以上，且任一科不低於 72 分。官方成績是量尺分數，這裡用答對率 × 120 估算${full ? "" : "；這次題數不是完整的 30＋30 題，估算僅供參考"}${both ? "" : "；這次只做了一科，所以不判斷是否通過"}。</div></div>`;
+}
 /* 英檢初級寫作成績（官方換算） */
 function geptWritingHTML(att) {
   let p1 = 0, m1 = 0, p2 = [], any = false;

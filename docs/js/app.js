@@ -1071,6 +1071,7 @@ function resultHTML(id) {
     ${att.regrade.map(c => { const X = getQ(c.i, att); return `<button class="pend-row" data-act="rv-jump" data-i="${c.i}"><span class="tag">第 ${c.i + 1} 題</span><span style="flex:1;text-align:left;min-width:0">${esc(X ? tagName(X.bank, X.q.tag) : "")}<br><span class="muted" style="font-size:13px">${c.from} 分 → <b style="color:${c.to > c.from ? "var(--good)" : "var(--bad)"}">${c.to} 分</b>（滿分 ${X ? maxPts(X.q, X.bank) : "?"}）</span></span>${I.chevR}</button>`; }).join("")}</div>`;
   if (att.id === justFinished && typeof questResultHTML === "function") h += questResultHTML(att);
   if (typeof teacherResultBar === "function") h += teacherResultBar(att);
+  if (typeof geptLRHTML === "function") h += geptLRHTML(att);   // 英檢初試（聽力＋閱讀）估算
   if (typeof geptWritingHTML === "function") h += geptWritingHTML(att);
   if (typeof toeflBandHTML === "function") h += toeflBandHTML(att);
   // 細項分析
