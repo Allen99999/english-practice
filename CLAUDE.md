@@ -128,7 +128,7 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
 - **AI 批改（目前只有托福 Write an Email）**：前端 `docs/js/aigrade.js`，後端 `apps-script/Ai.gs`（評分指令＝`新制托福 Write an Email 評分與回饋系統.md` 的標準）。
   - 後端用部署者（Allen）帳號的授權（`ScriptApp.getOAuthToken`＋`cloud-platform` scope）呼叫 Vertex AI，費用記在 `Secrets.gs` 的 `VERTEX_PROJECT`（Google Cloud 試用額度）。
     模型 `gemini-3.1-pro-preview`，被限流就改用 `gemini-2.5-pro`；一篇約 30～90 秒。服務帳戶金鑰被 Google 預設安全政策擋住，所以不用金鑰。
-  - 防濫用：學生要名字＋個人代碼（老師可用老師代碼），每人 6 小時 40 篇、全站 300 篇。aigrade 不進 doPost 的鎖。
+  - 防濫用：學生要名字＋個人代碼（老師可用老師代碼），每個名字每小時 3 篇、每 5 小時 10 篇（Test、Allen 和老師代碼不受每人限制），全站每 12 小時 300 篇；計數存在 Script Properties（固定時段）。aigrade 不進 doPost 的鎖（只在計數時短暫上鎖）。
   - 畫面：估分卡（四面向＋封頂規則）、一句診斷、任務檢核、原文標註＋錯誤清單、語域檢查、替換字、錯誤日誌與分數趨勢、5 分鐘限時重寫、C1／C2 範文。
     隨機組卷只計時；正式模擬卷（`S.mock`）每題限時 7 分鐘、時間到自動送出。AI 分數就是這題的分數，老師在待批改改分會覆蓋。
   - Email 題 `EM(..., 收件人, 主旨, C1範文, C2範文, 解析)`。隨機組卷的題數可以選「1 題」（適合專練寫作、口說）。

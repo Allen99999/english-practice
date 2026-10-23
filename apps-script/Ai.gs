@@ -7,8 +7,11 @@
  * 這段不放在 doPost 的鎖裡面（AI 要跑幾十秒，不能卡住交卷等其他動作）。
  */
 const AI_MODELS = ["gemini-3.1-pro-preview", "gemini-2.5-pro"];   // 第一個被限流或失敗就換下一個
-const AI_PER_STUDENT = 40;   // 每個名字 6 小時內最多批幾篇
-const AI_TOTAL = 300;        // 全站 6 小時內最多批幾篇（保護額度）
+/* 使用上限（固定時段計算，例如 1 小時＝每個整點重新計算）：每個名字 1 小時 3 篇、5 小時 10 篇；全站 12 小時 300 篇。
+   AI_NO_LIMIT 的名字（測試與老師自己）不受每人上限限制，但仍計入全站上限。老師代碼呼叫也不受每人上限。 */
+const AI_USER_LIMITS = [[3, 1], [10, 5]];   // [篇數, 小時]
+const AI_TOTAL = [300, 12];
+const AI_NO_LIMIT = ["test", "allen"];
 
 const EMAIL_SYSTEM = `You are a certified TOEFL iBT (2026 format) rater for the "Write an Email" task, giving feedback to a Taiwanese learner. Score and give feedback strictly by the rules below. Write ALL feedback text in Traditional Chinese (台灣用語), but keep quoted English exactly as written.
 
@@ -75,10 +78,23 @@ const EMAIL_SCHEMA = { type: "OBJECT", properties: {
   nextFocus: { type: "STRING" } },
   required: ["score", "wordCount", "dims", "caps", "diagnosis", "points", "registerCheck", "strengths", "errors", "upgrades", "nextFocus"] };
 
-function aiCount_(key, max) {   // 6 小時內的使用次數（超過就擋）
-  const c = CacheService.getScriptCache(), k = "ai:" + key, n = Number(c.get(k) || 0);
-  if (n >= max) return true;
-  c.put(k, String(n + 1), 21600); return false;
+/* 檢查並登記一次 AI 使用：回傳 "" 表示可以，或錯誤代碼（limit-1h、limit-5h、busy）。
+   計數存在 Script Properties（快取最多只能存 6 小時，存不了 12 小時的全站計數），用短暫的鎖避免同時寫入算錯。 */
+function aiQuota_(name, exempt) {
+  const lock = LockService.getScriptLock(); if (!lock.tryLock(5000)) return "busy";
+  try {
+    const P = PropertiesService.getScriptProperties(), now = Date.now(), H = 3600000;
+    const slot = h => Math.floor(now / (h * H));
+    const keys = [["ai:all:" + AI_TOTAL[1] + "h:" + slot(AI_TOTAL[1]), AI_TOTAL[0], "busy"]];
+    if (!exempt) AI_USER_LIMITS.forEach(([n, h]) => keys.push(["ai:n:" + name.toLowerCase() + ":" + h + "h:" + slot(h), n, "limit-" + h + "h"]));
+    for (const [k, max, err] of keys) if (Number(P.getProperty(k) || 0) >= max) return err;
+    keys.forEach(([k]) => P.setProperty(k, String(Number(P.getProperty(k) || 0) + 1)));
+    if (Math.random() < .05) {   // 偶爾清掉已經過期時段的計數
+      const cur = new Set(keys.map(x => x[0])), all = P.getProperties();
+      Object.keys(all).forEach(k => { if (k.startsWith("ai:") && !cur.has(k)) { const m = k.match(/:(\d+)h:(\d+)$/); if (m && Number(m[2]) < Math.floor(now / (Number(m[1]) * H))) P.deleteProperty(k); } });
+    }
+    return "";
+  } finally { lock.releaseLock(); }
 }
 function aiGrade_(body) {
   const teacher = body.teacherCode && String(body.teacherCode) === TEACHER_CODE;
@@ -87,7 +103,7 @@ function aiGrade_(body) {
   if (body.kind !== "email") return json_({ ok: false, error: "bad kind" });
   const t = body.task || {}, essay = String(body.essay || "").slice(0, 5000);
   if ((essay.match(/[A-Za-z]+/g) || []).length < 3) return json_({ ok: false, error: "empty" });
-  if (aiCount_("all", AI_TOTAL) || (!teacher && aiCount_("n:" + name, AI_PER_STUDENT))) return json_({ ok: false, error: "busy" });
+  const quota = aiQuota_(name, teacher || AI_NO_LIMIT.includes(name.toLowerCase())); if (quota) return json_({ ok: false, error: quota });
   const clip = (s, n) => String(s || "").slice(0, n);
   const prompt = "TASK PROMPT:\n" + clip(t.scenario, 1500) + "\n" + [].concat(t.bullets || []).slice(0, 5).map(b => "- " + clip(b, 300)).join("\n") +
     "\nTo: " + clip(t.to, 120) + "\nSubject: " + clip(t.subject, 200) +

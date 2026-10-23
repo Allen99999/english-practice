@@ -35,7 +35,7 @@ function emailTimerText(secs, mock) {
 }
 function aiBusyHTML(msg) { return `<div class="ai-busy glass"><span class="ai-spin"></span><div><b>${esc(msg)}</b><div class="muted" style="font-size:13px">大約 30～90 秒，可以先看其他題，批完會自動顯示。</div></div></div>`; }
 function aiErrText(e) {
-  return { busy: "現在批改的人太多（或這 6 小時已達上限），請稍後再試。", empty: "內容太短，AI 無法批改。", "wrong code": "個人代碼不對，請到「紀錄」頁確認代碼。", "no such name": "這個名字還沒登記，請先完成一次作答讓系統產生代碼。", offline: "沒有網路連線。" }[e] || "連線逾時或發生錯誤，請再試一次。";
+  return { busy: "現在批改的人太多，請稍後再試。", "limit-1h": "AI 批改每小時最多 3 篇，請到下一個整點再試（可以先看範文自評）。", "limit-5h": "AI 批改每 5 小時最多 10 篇，請稍後再試（可以先看範文自評）。", empty: "內容太短，AI 無法批改。", "wrong code": "個人代碼不對，請到「紀錄」頁確認代碼。", "no such name": "這個名字還沒登記，請先完成一次作答讓系統產生代碼。", offline: "沒有網路連線。" }[e] || "連線逾時或發生錯誤，請再試一次。";
 }
 function modelsHTML(q) {
   if (!q.models) return q.model ? `<div class="model"><div class="step-label">參考範文</div><div class="ptext" style="font-size:16px">${esc(q.model)}</div></div>` : "";
