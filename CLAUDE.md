@@ -125,7 +125,9 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
   - 托福題目用到的字收在 `dict7.js`、`dict8.js`（點字時用瀏覽器內建語音）；題目裡不要用 é、ā 這類字母（點字查詢會拆錯），寫成 cafe、resume、Maori。
   - 寫作、口說是自評＋範文；口說錄音在學生自評後上傳給老師（見下方「口說錄音」）。結果頁會顯示依答對率估算的 1～6 級分。
   - Allen 提供的「新托福模擬小題本」只當格式參考，內容含 ETS 官方題，不可照搬到網站。
-- **AI 批改（目前只有托福 Write an Email）**：前端 `docs/js/aigrade.js`，後端 `apps-script/Ai.gs`（評分指令＝`新制托福 Write an Email 評分與回饋系統.md` 的標準）。
+- **AI 批改（托福 Write an Email、Write for an Academic Discussion）**：前端 `docs/js/aigrade.js`，後端 `apps-script/Ai.gs`（評分指令＝`新制托福 Write an Email 評分與回饋系統.md`、`新制托福 Academic Discussion 評分與回饋系統.md` 的標準；兩份文件在本機、不上傳。**評分基準不可改動**）。
+  - AD 的回饋：估分卡（A 回應與貢獻、B 展開與連貫、C 句法與用字、D 正確性＋封頂規則）、一句診斷、任務檢核（教授問句／兩位同學 ↗️↔️⛔／🧩 新增點）、論證鏈、原文標註＋錯誤清單、替換字 3 個、升級一句、下一篇只練一件事；錯誤日誌與 Email 共用（標 E1／AD1），分數趨勢分題型。刻意不放：語氣轉換、對照課本。AD 正式模擬卷限時 10 分鐘、限時重寫 7 分鐘。
+  - 部署：`clasp deploy -i <deploymentId>` 一定要帶對 ID（用 `clasp deployments` 查標 @數字 的那一個）；ID 空白時只會建新版本，網站不會更新。
   - 後端用部署者（Allen）帳號的授權（`ScriptApp.getOAuthToken`＋`cloud-platform` scope）呼叫 Vertex AI，費用記在 `Secrets.gs` 的 `VERTEX_PROJECT`（Google Cloud 試用額度）。
     模型 `gemini-3.1-pro-preview`，被限流就改用 `gemini-2.5-pro`；一篇約 30～90 秒。服務帳戶金鑰被 Google 預設安全政策擋住，所以不用金鑰。
   - 防濫用：學生要名字＋個人代碼（老師可用老師代碼），每個名字每小時 3 篇、每 5 小時 10 篇（Test、Allen 和老師代碼不受每人限制），全站每 12 小時 300 篇；計數存在 Script Properties（固定時段）。aigrade 不進 doPost 的鎖（只在計數時短暫上鎖）。
