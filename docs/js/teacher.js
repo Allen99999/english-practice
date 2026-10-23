@@ -185,7 +185,7 @@ function gradeItemHTML(att, i) {
   <div style="font-size:15.5px">${questionReview(q)}</div>
   <dl class="kv"><dt>學生答案</dt><dd style="white-space:pre-wrap">${esc(respText(q, a))}</dd>${q.type === "essay" || q.type === "speak" ? "" : `<dt>參考答案</dt><dd class="ans-ok">${esc(correctText(q))}</dd>`}</dl>
   ${q.type === "speak" ? `<button class="btn" data-act="rec-fetch" data-att="${esc(att.id)}" data-i="${i}">${I.play}播放學生錄音</button>` : ""}
-  ${q.mail && a && a.resp && a.resp.ai && typeof aiReviewHTML === "function" ? `<div class="ai-tsum"><b>AI 評分 ${a.resp.ai.score} / 5</b>・${esc(a.resp.ai.diagnosis || "")}</div><details class="pfold" data-key="t-ai-${esc(att.id)}-${i}"><summary><span>看 AI 完整批改</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary>${aiReviewHTML(q, a, att, i)}</details>` : ""}
+  ${typeof isAiQ === "function" && isAiQ(q) && a && a.resp && a.resp.ai && typeof aiReviewHTML === "function" ? `<div class="ai-tsum"><b>AI 評分 ${a.resp.ai.score} / 5</b>・${esc(a.resp.ai.diagnosis || "")}</div><details class="pfold" data-key="t-ai-${esc(att.id)}-${i}"><summary><span>看 AI 完整批改</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary>${aiReviewHTML(q, a, att, i)}</details>` : ""}
   ${gradeButtonsHTML(att, i, true)}</div>`;
 }
 /* 改判按鈕（老師裝置、雲端紀錄、需批改的題型才顯示） */

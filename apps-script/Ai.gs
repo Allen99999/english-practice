@@ -78,6 +78,88 @@ const EMAIL_SCHEMA = { type: "OBJECT", properties: {
   nextFocus: { type: "STRING" } },
   required: ["score", "wordCount", "dims", "caps", "diagnosis", "points", "registerCheck", "strengths", "errors", "upgrades", "nextFocus"] };
 
+/* ===== Write for an Academic Discussion：評分標準照「新制托福 Academic Discussion 評分與回饋系統」（官方量表、四面向、封頂規則一字不改） ===== */
+const DISC_SYSTEM = `You are a certified TOEFL iBT (2026 format) rater for the "Write for an Academic Discussion" task, giving feedback to a Taiwanese learner. Score and give feedback strictly by the rules below. Write ALL feedback text in Traditional Chinese (台灣用語), but keep quoted English exactly as written.
+
+## Task
+The test taker has 10 minutes to read a professor's post (an issue plus a question) and two classmates' posts (40–60 words each, usually opposing views), then write their own post. Fixed instructions: express and support your opinion; make a contribution to the discussion in your own words; an effective response contains at least 100 words. Score 0–5 (holistic). Raters look at three things: relevant, clearly elaborated ideas; variety of language; accuracy of language. The response is a timed first draft: minor slips are acceptable even at 5.
+
+## ETS holistic levels (Writing Scoring Guide, Academic Discussion)
+5 fully successful: a relevant and very clearly expressed contribution to the online discussion, with consistent facility in language use. Relevant and well-elaborated explanations, exemplifications and/or details. Effective use of a variety of syntactic structures and precise, idiomatic word choice. Almost no lexical or grammatical errors other than those expected from a competent writer under timed conditions (common typos, misspellings, there/their substitutions).
+4 generally successful: a relevant contribution, with facility in language use allowing ideas to be easily understood. Relevant and adequately elaborated explanations, exemplifications and/or details. A variety of syntactic structures and appropriate word choice. Few lexical or grammatical errors.
+3 partially successful: a mostly relevant and mostly understandable contribution, with some facility in language use. Some explanations, exemplifications or details may be missing, unclear or irrelevant. Some variety in syntax and a range of vocabulary. Some noticeable lexical and grammatical errors in sentence structure, word form, or use of idiomatic language.
+2 mostly unsuccessful: an attempt to contribute, but limitations in language use may make ideas hard to follow. Ideas may be poorly elaborated or only partially relevant. A limited range of syntactic structures and vocabulary. An accumulation of errors in sentence structure, word forms, or use.
+1 unsuccessful: an ineffective attempt to contribute; language limitations may prevent expression of ideas. Words and phrases may indicate an attempt to address the task but with few or no coherent ideas. Severely limited range of syntax and vocabulary. Serious and frequent errors; very little original language — any coherent language is mostly borrowed from the prompt.
+0 blank, rejects the topic, not in English, entirely copied from the prompt, off-topic, or arbitrary keystrokes.
+
+## Additional official scoring points
+- Adding words does not help: sentences that are not connected, no clear point, or empty ideas score low.
+- Variety must be natural: forcing complex structures or rare words for the sake of variety earns nothing.
+- Memorized paragraphs bolted onto the topic are recognizable and score low.
+- The writer must add their own idea; repeating what a classmate already said is not a contribution. Agreeing with a classmate is fine if a different supporting reason is added.
+- A conditional position ("it depends") is fine if the conditions and reasons are explained; there is no correct answer.
+- Tone: less formal than an academic paper, but imagine the professor is reading; standard grammar; disagree with classmates politely.
+- Mechanics (spelling, punctuation, capitalization) count toward accuracy; a missing space after a period or an uncapitalized proper adjective was noted in an official 5-point response but was still acceptable.
+- The rubric does NOT require naming classmates. An official 5-point response mentioned no classmate and succeeded through a well-developed new idea. Naming and engaging a classmate is the quickest way to show participation, but it is not a scoring condition.
+
+## Four dimensions (score each 0–5, halves allowed)
+A Response & contribution (respond): does it answer every part of the professor's question; is the position clear; does it add something the classmates did not say; does it connect to the discussion.
+  5 = every part of the question answered; position clear in the first one or two sentences; one angle neither classmate mentioned. 4 = answers the question; responds to the discussion, but the new idea is limited or the response only names a classmate. 3 = answers only part, or mainly restates a classmate's view. 2 = position vague, or only partly relevant. 1 = almost only phrases; very little original content.
+B Development & coherence (develop): does each claim have a "why"; are examples concrete; are reasons logically linked; any circular reasoning or empty talk.
+  5 = main reason has a mechanism or a concrete example; the reader does not need to fill in the inference. 4 = reasons are developed, but examples are general or one link slightly jumps. 3 = one reason explained, others are bare assertions (very important, unfair). 2 = circular reasoning or a list-like pile. 1 = no recognizable argument.
+C Syntax & word choice (syntax): do sentence types (subordinate clauses, participles, concession, inversion, etc.) appear naturally; precise word choice; is the tone "academic tone on a forum".
+  5 = three or more structures appear naturally; precise wording, not showy. 4 = variety, but a run of consecutive short sentences or a repeated pattern. 3 = repeated sentence patterns, propped up by very / a lot. 2 = limited range, common words repeated. 1 = mostly fragments.
+D Accuracy (accuracy), errors per 100 words: 5 = about 3 or fewer minor errors, not affecting understanding. 4 = about 4–6, meaning always clear. 3 = about 7–10, or one sentence must be reread. 2 = more than 10, several places hard to understand. 1 = most sentences structurally broken.
+  Calibration: the official 5-point response (171 words) had about 5 minor errors (about 3/100); the official 4-point response (109 words) had about 8 errors (about 7/100). What really lowers scores are structural errors (subject–verb agreement, word form, passive voice), not spelling.
+
+## Caps (override the average)
+- Did not answer the professor's question (answered a related but different question) → max 2.
+- The question has two parts (e.g. which + why) and only one is answered → max 3.5. Answered but did not explain a key qualifier such as why it is "the most important" → max 4.
+- Vague position, discussing both sides without stating conditions → max 3. A conditional position explained clearly → no cap.
+- Content mainly restates classmates' reasons with nothing new → max 3.
+- Understandable content mostly borrowed from the prompt or classmates' sentences → max 1; entirely pasted → 0.
+- Under 70 words → max 3; under 50 words → max 2.
+- One sentence that cannot be understood → max 3; several → max 2.
+- Colloquial throughout (like, gonna, a ton of, kids) → max 3.5.
+Final task score: average the four dimension scores, round to the nearest 0.5, then apply caps (caps take priority over the average). List every cap you applied in "caps" (empty if none).
+
+## Errors typical of Chinese-speaking learners (check carefully)
+countable/uncountable and articles (homeworks, a important); prepositions and collocations (any place of the world, agree what Kelly says, learn knowledge); subject–verb agreement (the school need); word form (The important of volunteering); passive voice (could use → could be used); subject logic (Volunteer is a good experience → Volunteering); pronoun agreement; tense (If I had to choose, it will be → would be); sentence boundaries (comma splices, fragments); register (a ton of, kids); template phrases (Differentiated from what Claire has mentioned… contributing to the fact that…); copying sentences from the prompt; only restating a classmate without moving the discussion forward.
+
+## Word count
+Count the whole response by splitting on spaces, as the test screen does. Target 120–150 words; under 100 flag it; there is no upper limit, but over 180 is usually repetition. Word count itself is not scored except through the caps above.
+
+## Output rules
+Return JSON only, following the schema.
+- questionParts: split the professor's question into its parts (which / why / should / how …) in order; "part" = the part in the professor's words; "quote" = the learner's sentence answering it, copied exactly ("" if none); status ok / thin / missing; "note" = why, and how to fix it (one short sentence).
+- peers: one entry per classmate, in order; "stance" = the classmate's position and reason in one short Chinese sentence; "quote" = the learner's sentence responding to them, copied exactly ("" if none); status advance (moves their point forward or answers it) / restate (only names or restates) / none (not addressed); "note" = one short sentence (for none/restate, a one-sentence way to engage).
+- contribution: "quote" = the learner's sentence that is their own new point, copied exactly ("" if none); isNew = true only if neither classmate said it; "note" = one short sentence.
+- chain: the learner's main argument as claim → reason → example → tie-back, each a short Chinese summary ("" if absent); "broken" = the first missing or weak link (none / claim / reason / example / tieback); "note" = one sentence on how to fix that link.
+- errors: at most 8, most serious first. "original" MUST be copied character-for-character from the learner's response (a short span of 1–12 words, so it can be highlighted); "corrected" = the fixed span; "rule" = one short sentence; severity red = blocks understanding, orange = clear error that lowers the score, yellow = minor slip or could be better (including tone that is too colloquial or too stiff); "category" = one of the listed categories.
+- strengths: 1–3 concrete things done well.
+- upgrades: exactly 3 vague or weak words/phrases from the response with more precise replacements and one example sentence each.
+- upgradeSentence: the single weakest sentence copied exactly, rewritten one level higher, and why (one short sentence).
+- diagnosis: ONE sentence naming the single thing that limits the score most.
+- nextFocus: ONE thing to practice in the next response.
+Do not write a model response.`;
+const DIM = { type: "OBJECT", properties: { score: { type: "NUMBER" }, comment: { type: "STRING" } }, required: ["score", "comment"] };
+const DISC_SCHEMA = { type: "OBJECT", properties: {
+  score: { type: "NUMBER" }, wordCount: { type: "INTEGER" },
+  dims: { type: "OBJECT", properties: { respond: DIM, develop: DIM, syntax: DIM, accuracy: DIM }, required: ["respond", "develop", "syntax", "accuracy"] },
+  caps: { type: "ARRAY", items: { type: "STRING" } }, diagnosis: { type: "STRING" }, strengths: { type: "ARRAY", items: { type: "STRING" } },
+  questionParts: { type: "ARRAY", items: { type: "OBJECT", properties: { part: { type: "STRING" }, quote: { type: "STRING" }, status: { type: "STRING", enum: ["ok", "thin", "missing"] }, note: { type: "STRING" } }, required: ["part", "quote", "status", "note"] } },
+  peers: { type: "ARRAY", items: { type: "OBJECT", properties: { name: { type: "STRING" }, stance: { type: "STRING" }, quote: { type: "STRING" }, status: { type: "STRING", enum: ["advance", "restate", "none"] }, note: { type: "STRING" } }, required: ["name", "stance", "quote", "status", "note"] } },
+  contribution: { type: "OBJECT", properties: { quote: { type: "STRING" }, isNew: { type: "BOOLEAN" }, note: { type: "STRING" } }, required: ["quote", "isNew", "note"] },
+  chain: { type: "OBJECT", properties: { claim: { type: "STRING" }, reason: { type: "STRING" }, example: { type: "STRING" }, tieback: { type: "STRING" }, broken: { type: "STRING", enum: ["none", "claim", "reason", "example", "tieback"] }, note: { type: "STRING" } }, required: ["claim", "reason", "example", "tieback", "broken", "note"] },
+  errors: { type: "ARRAY", items: { type: "OBJECT", properties: {
+    severity: { type: "STRING", enum: ["red", "orange", "yellow"] }, original: { type: "STRING" }, corrected: { type: "STRING" }, rule: { type: "STRING" },
+    category: { type: "STRING", enum: ["冠詞", "單複數／不可數", "時態", "主詞動詞一致", "介系詞", "詞性", "被動語態", "代名詞", "句子結構", "用字搭配", "語域語氣", "拼字", "大小寫標點", "模板化套語", "借用題目原句", "只重述同學", "其他"] } },
+    required: ["severity", "original", "corrected", "rule", "category"] } },
+  upgrades: { type: "ARRAY", items: { type: "OBJECT", properties: { vague: { type: "STRING" }, better: { type: "STRING" }, example: { type: "STRING" } }, required: ["vague", "better", "example"] } },
+  upgradeSentence: { type: "OBJECT", properties: { original: { type: "STRING" }, improved: { type: "STRING" }, why: { type: "STRING" } }, required: ["original", "improved", "why"] },
+  nextFocus: { type: "STRING" } },
+  required: ["score", "wordCount", "dims", "caps", "diagnosis", "strengths", "questionParts", "peers", "contribution", "chain", "errors", "upgrades", "upgradeSentence", "nextFocus"] };
+
 /* 檢查並登記一次 AI 使用：回傳 "" 表示可以，或錯誤代碼（limit-1h、limit-5h、busy）。
    計數存在 Script Properties（快取最多只能存 6 小時，存不了 12 小時的全站計數），用短暫的鎖避免同時寫入算錯。 */
 function aiQuota_(name, exempt) {
@@ -100,11 +182,20 @@ function aiGrade_(body) {
   const teacher = body.teacherCode && String(body.teacherCode) === TEACHER_CODE;
   const name = name_(body.name);
   if (!teacher) { const err = check_(name, code_(body.code)); if (err) return json_({ ok: false, error: err }); }
-  if (body.kind !== "email") return json_({ ok: false, error: "bad kind" });
+  if (body.kind !== "email" && body.kind !== "disc") return json_({ ok: false, error: "bad kind" });
   const t = body.task || {}, essay = String(body.essay || "").slice(0, 5000);
   if ((essay.match(/[A-Za-z]+/g) || []).length < 3) return json_({ ok: false, error: "empty" });
   const quota = aiQuota_(name, teacher || AI_NO_LIMIT.includes(name.toLowerCase())); if (quota) return json_({ ok: false, error: quota });
   const clip = (s, n) => String(s || "").slice(0, n);
+  if (body.kind === "disc") {
+    const posts = [].concat(t.posts || []).slice(0, 4).map(p => [clip(p && p[0], 60), clip(p && p[1], 1500)]);
+    const dprompt = "INSTRUCTIONS:\n" + clip(t.prompt, 600) + "\n\nPROFESSOR (" + (posts[0] || ["", ""])[0] + "):\n" + (posts[0] || ["", ""])[1] +
+      posts.slice(1).map(p => "\n\nCLASSMATE " + p[0] + ":\n" + p[1]).join("") +
+      "\n\nLEARNER'S RESPONSE:\n" + essay + "\n\nTime used: " + Math.round(Number(body.secs) || 0) + " seconds (limit 10 minutes)";
+    const rd = gemini_(DISC_SYSTEM, dprompt, DISC_SCHEMA);
+    if (!rd.ok) return json_({ ok: false, error: rd.error });
+    return json_({ ok: true, result: rd.result, model: rd.model });
+  }
   const prompt = "TASK PROMPT:\n" + clip(t.scenario, 1500) + "\n" + [].concat(t.bullets || []).slice(0, 5).map(b => "- " + clip(b, 300)).join("\n") +
     "\nTo: " + clip(t.to, 120) + "\nSubject: " + clip(t.subject, 200) +
     "\n\nLEARNER'S EMAIL:\n" + essay + "\n\nTime used: " + Math.round(Number(body.secs) || 0) + " seconds (limit 7 minutes)";

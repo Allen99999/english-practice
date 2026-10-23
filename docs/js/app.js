@@ -778,7 +778,7 @@ function questionBody(X, i, a, review) {
   }
   else if (q.type === "cword") h += ctestCardHTML(X, i, a);
   else if (q.type === "speak") h += speakHTML(q, i, a);
-  else if (q.type === "essay" && q.mail && typeof emailHTML === "function") h += emailHTML(X, i, a, st, m);   // 托福 Email：AI 批改
+  else if (q.type === "essay" && typeof isAiQ === "function" && isAiQ(q)) h += emailHTML(X, i, a, st, m);   // 托福 Email、Academic Discussion：AI 批改
   else if (q.type === "essay") {
     const sub = locked || st.submitted; const txt = locked ? a.resp.text : (st.val || "");
     h += `<div class="eyebrow">${esc(q.label || "段落寫作")}</div><div class="stem" style="font-size:17px">${esc(q.prompt)}</div>
@@ -833,7 +833,7 @@ function questionBody(X, i, a, review) {
 }
 function feedbackHTML(X, a) {
   const q = X.q;
-  if (q.type === "essay" && q.mail && a.resp && a.resp.ai) return "";   // AI 批改結果在題目卡裡
+  if (q.type === "essay" && typeof isAiQ === "function" && isAiQ(q) && a.resp && a.resp.ai) return "";   // AI 批改結果在題目卡裡
   if (q.type === "speak" || q.type === "essay") { const p = ptsOf(q, X.bank, a), m = maxPts(q, X.bank);
     return `<div class="feedback ${a.correct ? "ok" : "no"}"><span class="fb-ic">${a.correct ? I.check : I.x}</span><div style="min-width:0"><b>自評 ${p} / ${m} 分</b><p>${esc(levelDesc(q, X.bank, p))}</p><p>${esc(q.exp || "")}</p></div></div>`; }
   const extra = (q.type === "trans" || q.type === "rewrite") && !a.correct ? diffHTML(q, a.resp) : "";
@@ -1107,12 +1107,12 @@ function reviewItem(att, i) {
   else if (X.group) body += `<details class="pfold"><summary><span class="muted">題組：${esc(X.group.title)}（展開文章）</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext ${X.group.kind}" style="margin-top:8px;font-size:15.5px">${insMarks(X.group.passage.map(p => `<p>${esc(p).replace(/\[\[(\d)\]\]/g, '<span class="cz">$1</span>')}</p>`).join(""), X.group, true)}</div></details>`;
   body += `<div>${questionReview(q)}</div>`;
   body += `<dl class="kv"><dt>你的答案</dt><dd class="${a && a.correct ? "ans-ok" : "ans-no"}" style="${a && a.correct ? "" : "text-decoration:none"}">${esc(respText(q, a))}${a && a.claim ? "（學生反應：我寫的也對）" : ""}${a && (a.self || a.tmark || rubricOf(q, X.bank)) ? `（${a.tmark ? "老師評分" : a.resp && a.resp.ai ? "AI 評分" : a.self || q.type === "essay" || q.type === "speak" ? "自評" : "得分"} ${ptsOf(q, X.bank, a)} / ${maxPts(q, X.bank)}）` : ""}${a && a.hint ? ` <span class="tag">用了提示</span>` : ""}</dd>
-  ${q.mail ? "" : `<dt>正確答案</dt><dd class="ans-ok">${esc(correctText(q))}</dd>`}
+  ${q.mail || (typeof isAiQ === "function" && isAiQ(q)) ? "" : `<dt>正確答案</dt><dd class="ans-ok">${esc(correctText(q))}</dd>`}
   ${q.type === "trans" || q.type === "rewrite" ? `<dt>可接受</dt><dd class="muted" style="font-size:14px">${q.ans.map(x => esc(x).replace(/\{([^}]*)\}/g, (m, g) => `[${g.split("|").map(s => s || "∅").join(" / ")}]`)).join("<br>")}</dd>` : ""}
   ${q.exp ? `<dt>解析</dt><dd>${esc(q.exp)}</dd>` : ""}
   ${q.hint ? `<dt>提示</dt><dd class="muted">${esc(q.hint)}</dd>` : ""}</dl>`;
   if ((q.type === "trans" || q.type === "rewrite") && a && !a.correct) body += diffHTML(q, a.resp);
-  if (q.mail && typeof aiReviewHTML === "function") body += aiReviewHTML(q, a, att, i);   // Email：AI 批改結果、重寫、範文
+  if (typeof isAiQ === "function" && isAiQ(q) && typeof aiReviewHTML === "function") body += aiReviewHTML(q, a, att, i);   // Email、AD：AI 批改結果、重寫、範文
   if (q.type === "speak" && a && store.teacherCode) body += `<button class="btn" data-act="rec-fetch" data-att="${esc(att.id)}" data-i="${i}">${I.play}播放學生錄音</button>`;
   if (typeof gradeButtonsHTML === "function") body += gradeButtonsHTML(att, i);
   const autoOpen = animNext && att.regrade && att.regrade.some(c => c.i === i) && !(typeof isRemote === "function" && isRemote(att) && store.teacherCode);

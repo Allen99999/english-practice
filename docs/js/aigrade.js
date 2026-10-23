@@ -1,37 +1,50 @@
-/* ===== AI 批改：托福 Write an Email（後端 Apps Script → Vertex AI Gemini，評分標準見 apps-script/Ai.gs）
-   作答時計時（隨機組卷只計時；正式模擬卷限時 7 分鐘、時間到自動送出）→ 交出後 AI 批改 → 顯示：
-   估分卡、一句診斷、任務檢核、原文標註＋錯誤清單、語域檢查、替換字、錯誤日誌與分數趨勢、5 分鐘限時重寫、C1／C2 範文 ===== */
+/* ===== AI 批改：托福 Write an Email、Write for an Academic Discussion（後端 Apps Script → Vertex AI Gemini，評分標準見 apps-script/Ai.gs）
+   作答時計時（隨機組卷只計時；正式模擬卷限時 7／10 分鐘、時間到自動送出）→ 交出後 AI 批改 → 顯示：
+   Email：估分卡、一句診斷、任務檢核、原文標註＋錯誤清單、語域檢查、替換字、錯誤日誌與分數趨勢、5 分鐘限時重寫、C1／C2 範文
+   AD：估分卡、一句診斷、任務檢核（教授問句／同學回應／新增貢獻）、論證鏈、原文標註＋錯誤清單、替換字、升級一句、錯誤日誌（和 Email 共用）、7 分鐘限時重寫、範文 ===== */
 const EMAIL_LIMIT = 420, REWRITE_LIMIT = 300;
 const AI_DIMS = [["task", "A 任務達成與內容發展"], ["register", "B 社交慣例與語域"], ["syntax", "C 句法多樣性與用字"], ["accuracy", "D 語言正確性"]];
 const AI_LEVEL = { 5: "完全成功", 4: "大致成功", 3: "部分成功", 2: "大多不成功", 1: "不成功", 0: "無法計分" };
 const AI_STATUS = { ok: ["✅", "完整"], thin: ["⚠️", "偏薄"], missing: ["❌", "缺漏"] };
 const AI_SEV = { red: ["🔴", "影響理解，必改"], orange: ["🟠", "明顯錯誤，會扣分"], yellow: ["🟡", "小失誤或可以更好"] };
 const isEmailQ = q => q && q.type === "essay" && !!q.mail;
+const isDiscQ = q => q && q.type === "essay" && !!q.posts && /Academic Discussion/.test(q.label || "");
+const isAiQ = q => isEmailQ(q) || isDiscQ(q);
+const AI_CFG = {
+  email: { kind: "email", name: "Email", tag: "E", limit: EMAIL_LIMIT, rw: REWRITE_LIMIT, dims: AI_DIMS, words: "100～130", what: "Email" },
+  disc: { kind: "disc", name: "Academic Discussion", tag: "AD", limit: 600, rw: 420, words: "120～150", what: "回文",
+    dims: [["respond", "A 回應與貢獻"], ["develop", "B 展開與連貫"], ["syntax", "C 句法與用字"], ["accuracy", "D 語言正確性"]] }
+};
+const aiCfg = q => isDiscQ(q) ? AI_CFG.disc : AI_CFG.email;
+const AI_PEER = { advance: ["↗️", "有推進"], restate: ["↔️", "只點名或重述"], none: ["⛔", "未回應"] };
+const AI_LINKS = [["claim", "主張"], ["reason", "理由"], ["example", "例子"], ["tieback", "回扣"]];
 const bodyWords = t => wcount(String(t || "").split("\n").filter((l, k, arr) => !(k === 0 && /^(dear|hi|hello|to)\b/i.test(l.trim())) && !(k >= arr.length - 3 && /^(best|sincerely|regards|kind regards|thanks|thank you|cheers|warm|all the best|wishing)/i.test(l.trim()) && l.trim().split(/\s+/).length <= 4)).join(" "));
 const aiBand = s => s % 1 ? `介於「${AI_LEVEL[Math.ceil(s)]}」與「${AI_LEVEL[Math.floor(s)]}」之間` : AI_LEVEL[s] || "";
 
 /* ---------- 作答畫面 ---------- */
+const wcText = (q, t) => isDiscQ(q) ? `${wcount(t)} 字（建議 120～150 字，至少 100 字）` : `${wcount(t)} 字・本文約 ${bodyWords(t)} 字（建議 100～130 字）`;
 function emailHTML(X, i, a, st, m) {
-  const q = X.q, res = a && a.resp, sub = !!a || st.submitted, txt = res ? res.text : (st.val || "");
-  const secs = res ? (res.secs || 0) : (st.secs || 0), mock = S.mock, left = EMAIL_LIMIT - secs;
-  let h = `<div class="eyebrow">Write an Email${mock ? "・限時 7 分鐘" : ""}</div><div class="stem" style="font-size:17px">${esc(q.prompt)}</div>
-  <div class="boxed" style="font-size:16px" data-ctx>${wrapWords(q.scenario, m)}<ul style="margin:8px 0 0;padding-left:22px">${q.bullets.map(b => `<li data-ctx>${wrapWords(b, m)}</li>`).join("")}</ul></div>
+  const q = X.q, K = aiCfg(q), res = a && a.resp, sub = !!a || st.submitted, txt = res ? res.text : (st.val || "");
+  const secs = res ? (res.secs || 0) : (st.secs || 0), mock = S.mock, left = K.limit - secs;
+  let h = `<div class="eyebrow">${K.name === "Email" ? "Write an Email" : "Academic Discussion"}${mock ? `・限時 ${K.limit / 60} 分鐘` : ""}</div><div class="stem" style="font-size:17px">${esc(q.prompt)}</div>`;
+  if (isDiscQ(q)) h += `<div class="posts">${q.posts.map(([who, t], k) => `<div class="post ${k ? "" : "prof"}"><div class="post-who">${esc(who)}</div><div data-ctx>${wrapWords(t, m)}</div></div>`).join("")}</div>`;
+  else h += `<div class="boxed" style="font-size:16px" data-ctx>${wrapWords(q.scenario, m)}<ul style="margin:8px 0 0;padding-left:22px">${q.bullets.map(b => `<li data-ctx>${wrapWords(b, m)}</li>`).join("")}</ul></div>
   <div class="mailhead"><div><span>To</span>${esc(q.mail.to)}</div><div><span>Subject</span>${esc(q.mail.subject)}</div></div>`;
-  if (!sub) h += `<div class="etimer ${mock && left < 60 ? "low" : !mock && secs > EMAIL_LIMIT ? "over" : ""}" id="etime">${emailTimerText(secs, mock)}</div>`;
-  h += `<textarea class="field essay" id="essayin" spellcheck="false" autocorrect="off" autocapitalize="sentences" placeholder="Dear …," ${sub ? "readonly" : ""}>${esc(txt)}</textarea>
-  <div class="muted tnum" id="wc" style="font-size:13.5px">${wcount(txt)} 字・本文約 ${bodyWords(txt)} 字（建議 100～130 字）</div>`;
+  if (!sub) h += `<div class="etimer ${mock && left < 60 ? "low" : !mock && secs > K.limit ? "over" : ""}" id="etime">${emailTimerText(secs, mock, K)}</div>`;
+  h += `<textarea class="field essay" id="essayin" spellcheck="false" autocorrect="off" autocapitalize="sentences" placeholder="${isDiscQ(q) ? "Write your post…" : "Dear …,"}" ${sub ? "readonly" : ""}>${esc(txt)}</textarea>
+  <div class="muted tnum" id="wc" style="font-size:13.5px">${wcText(q, txt)}</div>`;
   if (!sub) return h + `<div class="row"><button class="btn primary" data-act="ai-submit">${I.check}寫好了，交給 AI 批改</button></div>
     <div class="muted" style="font-size:12.5px">AI 依 ETS 官方 0～5 分標準批改，約需 30～90 秒；老師之後也會再看。練習時建議關掉自動校正。</div>`;
-  if (st.aiBusy && !a) return h + aiBusyHTML("AI 正在依 ETS 標準批改你的 Email…");
+  if (st.aiBusy && !a) return h + aiBusyHTML(`AI 正在依 ETS 標準批改你的${K.what}…`);
   if (!a) return h + `<div class="feedback no"><span class="fb-ic">${I.x}</span><div><b>AI 批改沒有完成</b><p>${esc(aiErrText(st.aiErr))}</p></div></div>
     <div class="row"><button class="btn primary" data-act="ai-retry">再試一次</button></div>
     <div class="muted" style="font-size:13px">也可以先看範文自評，之後老師會批改：</div>${modelsHTML(q)}${selfButtonsHTML(q, X.bank, "essay-rate")}`;
   if (!res.ai) return h + modelsHTML(q);   // 舊紀錄或自評（沒有 AI 結果）
   return h + aiFeedbackHTML(q, res, { who: S.who, live: true, i }) + rewriteHTML(q, res, st, i) + modelsHTML(q);
 }
-function emailTimerText(secs, mock) {
-  return mock ? `${I.flag}剩 <b class="tnum">${fmtTime(Math.max(0, EMAIL_LIMIT - secs))}</b>・時間到會自動送出`
-    : `本題用時 <b class="tnum">${fmtTime(secs)}</b> / 建議 7:00${secs > EMAIL_LIMIT ? `・已超過 ${fmtTime(secs - EMAIL_LIMIT)}` : ""}`;
+function emailTimerText(secs, mock, K = AI_CFG.email) {
+  return mock ? `${I.flag}剩 <b class="tnum">${fmtTime(Math.max(0, K.limit - secs))}</b>・時間到會自動送出`
+    : `本題用時 <b class="tnum">${fmtTime(secs)}</b> / 建議 ${fmtTime(K.limit)}${secs > K.limit ? `・已超過 ${fmtTime(secs - K.limit)}` : ""}`;
 }
 function aiBusyHTML(msg) { return `<div class="ai-busy glass"><span class="ai-spin"></span><div><b>${esc(msg)}</b><div class="muted" style="font-size:13px">大約 30～90 秒，可以先看其他題，批完會自動顯示。</div></div></div>`; }
 function aiErrText(e) {
@@ -46,27 +59,40 @@ function modelsHTML(q) {
 
 /* ---------- 批改結果 ---------- */
 function aiFeedbackHTML(q, res, opt = {}) {
-  const ai = res.ai, secs = res.secs || 0, wc = bodyWords(res.text);
+  const ai = res.ai, K = aiCfg(q), D = isDiscQ(q), secs = res.secs || 0, wc = D ? wcount(res.text) : bodyWords(res.text);
   const dimRow = ([k, n]) => { const d = (ai.dims || {})[k] || {}; const v = Number(d.score) || 0;
     return `<div class="ai-dim"><div class="ai-dim-h"><span>${n}</span><b class="tnum" style="color:${scoreColor(v / 5)}">${v}</b></div><div class="sk-bar"><i style="width:${v / 5 * 100}%;background:${scoreColor(v / 5)}"></i></div><div class="muted" style="font-size:13px">${esc(d.comment || "")}</div></div>`; };
   let h = `<div class="ai-card glass">
-  <div class="ai-score"><div class="ai-big" style="color:${scoreColor(ai.score / 5)}">${ai.score}<span>/ 5</span></div><div><div class="eyebrow">📊 AI 估分・ETS Write an Email</div><b style="font-size:18px">${esc(aiBand(ai.score))}</b>
-    <div class="row" style="gap:6px;margin-top:6px"><span class="tag">本文 ${wc} 字${wc < 80 ? "・偏少" : wc > 150 ? "・偏多" : ""}</span><span class="tag ${secs > EMAIL_LIMIT ? "warn" : ""}">${secs > EMAIL_LIMIT ? "⏱️ " : ""}用時 ${fmtTime(secs)}${secs > EMAIL_LIMIT ? `（超過 ${fmtTime(secs - EMAIL_LIMIT)}）` : ""}</span></div></div></div>
-  <div class="ai-dims">${AI_DIMS.map(dimRow).join("")}</div>
+  <div class="ai-score"><div class="ai-big" style="color:${scoreColor(ai.score / 5)}">${ai.score}<span>/ 5</span></div><div><div class="eyebrow">📊 AI 估分・ETS ${D ? "Academic Discussion" : "Write an Email"}</div><b style="font-size:18px">${esc(aiBand(ai.score))}</b>
+    <div class="row" style="gap:6px;margin-top:6px"><span class="tag">${D ? "" : "本文 "}${wc} 字${wc < (D ? 100 : 80) ? "・偏少" : wc > (D ? 180 : 150) ? "・偏多" : ""}</span><span class="tag ${secs > K.limit ? "warn" : ""}">${secs > K.limit ? "⏱️ " : ""}用時 ${fmtTime(secs)}${secs > K.limit ? `（超過 ${fmtTime(secs - K.limit)}）` : ""}</span></div></div></div>
+  <div class="ai-dims">${K.dims.map(dimRow).join("")}</div>
   ${ai.caps && ai.caps.length ? `<div class="ai-caps"><b>觸發封頂規則</b>${ai.caps.map(c => `<div>• ${esc(c)}</div>`).join("")}</div>` : ""}
   <div class="ai-diag">🎯 <b>一句診斷：</b>${esc(ai.diagnosis || "")}</div>
   ${(ai.strengths || []).length ? `<div class="ai-good">${ai.strengths.map(s => `<div>🟢 ${esc(s)}</div>`).join("")}</div>` : ""}</div>`;
+  if (D) {
+    h += `<div class="ai-sec"><h4>✅ 任務檢核</h4><div class="step-label">（a）教授的問題</div><div class="ai-points">${(ai.questionParts || []).map(p => { const st = AI_STATUS[p.status] || AI_STATUS.thin;
+      return `<div class="ai-point ${p.status}"><div class="ai-pt-h"><span>${st[0]} ${st[1]}</span><b>${esc(p.part)}</b></div>${p.quote ? `<div class="ai-quote">「${esc(p.quote)}」</div>` : `<div class="ai-quote muted">（沒有回答這一部分）</div>`}<div class="muted" style="font-size:13.5px">${esc(p.note)}</div></div>`; }).join("")}</div>
+    <div class="step-label">（b）同學觀點回應</div><div class="ai-points">${(ai.peers || []).map(p => { const st = AI_PEER[p.status] || AI_PEER.none;
+      return `<div class="ai-point ${p.status === "advance" ? "ok" : p.status === "restate" ? "thin" : "missing"}"><div class="ai-pt-h"><span>${st[0]} ${st[1]}</span><b>${esc(p.name)}：${esc(p.stance)}</b></div>${p.quote ? `<div class="ai-quote">「${esc(p.quote)}」</div>` : `<div class="ai-quote muted">（未提及）</div>`}<div class="muted" style="font-size:13.5px">${esc(p.note)}</div></div>`; }).join("")}</div>
+    <div class="step-label">（c）我的新增貢獻 🧩</div>${(c => `<div class="ai-point ${c.quote && c.isNew ? "ok" : "thin"}"><div class="ai-pt-h"><span>${c.quote && c.isNew ? "🟢 兩位同學都沒提" : c.quote ? "🟡 同學已經說過" : "⚠️ 沒有新增點"}</span></div>${c.quote ? `<div class="ai-quote">「${esc(c.quote)}」</div>` : ""}<div class="muted" style="font-size:13.5px">${esc(c.note || "")}</div></div>`)(ai.contribution || {})}</div>`;
+    const ch = ai.chain || {};
+    h += `<div class="ai-sec"><h4>🧱 論證鏈</h4><div class="ai-chain">${AI_LINKS.map(([k, n], x) => `${x ? `<span class="ai-arrow">→</span>` : ""}<div class="ai-link ${ch.broken === k ? "broken" : ch[k] ? "" : "empty"}"><span>${n}${ch.broken === k ? "・⛓️ 斷在這裡" : ""}</span><b>${esc(ch[k] || "（沒有）")}</b></div>`).join("")}</div>
+    ${ch.note ? `<div class="muted" style="font-size:13.5px">${esc(ch.note)}</div>` : ""}</div>`;
+  } else {
   h += `<div class="ai-sec"><h4>✅ 任務檢核</h4><div class="ai-points">${(ai.points || []).map((p, k) => { const s = AI_STATUS[p.status] || AI_STATUS.thin;
     return `<div class="ai-point ${p.status}"><div class="ai-pt-h"><span>${s[0]} ${s[1]}</span><b>要點 ${k + 1}：${esc(p.point)}</b></div>${p.quote ? `<div class="ai-quote">「${esc(p.quote)}」</div>` : `<div class="ai-quote muted">（沒有回應這一點）</div>`}<div class="muted" style="font-size:13.5px">${esc(p.note)}</div></div>`; }).join("")}</div></div>`;
+  }
   const errs = ai.errors || [];
   h += `<div class="ai-sec"><h4>🔍 原文標註與錯誤清單</h4><div class="muted" style="font-size:12.5px">${Object.values(AI_SEV).map(([e, t]) => `${e} ${t}`).join("　")}</div>
   <div class="ptext ai-essay">${markEssay(res.text, errs)}</div>
   ${errs.length ? `<ol class="ai-errs">${errs.map((e, k) => `<li id="aie-${opt.i ?? "x"}-${k}"><span class="ai-sev"><b class="tnum">${k + 1}</b>${(AI_SEV[e.severity] || AI_SEV.yellow)[0]}</span><div><div><s>${esc(e.original)}</s> → <b>${esc(e.corrected)}</b></div><div class="muted" style="font-size:13px">${esc(e.category || "")}｜${esc(e.rule)}</div></div></li>`).join("")}</ol>` : `<div class="muted">沒有找到明顯錯誤，做得好！</div>`}</div>`;
   const rc = ai.registerCheck || {};
-  h += `<div class="ai-sec"><h4>🗣️ 語域檢查</h4><dl class="kv ai-kv"><dt>稱謂</dt><dd>${esc(rc.greeting || "")}</dd><dt>結尾署名</dt><dd>${esc(rc.closing || "")}</dd><dt>請求句</dt><dd>${esc(rc.requests || "")}</dd><dt>語氣跳動</dt><dd>${esc(rc.toneShifts || "")}</dd></dl></div>`;
+  if (!D) h += `<div class="ai-sec"><h4>🗣️ 語域檢查</h4><dl class="kv ai-kv"><dt>稱謂</dt><dd>${esc(rc.greeting || "")}</dd><dt>結尾署名</dt><dd>${esc(rc.closing || "")}</dd><dt>請求句</dt><dd>${esc(rc.requests || "")}</dd><dt>語氣跳動</dt><dd>${esc(rc.toneShifts || "")}</dd></dl></div>`;
   if ((ai.upgrades || []).length) h += `<div class="ai-sec"><h4>🔄 替換字</h4><div class="ai-ups">${ai.upgrades.map(u => `<div class="ai-up"><div><s>${esc(u.vague)}</s> → <b>${esc(u.better)}</b></div><div class="muted" style="font-size:13.5px">${esc(u.example)}</div></div>`).join("")}</div></div>`;
+  const us = ai.upgradeSentence;
+  if (D && us && us.original) h += `<div class="ai-sec"><h4>✍️ 升級一句</h4><div class="ai-up"><div><s>${esc(us.original)}</s></div><div>→ <b>${esc(us.improved)}</b></div><div class="muted" style="font-size:13.5px">${esc(us.why || "")}</div></div></div>`;
   if (ai.nextFocus) h += `<div class="ai-next">📌 <b>下一篇只練一件事：</b>${esc(ai.nextFocus)}</div>`;
-  if (opt.who !== undefined && !opt.noLog) h += emailLogHTML(opt.who, opt.atts);
+  if (opt.who !== undefined && !opt.noLog) h += emailLogHTML(opt.who, opt.atts, K);
   return h;
 }
 /* 原文標註：把 AI 指出的錯誤片段在原文裡標色（找不到的片段只列在清單） */
@@ -85,58 +111,60 @@ function markEssay(text, errs) {
   return out + esc(lower.slice(p));
 }
 
-/* ---------- 5 分鐘限時重寫 ---------- */
+/* ---------- 限時重寫（Email 5 分鐘、AD 7 分鐘） ---------- */
 function rewriteHTML(q, res, st, i) {
-  const rws = res.rewrites || [], rw = st.rw;
-  let h = `<div class="ai-sec"><h4>✍️ 限時重寫（5 分鐘）</h4>`;
+  const rws = res.rewrites || [], rw = st.rw, K = aiCfg(q), M = K.rw / 60;
+  let h = `<div class="ai-sec"><h4>✍️ 限時重寫（${M} 分鐘）</h4>`;
   if (rws.length) h += rws.map((r, k) => { const prev = k ? rws[k - 1].ai.score : res.ai.score, d = r.ai.score - prev;
     return `<details class="pfold rw-fold" data-key="rw-${k}"><summary><span>第 ${k + 1} 次重寫：<b style="color:${scoreColor(r.ai.score / 5)}">${r.ai.score} / 5</b> <span class="tag ${d > 0 ? "up" : d < 0 ? "down" : ""}">${d > 0 ? "📈 +" + d : d < 0 ? "📉 " + d : "➖ 持平"}</span><span class="muted" style="font-size:13px">・用時 ${fmtTime(r.secs || 0)}</span></span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary>
     ${aiFeedbackHTML(q, r, { noLog: true, i: i + "r" + k })}</details>`; }).join("");
   if (rw && rw.busy) return h + aiBusyHTML("AI 正在批改你的重寫…") + `</div>`;
-  if (rw && !rw.done) return h + `<div class="muted" style="font-size:13.5px">參考上面的回饋，同一題在 5 分鐘內重寫一次，時間到會自動送出。</div>
-    <div class="etimer ${REWRITE_LIMIT - (rw.secs || 0) < 60 ? "low" : ""}" id="rwtime">${I.flag}剩 <b class="tnum">${fmtTime(Math.max(0, REWRITE_LIMIT - (rw.secs || 0)))}</b></div>
-    <textarea class="field essay" id="rwin" spellcheck="false" autocorrect="off" placeholder="重寫你的 Email…">${esc(rw.val || "")}</textarea>
+  if (rw && !rw.done) return h + `<div class="muted" style="font-size:13.5px">參考上面的回饋，同一題在 ${M} 分鐘內重寫一次，時間到會自動送出。</div>
+    <div class="etimer ${K.rw - (rw.secs || 0) < 60 ? "low" : ""}" id="rwtime">${I.flag}剩 <b class="tnum">${fmtTime(Math.max(0, K.rw - (rw.secs || 0)))}</b></div>
+    <textarea class="field essay" id="rwin" spellcheck="false" autocorrect="off" placeholder="重寫你的${K.what}…">${esc(rw.val || "")}</textarea>
     ${rw.err ? `<div class="muted" style="color:var(--bad)">${esc(aiErrText(rw.err))}</div>` : ""}
     <div class="row"><button class="btn primary" data-act="rw-submit">送出重寫</button></div></div>`;
-  return h + `<div class="row"><button class="btn" data-act="rw-start">${I.redo}${rws.length ? "再重寫一次" : "開始 5 分鐘重寫"}</button></div></div>`;
+  return h + `<div class="row"><button class="btn" data-act="rw-start">${I.redo}${rws.length ? "再重寫一次" : `開始 ${M} 分鐘重寫`}</button></div></div>`;
 }
 
-/* ---------- 錯誤日誌與分數趨勢（同一個名字的所有 Email） ---------- */
+/* ---------- 錯誤日誌（Email＋AD 共用）與分數趨勢（只看同一題型），同一個名字 ---------- */
 function emailHistory(who, atts) {
   const list = [];
-  const take = (att, date) => (att.qs || []).forEach((r, i) => { const a = (att.ans || {})[i], X = a && getQ(i, att); if (X && isEmailQ(X.q) && a.resp && a.resp.ai) list.push({ date, ai: a.resp.ai, rewrites: a.resp.rewrites || [] }); });
+  const take = (att, date) => (att.qs || []).forEach((r, i) => { const a = (att.ans || {})[i], X = a && getQ(i, att); if (X && isAiQ(X.q) && a.resp && a.resp.ai) list.push({ date, ai: a.resp.ai, rewrites: a.resp.rewrites || [], kind: aiCfg(X.q).kind }); });
   (atts || store.attempts.filter(x => (x.who || "未署名") === (who || "未署名"))).forEach(att => take(att, att.date || 0));
   if (!atts && S && S.who === who && !store.attempts.some(x => x.id === S.id)) take(S, Date.now());
   return list.sort((a, b) => a.date - b.date);
 }
-function emailLogHTML(who, atts) {
+function emailLogHTML(who, atts, K = AI_CFG.email) {
   const hist = emailHistory(who, atts); if (!hist.length) return "";
+  const nth = { email: 0, disc: 0 }; hist.forEach(e => e.no = AI_CFG[e.kind].tag + (++nth[e.kind]));
   const cats = {};
-  hist.forEach((e, n) => (e.ai.errors || []).forEach(x => { const c = x.category || "其他", o = cats[c] || (cats[c] = { n: 0, essays: new Set(), last: null, lastN: -1 }); o.n++; o.essays.add(n); o.last = x; o.lastN = n; }));
+  hist.forEach((e, n) => (e.ai.errors || []).forEach(x => { const c = x.category || "其他", o = cats[c] || (cats[c] = { n: 0, essays: new Set(), last: null, lastN: -1 }); o.n++; o.essays.add(n); o.last = x; o.lastN = n; o.lastNo = e.no; }));
   const N = hist.length, rows = Object.entries(cats).map(([c, o]) => ({ c, ...o, status: N - 1 - o.lastN >= 3 ? "🟢" : (o.essays.size > 1 || o.n >= 2) ? "🔴" : "🟡" })).sort((a, b) => ({ "🔴": 0, "🟡": 1, "🟢": 2 }[a.status] - { "🔴": 0, "🟡": 1, "🟢": 2 }[b.status]) || b.n - a.n);
-  const recent = hist.slice(-10), W = 100 / Math.max(recent.length, 1);
+  const mine = hist.filter(e => e.kind === K.kind), recent = mine.slice(-10), W = 100 / Math.max(recent.length, 1);
   const bars = recent.map((e, k) => `<div class="tr-col" style="width:${W}%"><div class="tr-bar" style="height:${e.ai.score / 5 * 100}%;background:${scoreColor(e.ai.score / 5)}"><span>${e.ai.score}</span></div><div class="tr-x">${k + 1}</div></div>`).join("");
-  const dimAvg = AI_DIMS.map(([k, n]) => { const last = recent.slice(-3), v = last.reduce((s, e) => s + (Number((e.ai.dims || {})[k] && e.ai.dims[k].score) || 0), 0) / last.length; return [n, Math.round(v * 10) / 10]; });
-  return `<div class="ai-sec ai-log"><h4>📒 ${esc(who || "")} 的 Email 錯誤日誌與分數趨勢</h4>
-  <div class="muted" style="font-size:12.5px">累積 ${N} 篇。🔴 重複出現　🟡 偶爾出現　🟢 連續 3 篇沒再犯</div>
-  ${rows.length ? `<table class="vtable ai-logt"><thead><tr><th>狀態</th><th>錯誤類型</th><th>次數</th><th>最近一次</th></tr></thead><tbody>${rows.map(r => `<tr><td>${r.status}</td><td>${esc(r.c)}</td><td class="tnum">${r.n}</td><td><s>${esc(r.last.original)}</s> → <b>${esc(r.last.corrected)}</b></td></tr>`).join("")}</tbody></table>` : ""}
-  <div class="step-label" style="margin-top:6px">最近 ${recent.length} 篇任務分</div><div class="trend">${bars}</div>
+  const dimAvg = recent.length ? K.dims.map(([k, n]) => { const last = recent.slice(-3), v = last.reduce((s, e) => s + (Number((e.ai.dims || {})[k] && e.ai.dims[k].score) || 0), 0) / last.length; return [n, Math.round(v * 10) / 10]; }) : [];
+  return `<div class="ai-sec ai-log"><h4>📒 ${esc(who || "")} 的寫作錯誤日誌（Email＋AD 共用）與 ${K.name} 分數趨勢</h4>
+  <div class="muted" style="font-size:12.5px">累積 ${N} 篇（Email ${nth.email}、AD ${nth.disc}）。🔴 重複出現　🟡 偶爾出現　🟢 連續 3 篇沒再犯</div>
+  ${rows.length ? `<table class="vtable ai-logt"><thead><tr><th>狀態</th><th>錯誤類型</th><th>次數</th><th>最近一次</th></tr></thead><tbody>${rows.map(r => `<tr><td>${r.status}</td><td>${esc(r.c)}</td><td class="tnum">${r.n}</td><td><span class="tag">${esc(r.lastNo)}</span> <s>${esc(r.last.original)}</s> → <b>${esc(r.last.corrected)}</b></td></tr>`).join("")}</tbody></table>` : ""}
+  ${recent.length ? `<div class="step-label" style="margin-top:6px">${K.name} 最近 ${recent.length} 篇任務分</div><div class="trend">${bars}</div>` : ""}
   <div class="ai-dimavg">${dimAvg.map(([n, v]) => `<span class="tag">${esc(n.split(" ")[0])} ${esc(n.split(" ")[1])} ${v}</span>`).join("")}<span class="muted" style="font-size:12px">（最近 3 篇平均）</span></div></div>`;
 }
 
 /* ---------- 計時、送出、重寫 ---------- */
 function emailTick() {
   if (!S || view !== "quiz") return;
-  const i = S.idx, X = getQ(i); if (!X || !isEmailQ(X.q)) return;
+  const i = S.idx, X = getQ(i); if (!X || !isAiQ(X.q)) return;
+  const K = aiCfg(X.q);
   const w = work(i);
   if (!S.ans[i] && !w.submitted) {
     w.secs = (w.secs || 0) + 1;
-    const el = $("#etime"); if (el) { el.innerHTML = emailTimerText(w.secs, S.mock); el.classList.toggle("low", S.mock && EMAIL_LIMIT - w.secs < 60); el.classList.toggle("over", !S.mock && w.secs > EMAIL_LIMIT); }
-    if (S.mock && w.secs >= EMAIL_LIMIT) { toast("7 分鐘到，自動送出"); emailSubmit(true); }
+    const el = $("#etime"); if (el) { el.innerHTML = emailTimerText(w.secs, S.mock, K); el.classList.toggle("low", S.mock && K.limit - w.secs < 60); el.classList.toggle("over", !S.mock && w.secs > K.limit); }
+    if (S.mock && w.secs >= K.limit) { toast(`${K.limit / 60} 分鐘到，自動送出`); emailSubmit(true); }
   } else if (w.rw && !w.rw.done && !w.rw.busy) {
     w.rw.secs = (w.rw.secs || 0) + 1; const inp = $("#rwin"); if (inp) w.rw.val = inp.value;
-    const el = $("#rwtime"); if (el) { el.innerHTML = `${I.flag}剩 <b class="tnum">${fmtTime(Math.max(0, REWRITE_LIMIT - w.rw.secs))}</b>`; el.classList.toggle("low", REWRITE_LIMIT - w.rw.secs < 60); }
-    if (w.rw.secs >= REWRITE_LIMIT) { toast("5 分鐘到，自動送出重寫"); rewriteSubmit(true); }
+    const el = $("#rwtime"); if (el) { el.innerHTML = `${I.flag}剩 <b class="tnum">${fmtTime(Math.max(0, K.rw - w.rw.secs))}</b>`; el.classList.toggle("low", K.rw - w.rw.secs < 60); }
+    if (w.rw.secs >= K.rw) { toast(`${K.rw / 60} 分鐘到，自動送出重寫`); rewriteSubmit(true); }
   }
 }
 function emailSubmit(auto) {
@@ -155,8 +183,8 @@ async function aiRun(sess, i, mode) {
   const refresh = () => { save(true); if (S === sess && view === "quiz") rerenderKeep(); };
   if (rw) { w.rw.busy = true; w.rw.err = ""; } else { w.aiBusy = true; w.aiErr = ""; }
   refresh();
-  const payload = { action: "aigrade", kind: "email", name: sess.who, code: store.codes[sess.who] || "", essay: text, secs,
-    task: { scenario: q.scenario, bullets: q.bullets, to: q.mail.to, subject: q.mail.subject } };
+  const payload = { action: "aigrade", kind: aiCfg(q).kind, name: sess.who, code: store.codes[sess.who] || "", essay: text, secs,
+    task: isDiscQ(q) ? { prompt: q.prompt, posts: q.posts } : { scenario: q.scenario, bullets: q.bullets, to: q.mail.to, subject: q.mail.subject } };
   if (!payload.code && store.teacherCode) payload.teacherCode = store.teacherCode;
   try {
     if (typeof SYNC_ON === "undefined" || !SYNC_ON) { const e = new Error("offline"); e.server = true; throw e; }
@@ -188,7 +216,7 @@ document.addEventListener("click", e => {
 document.addEventListener("input", e => {
   if (!S || !e.target) return;
   if (e.target.id === "rwin") { const w = work(S.idx); if (w.rw) w.rw.val = e.target.value; }
-  if (e.target.id === "essayin" && isEmailQ((getQ(S.idx) || {}).q)) { const c = $("#wc"); if (c) c.textContent = `${wcount(e.target.value)} 字・本文約 ${bodyWords(e.target.value)} 字（建議 100～130 字）`; }
+  if (e.target.id === "essayin") { const q = (getQ(S.idx) || {}).q; if (isAiQ(q)) { const c = $("#wc"); if (c) c.textContent = wcText(q, e.target.value); } }
 });
 
 /* ---------- 解析頁、老師批改頁 ---------- */
