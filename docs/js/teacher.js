@@ -150,7 +150,8 @@ function teacherHTML() {
 /* ================= 老師批改 ================= */
 const GRADE_TYPES = ["rewrite", "trans", "essay", "speak"];   // 需要老師判斷的題型：寫作、句子改寫、翻譯、口說
 /* 要老師批改的題目：作文、口說一律要；改寫、翻譯只有「系統判錯」的才要（不管學生有沒有反應） */
-function gradeIdx(att) { return (att.qs || []).map((_, i) => i).filter(i => { const X = getQ(i, att), a = att.ans && att.ans[i]; if (!X || !a || !GRADE_TYPES.includes(X.q.type)) return false; return X.q.type === "essay" || X.q.type === "speak" || sysWrong(a); }); }
+function gradeIdx(att) { return (att.qs || []).map((_, i) => i).filter(i => { const X = getQ(i, att), a = att.ans && att.ans[i]; if (!X || !a || !GRADE_TYPES.includes(X.q.type)) return false; if (X.group && X.group.kind === "readaloud" && recIdx(att, i) !== i) return false;   // 英檢朗讀 6 題共用一段錄音：只列第一題
+    return X.q.type === "essay" || X.q.type === "speak" || sysWrong(a); }); }
 function isRemote(att) { return ((store.imported || {}).attempts || []).some(a => a.id === att.id); }
 function rv(att) { return (store.reviews || {})[att.id] || { done: false, marks: {} }; }
 /* 把老師的改判套到載入的紀錄上（保留系統原本的判定，取消改判時可以還原） */
@@ -184,7 +185,7 @@ function gradeItemHTML(att, i) {
   return `<div class="pend-item"><div class="row" style="gap:8px"><span class="tag">第 ${i + 1} 題</span><span class="tag">${esc(tagName(X.bank, q.tag))}</span></div>
   <div style="font-size:15.5px">${questionReview(q)}</div>
   <dl class="kv"><dt>學生答案</dt><dd style="white-space:pre-wrap">${esc(respText(q, a))}</dd>${q.type === "essay" || q.type === "speak" ? "" : `<dt>參考答案</dt><dd class="ans-ok">${esc(correctText(q))}</dd>`}</dl>
-  ${q.type === "speak" ? `<button class="btn" data-act="rec-fetch" data-att="${esc(att.id)}" data-i="${i}">${I.play}播放學生錄音</button>` : ""}
+  ${q.type === "speak" ? `<button class="btn" data-act="rec-fetch" data-att="${esc(att.id)}" data-i="${recIdx(att, i)}">${I.play}播放學生錄音</button>` : ""}
   ${typeof isAiQ === "function" && isAiQ(q) && a && a.resp && a.resp.ai && typeof aiReviewHTML === "function" ? `<div class="ai-tsum"><b>AI 評分 ${a.resp.ai.score} / 5</b>・${esc(a.resp.ai.diagnosis || "")}</div><details class="pfold" data-key="t-ai-${esc(att.id)}-${i}"><summary><span>看 AI 完整批改</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary>${aiReviewHTML(q, a, att, i)}</details>` : ""}
   ${gradeButtonsHTML(att, i, true)}</div>`;
 }

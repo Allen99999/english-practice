@@ -75,3 +75,15 @@ const AD = (id, tag, course, professor, posts, model, exp) => ({ id, type: "essa
 /* 口說：Listen and Repeat（聽一句、照著說）／Take an Interview（回答訪問的問題） */
 const SR = (id, tag, scenario, line, exp) => ({ id, type: "speak", mode: "repeat", tag, scenario, script: [line], text: line.replace(/^[A-Z]{1,2}\d?: /, ""), exp: exp || "重點：完整、正確地照原句說出來，注意重音和語調。", secs: Math.max(8, Math.ceil(line.split(/\s+/).length * 0.75)) });
 const SI = (id, tag, scenario, question, model, exp) => ({ id, type: "speak", mode: "interview", tag, scenario, script: [question], text: question.replace(/^[A-Z]{1,2}\d?: /, ""), model, exp, secs: 45 });
+
+/* ===== 全民英檢初級口說（照 LTTC 官方流程；作答畫面在 geptspeak.js） =====
+   GS1 複誦：題目播兩次，聽完立刻跟著唸一次。GS3 回答問題：題目播兩次，回答 15 秒（model＝參考回答，也做成語音）
+   GS2 朗讀句子與短文：5 句＋1 篇短文，先看 1 分鐘、再用 1 分鐘全部唸完；照官方每句、短文各算 1 題（共 6 題），畫面上是一頁、錄一次音
+   出題的聲音男女輪流（依題號） */
+const gsVoice = id => [...id].reduce((s, c) => s + c.charCodeAt(0), 0) % 2 ? "M: " : "W: ";
+const GS1 = (id, tag, line, exp) => ({ id, type: "speak", mode: "g-repeat", gept: true, tag, script: [gsVoice(id) + line], text: line,
+  exp: exp || "重點：一字不漏照原句唸，注意重音、連音和句尾語調（問句上揚）。", secs: Math.max(7, Math.ceil(line.split(/\s+/).length * 0.6) + 3) });
+const GS2 = (id, tag, sents, passage, exp) => { const all = sents.concat([passage]);
+  return { id, type: "group", tag, kind: "readaloud", title: "朗讀句子與短文", passage: all, exp,
+    qs: all.map((t, k) => ({ id: id + "-" + (k + 1), type: "speak", mode: "g-read", gept: true, text: t, n: k, exp: exp || "", secs: 60 })) }; };
+const GS3 = (id, tag, question, model, exp) => ({ id, type: "speak", mode: "g-answer", gept: true, tag, script: [gsVoice(id) + question], text: question, model, exp, secs: 15 });

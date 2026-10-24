@@ -9,40 +9,53 @@ const AI_STATUS = { ok: ["✅", "完整"], thin: ["⚠️", "偏薄"], missing: 
 const AI_SEV = { red: ["🔴", "影響理解，必改"], orange: ["🟠", "明顯錯誤，會扣分"], yellow: ["🟡", "小失誤或可以更好"] };
 const isEmailQ = q => q && q.type === "essay" && !!q.mail;
 const isDiscQ = q => q && q.type === "essay" && !!q.posts && /Academic Discussion/.test(q.label || "");
-const isAiQ = q => isEmailQ(q) || isDiscQ(q);
+const isGeptQ = q => q && q.type === "essay" && !!q.gept;
+const isAiQ = q => isEmailQ(q) || isDiscQ(q) || isGeptQ(q);
 const AI_CFG = {
   email: { kind: "email", name: "Email", tag: "E", limit: EMAIL_LIMIT, rw: REWRITE_LIMIT, dims: AI_DIMS, words: "100～130", what: "Email" },
   disc: { kind: "disc", name: "Academic Discussion", tag: "AD", limit: 600, rw: 420, words: "120～150", what: "回文",
-    dims: [["respond", "A 回應與貢獻"], ["develop", "B 展開與連貫"], ["syntax", "C 句法與用字"], ["accuracy", "D 語言正確性"]] }
+    dims: [["respond", "A 回應與貢獻"], ["develop", "B 展開與連貫"], ["syntax", "C 句法與用字"], ["accuracy", "D 語言正確性"]] },
+  gept: { kind: "gept-para", name: "段落寫作", tag: "G", limit: 0, rw: 0, words: "約 50", what: "短文", dims: [] }
 };
-const aiCfg = q => isDiscQ(q) ? AI_CFG.disc : AI_CFG.email;
+const aiCfg = q => isGeptQ(q) ? AI_CFG.gept : isDiscQ(q) ? AI_CFG.disc : AI_CFG.email;
+/* 英檢錯誤代碼 → 國中生看得懂的名稱 */
+const GEPT_CODE = { G1: "動詞時間（時態）", G2: "主詞和動詞要搭配", G3: "be 動詞和一般動詞混用", G4: "單數、複數", G5: "a／an／the", G6: "介系詞", G7: "詞性用錯", G8: "句子不完整／逗號連接兩句",
+  G9: "字的順序", G10: "比較級、最高級", G11: "助動詞與問句", V1: "用字不恰當", V2: "中式英文", V3: "拼字", M1: "大小寫", M2: "標點", O1: "漏寫重點", O2: "順序混亂", O3: "缺少連接詞", O4: "離題、和圖不符", UP: "升級挑戰" };
+const GEPT_DIMS = [["T", "任務"], ["O", "組織"], ["G", "文法"], ["V", "用字"], ["M", "格式"]];
+const GEPT_REQ = { ok: ["✅", "ok"], partial: ["⚠️", "thin"], missing: ["❌", "missing"] };
 const AI_PEER = { advance: ["↗️", "有推進"], restate: ["↔️", "只點名或重述"], none: ["⛔", "未回應"] };
 const AI_LINKS = [["claim", "主張"], ["reason", "理由"], ["example", "例子"], ["tieback", "回扣"]];
 const bodyWords = t => wcount(String(t || "").split("\n").filter((l, k, arr) => !(k === 0 && /^(dear|hi|hello|to)\b/i.test(l.trim())) && !(k >= arr.length - 3 && /^(best|sincerely|regards|kind regards|thanks|thank you|cheers|warm|all the best|wishing)/i.test(l.trim()) && l.trim().split(/\s+/).length <= 4)).join(" "));
 const aiBand = s => s % 1 ? `介於「${AI_LEVEL[Math.ceil(s)]}」與「${AI_LEVEL[Math.floor(s)]}」之間` : AI_LEVEL[s] || "";
 
 /* ---------- 作答畫面 ---------- */
-const wcText = (q, t) => isDiscQ(q) ? `${wcount(t)} 字（建議 120～150 字，至少 100 字）` : `${wcount(t)} 字・本文約 ${bodyWords(t)} 字（建議 100～130 字）`;
+const wcText = (q, t) => isGeptQ(q) ? `${wcount(t)} 字（約 50 字）` : isDiscQ(q) ? `${wcount(t)} 字（建議 120～150 字，至少 100 字）` : `${wcount(t)} 字・本文約 ${bodyWords(t)} 字（建議 100～130 字）`;
 function emailHTML(X, i, a, st, m) {
   const q = X.q, K = aiCfg(q), res = a && a.resp, sub = !!a || st.submitted, txt = res ? res.text : (st.val || "");
   const secs = res ? (res.secs || 0) : (st.secs || 0), mock = S.mock, left = K.limit - secs;
   let h = `<div class="eyebrow">${K.name === "Email" ? "Write an Email" : "Academic Discussion"}${mock ? `・限時 ${K.limit / 60} 分鐘` : ""}</div><div class="stem" style="font-size:17px">${esc(q.prompt)}</div>`;
-  if (isDiscQ(q)) h += `<div class="posts">${q.posts.map(([who, t], k) => `<div class="post ${k ? "" : "prof"}"><div class="post-who">${esc(who)}</div><div data-ctx>${wrapWords(t, m)}</div></div>`).join("")}</div>`;
+  if (isGeptQ(q)) h = `<div class="eyebrow">段落寫作・看圖寫約 50 字</div><div class="stem" style="font-size:17px">${esc(q.prompt)}</div>
+    ${q.img ? `<img class="essay-img" src="${esc(q.img)}" alt="看圖寫作的三格圖" onerror="this.remove()">` : ""}
+    ${q.scenes ? `<div class="scenes">${q.scenes.map((s, k) => `<div class="scene"><span class="sn">${k + 1}</span><span data-ctx>${wrapWords(s, m)}</span></div>`).join("")}</div>` : ""}
+    ${q.keywords ? `<div class="row" style="gap:6px"><span class="step-label">可以用的字：</span>${q.keywords.map(k => `<span class="tag">${esc(k)}</span>`).join("")}</div>` : ""}`;
+  else if (isDiscQ(q)) h += `<div class="posts">${q.posts.map(([who, t], k) => `<div class="post ${k ? "" : "prof"}"><div class="post-who">${esc(who)}</div><div data-ctx>${wrapWords(t, m)}</div></div>`).join("")}</div>`;
   else h += `<div class="boxed" style="font-size:16px" data-ctx>${wrapWords(q.scenario, m)}<ul style="margin:8px 0 0;padding-left:22px">${q.bullets.map(b => `<li data-ctx>${wrapWords(b, m)}</li>`).join("")}</ul></div>
   <div class="mailhead"><div><span>To</span>${esc(q.mail.to)}</div><div><span>Subject</span>${esc(q.mail.subject)}</div></div>`;
   if (!sub) h += `<div class="etimer ${mock && left < 60 ? "low" : !mock && secs > K.limit ? "over" : ""}" id="etime">${emailTimerText(secs, mock, K)}</div>`;
-  h += `<textarea class="field essay" id="essayin" spellcheck="false" autocorrect="off" autocapitalize="sentences" placeholder="${isDiscQ(q) ? "Write your post…" : "Dear …,"}" ${sub ? "readonly" : ""}>${esc(txt)}</textarea>
+  h += `<textarea class="field essay" id="essayin" spellcheck="false" autocorrect="off" autocapitalize="sentences" placeholder="${isGeptQ(q) ? "Write your paragraph…" : isDiscQ(q) ? "Write your post…" : "Dear …,"}" ${sub ? "readonly" : ""}>${esc(txt)}</textarea>
   <div class="muted tnum" id="wc" style="font-size:13.5px">${wcText(q, txt)}</div>`;
   if (!sub) return h + `<div class="row"><button class="btn primary" data-act="ai-submit">${I.check}寫好了，交給 AI 批改</button></div>
-    <div class="muted" style="font-size:12.5px">AI 依 ETS 官方 0～5 分標準批改，約需 30～90 秒；老師之後也會再看。練習時建議關掉自動校正。</div>`;
+    <div class="muted" style="font-size:12.5px">${isGeptQ(q) ? "AI 依全民英檢官方 0～5 級分標準批改" : "AI 依 ETS 官方 0～5 分標準批改"}，約需 30～90 秒；老師之後也會再看。練習時建議關掉自動校正。</div>`;
   if (st.aiBusy && !a) return h + aiBusyHTML(`AI 正在依 ETS 標準批改你的${K.what}…`);
   if (!a) return h + `<div class="feedback no"><span class="fb-ic">${I.x}</span><div><b>AI 批改沒有完成</b><p>${esc(aiErrText(st.aiErr))}</p></div></div>
     <div class="row"><button class="btn primary" data-act="ai-retry">再試一次</button></div>
     <div class="muted" style="font-size:13px">也可以先看範文自評，之後老師會批改：</div>${modelsHTML(q)}${selfButtonsHTML(q, X.bank, "essay-rate")}`;
   if (!res.ai) return h + modelsHTML(q);   // 舊紀錄或自評（沒有 AI 結果）
+  if (isGeptQ(q)) return h + geptFeedbackHTML(q, res, { who: S.who, i });
   return h + aiFeedbackHTML(q, res, { who: S.who, live: true, i }) + rewriteHTML(q, res, st, i) + modelsHTML(q);
 }
 function emailTimerText(secs, mock, K = AI_CFG.email) {
+  if (!K.limit) return `本題用時 <b class="tnum">${fmtTime(secs)}</b>`;
   return mock ? `${I.flag}剩 <b class="tnum">${fmtTime(Math.max(0, K.limit - secs))}</b>・時間到會自動送出`
     : `本題用時 <b class="tnum">${fmtTime(secs)}</b> / 建議 ${fmtTime(K.limit)}${secs > K.limit ? `・已超過 ${fmtTime(secs - K.limit)}` : ""}`;
 }
@@ -160,7 +173,7 @@ function emailTick() {
   if (!S.ans[i] && !w.submitted) {
     w.secs = (w.secs || 0) + 1;
     const el = $("#etime"); if (el) { el.innerHTML = emailTimerText(w.secs, S.mock, K); el.classList.toggle("low", S.mock && K.limit - w.secs < 60); el.classList.toggle("over", !S.mock && w.secs > K.limit); }
-    if (S.mock && w.secs >= K.limit) { toast(`${K.limit / 60} 分鐘到，自動送出`); emailSubmit(true); }
+    if (S.mock && K.limit && w.secs >= K.limit) { toast(`${K.limit / 60} 分鐘到，自動送出`); emailSubmit(true); }
   } else if (w.rw && !w.rw.done && !w.rw.busy) {
     w.rw.secs = (w.rw.secs || 0) + 1; const inp = $("#rwin"); if (inp) w.rw.val = inp.value;
     const el = $("#rwtime"); if (el) { el.innerHTML = `${I.flag}剩 <b class="tnum">${fmtTime(Math.max(0, K.rw - w.rw.secs))}</b>`; el.classList.toggle("low", K.rw - w.rw.secs < 60); }
@@ -184,12 +197,13 @@ async function aiRun(sess, i, mode) {
   if (rw) { w.rw.busy = true; w.rw.err = ""; } else { w.aiBusy = true; w.aiErr = ""; }
   refresh();
   const payload = { action: "aigrade", kind: aiCfg(q).kind, name: sess.who, code: store.codes[sess.who] || "", essay: text, secs,
-    task: isDiscQ(q) ? { prompt: q.prompt, posts: q.posts } : { scenario: q.scenario, bullets: q.bullets, to: q.mail.to, subject: q.mail.subject } };
+    task: isGeptQ(q) ? { prompt: q.prompt, scenes: q.scenes, keywords: q.keywords } : isDiscQ(q) ? { prompt: q.prompt, posts: q.posts } : { scenario: q.scenario, bullets: q.bullets, to: q.mail.to, subject: q.mail.subject } };
   if (!payload.code && store.teacherCode) payload.teacherCode = store.teacherCode;
   try {
     if (typeof SYNC_ON === "undefined" || !SYNC_ON) { const e = new Error("offline"); e.server = true; throw e; }
     if (!payload.code && !payload.teacherCode && typeof ensureCode === "function") { await ensureCode(sess.who); payload.code = store.codes[sess.who] || ""; }
     const r = await postSync(payload, 300000), ai = r.result;
+    if (isGeptQ(q)) ai.score = Math.max(0, Math.min(5, Math.round(Number(ai.level)) || 0));
     ai.score = Math.max(0, Math.min(5, Math.round(Number(ai.score) * 2) / 2 || 0));
     if (rw) { const a = sess.ans[i]; (a.resp.rewrites || (a.resp.rewrites = [])).push({ text, secs, ai, model: r.model }); w.rw = null; }
     else {
@@ -228,7 +242,85 @@ function rewritesStaticHTML(q, res, key) {
 function aiReviewHTML(q, a, att, i) {
   const res = a && a.resp;
   if (!res || !res.ai) return modelsHTML(q);
+  if (isGeptQ(q)) { const who = att.who || "未署名", remote = typeof isRemote === "function" && isRemote(att);
+    const pool = (remote && typeof allAttempts === "function" ? allAttempts() : store.attempts).filter(x => (x.who || "未署名") === who);
+    return `<div class="ai-review">${geptFeedbackHTML(q, res, { who, atts: pool, i: "v" + i })}</div>`; }
   const who = att.who || "未署名", remote = typeof isRemote === "function" && isRemote(att);
   const pool = (remote && typeof allAttempts === "function" ? allAttempts() : store.attempts).filter(x => (x.who || "未署名") === who);
   return `<div class="ai-review">${aiFeedbackHTML(q, res, { who, atts: pool, i: "v" + i })}${rewritesStaticHTML(q, res, "v" + i)}${modelsHTML(q)}</div>`;
+}
+
+/* ===================== 全民英檢初級：段落寫作回饋（學生版，一頁看完） ===================== */
+const gLv = v => scoreColor(v / 5);
+function geptFeedbackHTML(q, res, opt = {}) {
+  const ai = res.ai, lv = Math.max(0, Math.min(5, Number(ai.level) || 0)), wc = wcount(res.text), secs = res.secs || 0, errs = ai.errors || [];
+  const desc = typeof levelDesc === "function" ? levelDesc(q, null, lv) : "";
+  let h = `<div class="ai-card glass gx">
+  <div class="ai-score"><div class="ai-big" style="color:${gLv(lv)}">${lv}<span>/ 5 級分</span></div><div style="min-width:0"><div class="eyebrow">📊 AI 估分・全民英檢初級 段落寫作</div><b style="font-size:17px">${esc(desc)}</b>
+    <div class="row" style="gap:6px;margin-top:6px"><span class="tag ${wc < 35 ? "warn" : ""}">${wc} 字${wc < 35 ? "・偏少" : wc > 90 ? "・偏多" : ""}</span><span class="tag">⏱️ 用時 ${fmtTime(secs)}</span>${(ai.caps || []).length ? `<span class="tag warn">⚠️ 觸發上限規則</span>` : ""}</div></div></div>
+  <div class="gx-dims">${GEPT_DIMS.map(([k, n]) => { const d = (ai.dims || {})[k] || {}, v = Number(d.score) || 0;
+    return `<div class="gx-dim" title="${esc(d.comment || "")}"><span>${n}</span><b style="color:${gLv(v)}">${v}</b><i><em style="width:${v / 5 * 100}%;background:${gLv(v)}"></em></i></div>`; }).join("")}</div>
+  <div class="muted" style="font-size:12px;margin-top:-4px">五個面向是診斷參考，官方只給一個整體級分。</div>
+  <div class="ai-diag">🎯 <b>一句話診斷：</b>${esc(ai.diagnosis || "")}</div>
+  ${lv < 5 && ai.nextLevel ? `<div class="gx-up">⬆️ <b>要拿到 ${lv + 1} 級分：</b>${esc(ai.nextLevel)}</div>` : ""}
+  ${(ai.caps || []).map(c => `<div class="gx-cap">⚠️ ${esc(c.text)}</div>`).join("")}</div>`;
+  h += `<div class="ai-sec"><h4>✅ 題目要求檢核</h4><div class="gx-reqs">${(ai.requirements || []).map(r => { const st = GEPT_REQ[r.status] || GEPT_REQ.partial;
+    return `<div class="gx-req ${st[1]}"><span class="gx-ric">${st[0]}</span><div style="min-width:0"><b>${esc(r.item)}</b>${r.quote ? `<div class="ai-quote">「${esc(r.quote)}」</div>` : ""}<div class="muted" style="font-size:13px">${esc(r.note || "")}</div></div></div>`; }).join("")}</div></div>`;
+  h += `<div class="ai-sec"><h4>🔍 原文標註與要改的地方</h4><div class="muted" style="font-size:12.5px">🔴 看不懂、一定要改　🟠 明顯錯誤　🟡 小地方</div>
+  <div class="ptext ai-essay">${markEssay(res.text, errs)}</div>
+  ${errs.length ? `<ol class="ai-errs">${errs.map((e, k) => `<li><span class="ai-sev"><b class="tnum">${k + 1}</b>${(AI_SEV[e.severity] || AI_SEV.yellow)[0]}</span><div><div><s>${esc(e.original)}</s> → <b>${esc(e.corrected)}</b><span class="tag gx-code">${esc(GEPT_CODE[e.code] || e.code)}</span></div><div class="muted" style="font-size:13px">${esc(e.why || "")}</div></div></li>`).join("")}</ol>` : `<div class="muted">沒有找到錯誤，很棒！</div>`}</div>`;
+  if ((ai.upgrades || []).length) h += `<div class="ai-sec"><h4>💡 換個字更厲害</h4><div class="gx-ups">${ai.upgrades.map(u => `<div class="gx-upw"><div><s>${esc(u.vague)}</s> → <b>${esc(u.better)}</b></div><div class="muted" style="font-size:12.5px">${esc(u.when || "")}</div><div style="font-size:13.5px">${esc(u.example || "")}</div></div>`).join("")}</div></div>`;
+  if (ai.rewrite) h += `<details class="pfold gx-rw" data-key="gx-rw-${opt.i ?? "x"}"><summary><span>✍️ 5 級分示範（先自己改完，再點開對照）</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext" style="font-size:16px;margin-top:8px">${esc(ai.rewrite)}</div></details>`;
+  if (q.model) h += `<details class="pfold" data-key="gx-model-${opt.i ?? "x"}"><summary><span>📄 參考範文</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext" style="font-size:16px;margin-top:8px">${esc(q.model)}</div>${q.exp ? `<div class="muted" style="font-size:13.5px;margin-top:6px">💡 ${esc(q.exp)}</div>` : ""}</details>`;
+  const nf = ai.nextFocus || {};
+  if (nf.how) h += `<div class="ai-next">📌 <b>下一篇只練一件事：${esc(GEPT_CODE[nf.code] || "")}</b><br>${esc(nf.how)}</div>`;
+  if (opt.who !== undefined) h += geptLogHTML(opt.who, opt.atts);
+  return h;
+}
+/* 英檢寫作錯誤日誌與級分趨勢（同一個名字的所有英檢段落寫作） */
+function geptLogHTML(who, atts) {
+  const hist = [];
+  const take = (att, date) => (att.qs || []).forEach((r, i) => { const a = (att.ans || {})[i], X = a && getQ(i, att); if (X && isGeptQ(X.q) && a.resp && a.resp.ai) hist.push({ date, ai: a.resp.ai }); });
+  (atts || store.attempts.filter(x => (x.who || "未署名") === (who || "未署名"))).forEach(att => take(att, att.date || 0));
+  if (!atts && S && S.who === who && !store.attempts.some(x => x.id === S.id)) take(S, Date.now());
+  hist.sort((a, b) => a.date - b.date); if (!hist.length) return "";
+  const cats = {}; hist.forEach((e, n) => (e.ai.errors || []).forEach(x => { const o = cats[x.code] || (cats[x.code] = { n: 0, essays: new Set(), last: null, lastN: -1 }); o.n++; o.essays.add(n); o.last = x; o.lastN = n; }));
+  const N = hist.length, rows = Object.entries(cats).map(([c, o]) => ({ c, ...o, status: N - 1 - o.lastN >= 3 ? "🟢" : (o.essays.size > 1 || o.n >= 2) ? "🔴" : "🟡" }))
+    .sort((a, b) => ({ "🔴": 0, "🟡": 1, "🟢": 2 }[a.status] - { "🔴": 0, "🟡": 1, "🟢": 2 }[b.status]) || b.n - a.n).slice(0, 8);
+  const recent = hist.slice(-10), W = 100 / recent.length;
+  const bars = recent.map((e, k) => { const v = Number(e.ai.level) || 0; return `<div class="tr-col" style="width:${W}%"><div class="tr-bar" style="height:${v / 5 * 100}%;background:${gLv(v)}"><span>${v}</span></div><div class="tr-x">${k + 1}</div></div>`; }).join("");
+  return `<details class="pfold ai-log" data-key="gx-log" ${N > 1 ? "open" : ""}><summary><span>📒 ${esc(who || "")} 的英檢寫作錯誤日誌與級分趨勢（${N} 篇）</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary>
+  <div class="muted" style="font-size:12.5px;margin-top:6px">🔴 重複出現　🟡 偶爾出現　🟢 連續 3 篇沒再犯</div>
+  ${rows.length ? `<table class="vtable ai-logt"><thead><tr><th>狀態</th><th>錯誤類型</th><th>次數</th><th>最近一次</th></tr></thead><tbody>${rows.map(r => `<tr><td>${r.status}</td><td>${esc(GEPT_CODE[r.c] || r.c)}</td><td class="tnum">${r.n}</td><td><s>${esc(r.last.original)}</s> → <b>${esc(r.last.corrected)}</b></td></tr>`).join("")}</tbody></table>` : ""}
+  <div class="step-label" style="margin-top:6px">最近 ${recent.length} 篇級分</div><div class="trend">${bars}</div></details>`;
+}
+
+/* ===================== 全民英檢初級：單句寫作（改寫、合併）系統判錯時請 AI 依官方 0／1／2 分再判一次 ===================== */
+const isGeptSent = (X, sess) => X && X.q && X.q.type === "rewrite" && X.bank && /^gept/.test(X.bank.id) && !(sess && sess.blind);
+async function sentAiRun(sess, i) {
+  const X = getQ(i, sess), q = X.q, a = sess.ans[i]; if (!a || a.correct || a.aiSent) return;
+  const w = sess.work[i] || (sess.work[i] = {});
+  const refresh = () => { save(true); if (S === sess && view === "quiz" && sess.idx === i) rerenderKeep(); };
+  w.sentBusy = true; w.sentErr = ""; refresh();
+  const payload = { action: "aigrade", kind: "gept-sent", name: sess.who, code: store.codes[sess.who] || "", essay: String(a.resp || ""),
+    task: { type: X.q.tag === "g5" || X.q.tag === "w2" ? "句子合併" : "句子改寫", src: q.src, instr: q.instr, start: q.start, ans: q.ans.map(x => typeof expand === "function" ? expand(x)[0] : x) } };
+  if (!payload.code && store.teacherCode) payload.teacherCode = store.teacherCode;
+  try {
+    if (typeof SYNC_ON === "undefined" || !SYNC_ON) { const e = new Error("offline"); e.server = true; throw e; }
+    if (!payload.code && !payload.teacherCode && typeof ensureCode === "function") { await ensureCode(sess.who); payload.code = store.codes[sess.who] || ""; }
+    const r = await postSync(payload, 120000), res = r.result, sc = Math.max(0, Math.min(2, Math.round(Number(res.score)) || 0));
+    a.aiSent = { score: sc, point: res.point || "", reason: res.reason || "", corrected: res.corrected || "", model: r.model };
+    if (!a.claim && !a.self && !a.tmark) { a.pts = sc; a.correct = sc >= 2; }
+  } catch (e) { w.sentErr = e.server ? e.message : "error"; }
+  w.sentBusy = false; refresh();
+}
+function sentAiHTML(X, a, w) {
+  if (!isGeptSent(X) || !a || (a.sys !== false && !a.aiSent)) return "";
+  if (w && w.sentBusy) return `<div class="gx-sent busy"><span class="ai-spin"></span>AI 正在依英檢標準評分（0～2 分）…</div>`;
+  const s = a.aiSent;
+  if (!s) return w && w.sentErr ? `<div class="gx-sent"><span class="muted">${esc(w.sentErr === "slimit-1h" ? "AI 單句評分每小時最多 10 句，先依系統判定，老師會再批改。" : w.sentErr === "slimit-5h" ? "AI 單句評分每 5 小時最多 30 句，先依系統判定，老師會再批改。" : "AI 評分沒有完成，先依系統判定，老師會再批改。")}</span></div>` : "";
+  const col = s.score === 2 ? "var(--good)" : s.score === 1 ? "var(--gold)" : "var(--bad)";
+  return `<div class="gx-sent"><div class="gx-sent-h"><b style="color:${col}">🤖 AI 依英檢標準：${s.score} / 2 分</b><span class="tag">${s.score === 2 ? "正確無誤" : s.score === 1 ? "重點對了，有小錯" : "重點結構有誤"}</span></div>
+  ${s.point ? `<div class="muted" style="font-size:13px">考點：${esc(s.point)}</div>` : ""}<div style="font-size:14px">${esc(s.reason)}</div>
+  ${s.corrected && s.score < 2 ? `<div style="font-size:14px">改成：<b>${esc(s.corrected)}</b></div>` : ""}</div>`;
 }

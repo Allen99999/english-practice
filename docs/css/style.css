@@ -715,6 +715,27 @@ details.script summary{cursor:pointer;font-weight:650;color:var(--ink-2)}
 .ai-kv{margin:0}
 .ai-ups{display:flex;flex-direction:column;gap:8px}
 .ai-up{padding:8px 12px;border-radius:var(--r-md);background:var(--glass-lo)}
+/* 英檢段落寫作回饋 */
+.gx-dims{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.gx-dim{padding:8px 10px;border-radius:var(--r-md);background:var(--glass-lo);display:flex;flex-direction:column;gap:4px;min-width:0}
+.gx-dim span{font-size:12.5px;color:var(--ink-2);font-weight:650}
+.gx-dim b{font:850 22px/1 var(--round)}
+.gx-dim i{display:block;height:5px;border-radius:99px;background:color-mix(in srgb,var(--ink) 8%,transparent);overflow:hidden}
+.gx-dim em{display:block;height:100%;border-radius:inherit}
+.gx-up{padding:10px 12px;border-radius:var(--r-md);background:var(--good-soft);font-size:14.5px}
+.gx-cap{padding:10px 12px;border-radius:var(--r-md);background:var(--bad-soft);font-size:14px}
+.gx-reqs{display:flex;flex-direction:column;gap:6px}
+.gx-req{display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border-radius:var(--r-md);background:var(--glass-lo)}
+.gx-req.thin{background:var(--gold-soft)}.gx-req.missing{background:var(--bad-soft)}
+.gx-ric{font-size:18px;line-height:1.3}
+.gx-req b{font-size:14.5px}
+.gx-code{margin-left:6px;font-size:11.5px;vertical-align:middle}
+.gx-ups{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+.gx-upw{padding:10px 12px;border-radius:var(--r-md);background:var(--accent-soft);display:flex;flex-direction:column;gap:3px}
+.gx-sent{margin-top:10px;padding:10px 12px;border-radius:var(--r-md);background:var(--glass-lo);box-shadow:inset 0 0 0 1px var(--edge);display:flex;flex-direction:column;gap:4px}
+.gx-sent.busy{flex-direction:row;align-items:center;gap:10px;font-size:14px}
+.gx-sent-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+@media (max-width:520px){.gx-dims{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.gx-dim{padding:6px}.gx-dim b{font-size:18px}.gx-dim span{font-size:11px}}
 /* AD 論證鏈：主張 → 理由 → 例子 → 回扣，斷掉的環節標紅 */
 .ai-chain{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px}
 .ai-link{flex:1 1 150px;min-width:0;padding:8px 10px;border-radius:var(--r-md);background:var(--glass-lo);display:flex;flex-direction:column;gap:2px}

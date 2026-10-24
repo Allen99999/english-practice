@@ -12,6 +12,10 @@ const AI_MODELS = ["gemini-3.1-pro-preview", "gemini-2.5-pro"];   // 第一個�
 const AI_USER_LIMITS = [[3, 1], [10, 5]];   // [篇數, 小時]
 const AI_TOTAL = [300, 12];
 const AI_NO_LIMIT = ["test", "allen"];
+/* 英檢單句寫作（系統判錯時才送 AI）另外計數：每個名字 1 小時 10 句、5 小時 30 句；全站 12 小時 1500 句 */
+const SENT_USER_LIMITS = [[10, 1], [30, 5]];
+const SENT_TOTAL = [1500, 12];
+const AI_MODELS_FAST = ["gemini-3.5-flash", "gemini-2.5-flash"];   // 單句寫作用便宜快速的模型
 
 const EMAIL_SYSTEM = `You are a certified TOEFL iBT (2026 format) rater for the "Write an Email" task, giving feedback to a Taiwanese learner. Score and give feedback strictly by the rules below. Write ALL feedback text in Traditional Chinese (台灣用語), but keep quoted English exactly as written.
 
@@ -160,15 +164,95 @@ const DISC_SCHEMA = { type: "OBJECT", properties: {
   nextFocus: { type: "STRING" } },
   required: ["score", "wordCount", "dims", "caps", "diagnosis", "strengths", "questionParts", "peers", "contribution", "chain", "errors", "upgrades", "upgradeSentence", "nextFocus"] };
 
+/* ===== 全民英檢初級寫作：評分標準照「全民英檢初級寫作 評分與回饋系統」（LTTC 官方級分描述、band 判定、封頂規則） ===== */
+const GEPT_CODES = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9", "G10", "G11", "V1", "V2", "V3", "M1", "M2", "O1", "O2", "O3", "O4"];
+const GEPT_PARA_SYSTEM = `You are a GEPT Elementary (全民英檢初級, CEFR A2) writing rater for LTTC, grading Part 2 段落寫作: the learner looks at three pictures and writes a paragraph of about 50 words. The learner is a Taiwanese junior high student (about 13–16). Write ALL feedback in Traditional Chinese (台灣用語) that a junior high student understands easily: never use grammar jargon such as 時態一致性 or 主謂一致; say things like 「動詞的時間要前後一樣」「he/she 後面的動詞要加 s」. Keep quoted English exactly as written.
+
+## Official holistic levels (LTTC, quoted)
+5: 正確表達題目之要求；文法、用字等幾乎無誤。
+4: 大致正確表達題目之要求；文法、用字等有誤，但不影響讀者之理解。
+3: 大致回答題目之要求，但未能完全達意；文法、用字等有誤，稍影響讀者之理解。
+2: 部分回答題目之要求，表達上有令人不解／誤解之處；讀者須耐心解讀。
+1: 僅回答 1 個問題或重點；文法、用字等錯誤過多，嚴重影響讀者之理解。
+0: 未答、等同未答。
+Scoring is holistic and integer only (no .5).
+
+## Fixed procedure (do not skip)
+1. Read the prompt; list its hard requirements: the three pictures (three key points), about 50 words, any required tense/person (a story that already happened needs past tense).
+2. Check each requirement. Coverage = key points that are told AND understandable ÷ 3.
+3. Mark every error with a severity light and a code.
+   🔴 red: the reader cannot understand or would misunderstand and must reread.
+   🟠 orange: a clear grammar error, but the reader still understands.
+   🟡 yellow: small slips — spelling, punctuation, capitalization.
+4. Rate five diagnostic dimensions 0–5 (T task, O organization/coherence, G grammar & sentence structure, V word choice & spelling, M capitalization & punctuation). These are diagnostic only.
+5. Decide the level with the band rules (check from 5 downward; the first that fits):
+   5 = coverage 3/3, red 0, orange ≤1, yellow ≤2.
+   4 = coverage 3/3, red 0, orange 2–5.
+   3 = coverage 3/3 but one point is unclear, or red 1–2.
+   2 = coverage 2/3, or red ≥3.
+   1 = coverage 1/3, or almost every sentence is red.
+   0 = blank, totally unrelated to the pictures, or only copies the prompt.
+   Anchor from the official 4-level sample: it had a spelling error (delicous), an incomplete because-clause, and the whole text used a tense different from the prompt, and still got 4 because it read smoothly, the event order was clear and the reader understood. Wrong tense alone does not drop a paper to 3; whether the reader understands is the dividing line.
+6. Apply caps (only push down; if several apply, take the lowest):
+   C1 completely off topic, unrelated to the pictures → max 1.
+   C2 only 1 key point told → max 1.
+   C3 only 2 key points told → max 2.
+   C4 fewer than 25 words → max 2; fewer than 15 words → max 1. (teaching rule, not official)
+   C5 three or more red errors → max 2.
+   C6 the whole answer is a single sentence → max 3. (teaching rule, not official)
+   C7 the prompt clearly requires a tense/person, the whole paper does not follow it, AND this causes misunderstanding → max 3.
+   C8 copies the Chinese prompt or copies the model sentences → 0.
+7. "nextFocus": choose by this algorithm — the code that appears most among red errors; if each red code appears once, a code repeated in this paper at least twice; otherwise the most frequent orange code; if almost no errors, an upgrade goal (add linking words, more precise words, a longer sentence pattern).
+
+## Error codes (use only these)
+G1 時態錯誤或不一致, G2 主詞動詞不一致, G3 be 動詞與一般動詞混用, G4 名詞單複數, G5 冠詞 a/an/the, G6 介系詞, G7 詞性用錯, G8 句子不完整或用逗號連接兩句, G9 語序, G10 比較級與最高級, G11 助動詞與問句結構, V1 用字不當, V2 中式英文直譯, V3 拼字, M1 大小寫, M2 標點, O1 題目重點缺漏, O2 敘述順序混亂, O3 缺連接詞，句子各自獨立, O4 離題或與圖片不符.
+
+## Output rules (JSON only)
+- level: final integer 0–5. levelBeforeCaps: the band before caps.
+- wordCount: words in the learner's paragraph.
+- requirements: one row per picture (item = 圖一／圖二／圖三 + what it shows, in Chinese), then a row for 約 50 字, then a row for the required tense if the story is in the past; status ok / partial / missing; quote = the learner's words for it, copied exactly ("" if none); note = one short Chinese sentence.
+- dims: T, O, G, V, M each {score 0–5, comment: one short Chinese sentence}.
+- caps: only the caps that were triggered, each {code: "C1".."C8", text: one Chinese sentence explaining it to the student}; empty if none.
+- diagnosis: ONE Chinese sentence naming the single thing that holds the score back most.
+- nextLevel: ONE Chinese sentence telling the student exactly what to change to reach the next level (empty if level is 5).
+- errors: at most 6, most serious first. original MUST be copied character-for-character from the learner's paragraph (1–10 words, for highlighting); corrected = the fixed span; severity red/orange/yellow; code; why = one short plain Chinese sentence a junior high student understands.
+- upgrades: exactly 3 plain or repeated words from the paragraph → more precise words that are within the GEPT Elementary word list, each with when (one short Chinese phrase) and an A2-level example sentence.
+- rewrite: a level-5 version of the learner's own paragraph (keep their ideas, about 50–70 words, only Elementary-level words).
+- nextFocus: {code, how: one concrete action the student can do today, in Chinese}.`;
+const GEPT_DIM = { type: "OBJECT", properties: { score: { type: "NUMBER" }, comment: { type: "STRING" } }, required: ["score", "comment"] };
+const GEPT_PARA_SCHEMA = { type: "OBJECT", properties: {
+  level: { type: "INTEGER" }, levelBeforeCaps: { type: "INTEGER" }, wordCount: { type: "INTEGER" },
+  requirements: { type: "ARRAY", items: { type: "OBJECT", properties: { item: { type: "STRING" }, status: { type: "STRING", enum: ["ok", "partial", "missing"] }, quote: { type: "STRING" }, note: { type: "STRING" } }, required: ["item", "status", "quote", "note"] } },
+  dims: { type: "OBJECT", properties: { T: GEPT_DIM, O: GEPT_DIM, G: GEPT_DIM, V: GEPT_DIM, M: GEPT_DIM }, required: ["T", "O", "G", "V", "M"] },
+  caps: { type: "ARRAY", items: { type: "OBJECT", properties: { code: { type: "STRING" }, text: { type: "STRING" } }, required: ["code", "text"] } },
+  diagnosis: { type: "STRING" }, nextLevel: { type: "STRING" },
+  errors: { type: "ARRAY", items: { type: "OBJECT", properties: { severity: { type: "STRING", enum: ["red", "orange", "yellow"] }, code: { type: "STRING", enum: GEPT_CODES }, original: { type: "STRING" }, corrected: { type: "STRING" }, why: { type: "STRING" } }, required: ["severity", "code", "original", "corrected", "why"] } },
+  upgrades: { type: "ARRAY", items: { type: "OBJECT", properties: { vague: { type: "STRING" }, better: { type: "STRING" }, when: { type: "STRING" }, example: { type: "STRING" } }, required: ["vague", "better", "when", "example"] } },
+  rewrite: { type: "STRING" },
+  nextFocus: { type: "OBJECT", properties: { code: { type: "STRING", enum: GEPT_CODES.concat(["UP"]) }, how: { type: "STRING" } }, required: ["code", "how"] } },
+  required: ["level", "levelBeforeCaps", "wordCount", "requirements", "dims", "caps", "diagnosis", "nextLevel", "errors", "upgrades", "rewrite", "nextFocus"] };
+
+const GEPT_SENT_SYSTEM = `You are a GEPT Elementary (全民英檢初級) rater scoring ONE item of Part 1 單句寫作 (句子改寫 or 句子合併). Official levels: 2 = 正確無誤; 1 = 有誤，但重點結構正確; 0 = 錯誤過多、未答或等同未答.
+Procedure: first state the tested point (考點) — the structure the instruction asks for (question word order, negative, passive, comparison, indirect question, relative pronoun, conjunction, so…that, participle, etc.). Then compare the learner's answer with the instruction and the reference answers. The reference answers are examples, not the only correct answers: accept any grammatical sentence that does the required transformation and keeps the meaning.
+Rules:
+- 2 points: the tested point is correct AND spelling, punctuation and capitalization are all correct.
+- 1 point: the tested point is correct, but there are small errors (spelling, punctuation, capitalization, or a small unrelated slip).
+- 0 points: the tested point itself is wrong (e.g. no inversion in a question, wrong connector, split into two sentences), or blank.
+- R2: if the required start words given in the instruction are missing, at most 1 point.
+- R3: score each item once; if the tested point is correct, the minimum is 1 point — several small slips do not push it to 0.
+Write point, reason and fix in Traditional Chinese that a junior high student understands (no grammar jargon). corrected = the learner's answer with the smallest changes that make it a 2-point answer (English). Return JSON only.`;
+const GEPT_SENT_SCHEMA = { type: "OBJECT", properties: { score: { type: "INTEGER" }, point: { type: "STRING" }, reason: { type: "STRING" }, corrected: { type: "STRING" } }, required: ["score", "point", "reason", "corrected"] };
+
 /* 檢查並登記一次 AI 使用：回傳 "" 表示可以，或錯誤代碼（limit-1h、limit-5h、busy）。
    計數存在 Script Properties（快取最多只能存 6 小時，存不了 12 小時的全站計數），用短暫的鎖避免同時寫入算錯。 */
-function aiQuota_(name, exempt) {
+function aiQuota_(name, exempt, bucket) {
+  const sent = bucket === "sent", userLimits = sent ? SENT_USER_LIMITS : AI_USER_LIMITS, total = sent ? SENT_TOTAL : AI_TOTAL, pre = sent ? "ai:s:" : "ai:";
   const lock = LockService.getScriptLock(); if (!lock.tryLock(5000)) return "busy";
   try {
     const P = PropertiesService.getScriptProperties(), now = Date.now(), H = 3600000;
     const slot = h => Math.floor(now / (h * H));
-    const keys = [["ai:all:" + AI_TOTAL[1] + "h:" + slot(AI_TOTAL[1]), AI_TOTAL[0], "busy"]];
-    if (!exempt) AI_USER_LIMITS.forEach(([n, h]) => keys.push(["ai:n:" + name.toLowerCase() + ":" + h + "h:" + slot(h), n, "limit-" + h + "h"]));
+    const keys = [[pre + "all:" + total[1] + "h:" + slot(total[1]), total[0], "busy"]];
+    if (!exempt) userLimits.forEach(([n, h]) => keys.push([pre + "n:" + name.toLowerCase() + ":" + h + "h:" + slot(h), n, (sent ? "slimit-" : "limit-") + h + "h"]));
     for (const [k, max, err] of keys) if (Number(P.getProperty(k) || 0) >= max) return err;
     keys.forEach(([k]) => P.setProperty(k, String(Number(P.getProperty(k) || 0) + 1)));
     if (Math.random() < .05) {   // 偶爾清掉已經過期時段的計數
@@ -182,11 +266,25 @@ function aiGrade_(body) {
   const teacher = body.teacherCode && String(body.teacherCode) === TEACHER_CODE;
   const name = name_(body.name);
   if (!teacher) { const err = check_(name, code_(body.code)); if (err) return json_({ ok: false, error: err }); }
-  if (body.kind !== "email" && body.kind !== "disc") return json_({ ok: false, error: "bad kind" });
+  if (["email", "disc", "gept-para", "gept-sent"].indexOf(body.kind) < 0) return json_({ ok: false, error: "bad kind" });
   const t = body.task || {}, essay = String(body.essay || "").slice(0, 5000);
   if ((essay.match(/[A-Za-z]+/g) || []).length < 3) return json_({ ok: false, error: "empty" });
-  const quota = aiQuota_(name, teacher || AI_NO_LIMIT.includes(name.toLowerCase())); if (quota) return json_({ ok: false, error: quota });
+  const quota = aiQuota_(name, teacher || AI_NO_LIMIT.includes(name.toLowerCase()), body.kind === "gept-sent" ? "sent" : "essay"); if (quota) return json_({ ok: false, error: quota });
   const clip = (s, n) => String(s || "").slice(0, n);
+  if (body.kind === "gept-sent") {
+    const sp = "TASK TYPE: " + clip(t.type, 30) + "\nGIVEN SENTENCE(S):\n" + [].concat(t.src || []).map(x => clip(x, 300)).join("\n") + "\nINSTRUCTION: " + clip(t.instr, 200) +
+      "\nREQUIRED START: " + clip(t.start, 120) + "\nREFERENCE ANSWER(S):\n" + [].concat(t.ans || []).slice(0, 6).map(x => clip(x, 300)).join("\n") + "\n\nLEARNER'S ANSWER:\n" + clip(essay, 600);
+    const rs = gemini_(GEPT_SENT_SYSTEM, sp, GEPT_SENT_SCHEMA, AI_MODELS_FAST);
+    if (!rs.ok) return json_({ ok: false, error: rs.error });
+    return json_({ ok: true, result: rs.result, model: rs.model });
+  }
+  if (body.kind === "gept-para") {
+    const pp = "PROMPT (Chinese): " + clip(t.prompt, 400) + "\nTHE THREE PICTURES:\n" + [].concat(t.scenes || []).slice(0, 4).map((x, k) => (k + 1) + ". " + clip(x, 300)).join("\n") +
+      "\nKEYWORDS GIVEN: " + [].concat(t.keywords || []).slice(0, 8).map(x => clip(x, 40)).join(", ") + "\n\nLEARNER'S PARAGRAPH:\n" + essay + "\n\nTime used on this paragraph: " + Math.round(Number(body.secs) || 0) + " seconds";
+    const rp = gemini_(GEPT_PARA_SYSTEM, pp, GEPT_PARA_SCHEMA);
+    if (!rp.ok) return json_({ ok: false, error: rp.error });
+    return json_({ ok: true, result: rp.result, model: rp.model });
+  }
   if (body.kind === "disc") {
     const posts = [].concat(t.posts || []).slice(0, 4).map(p => [clip(p && p[0], 60), clip(p && p[1], 1500)]);
     const dprompt = "INSTRUCTIONS:\n" + clip(t.prompt, 600) + "\n\nPROFESSOR (" + (posts[0] || ["", ""])[0] + "):\n" + (posts[0] || ["", ""])[1] +
@@ -203,9 +301,9 @@ function aiGrade_(body) {
   if (!r.ok) return json_({ ok: false, error: r.error });
   return json_({ ok: true, result: r.result, model: r.model });
 }
-function gemini_(system, prompt, schema) {
+function gemini_(system, prompt, schema, models) {
   const token = ScriptApp.getOAuthToken(), errs = [];
-  for (const model of AI_MODELS) {
+  for (const model of models || AI_MODELS) {
     const url = "https://aiplatform.googleapis.com/v1/projects/" + VERTEX_PROJECT + "/locations/global/publishers/google/models/" + model + ":generateContent";
     const res = UrlFetchApp.fetch(url, { method: "post", contentType: "application/json", muteHttpExceptions: true, timeoutSeconds: 240,
       headers: { Authorization: "Bearer " + token, "x-goog-user-project": VERTEX_PROJECT },

@@ -54,7 +54,7 @@ const ESSAY_CHECK = ["寫了大約 50 個字以上", "每一個提示（圖或�
 const isMC = q => q.type === "mc" || q.type === "dict" || q.type === "listen";
 /* 題組依內容分類：補字母（Complete the Words）、聽力題組、一般閱讀題組 */
 const unitType = it => it.type === "group" ? (it.kind === "ctest" ? "cword" : it.kind === "listening" ? "lgroup" : "group") : it.type;
-const KIND_LABEL = { ctest: "Complete the Words", listening: "聽力題組" };
+const KIND_LABEL = { ctest: "Complete the Words", listening: "聽力題組", readaloud: "口說・朗讀句子與短文" };
 const wcount = s => (String(s || "").match(/[A-Za-z]+(?:['’-][A-Za-z]+)*/g) || []).length;
 /* 選項順序平衡：每份題庫的單選正解輪流落在 A/B/C/D，其餘選項以題號為種子固定打散；
    解析裡的 (A)（B 錯）等字母會跟著換。舊紀錄（沒有 optv）仍用原始順序顯示。 */
@@ -353,7 +353,7 @@ function correctText(q) {
     case "spell": return q.ans;
     case "trans": case "rewrite": return q.ans.map(a => expand(a)[0]).filter((v, i, a) => a.indexOf(v) === i).slice(0, 2).join("／");
     case "essay": return "參考範文：" + q.model;
-    case "speak": return q.mode === "repeat" ? q.text : "參考回答：" + (q.model || "");
+    case "speak": return q.mode === "repeat" || q.mode === "g-repeat" || q.mode === "g-read" ? q.text : "參考回答：" + (q.model || "");
     case "cword": return q.ans;
     case "scramble": return q.frame ? bsFill(q, q.tiles) : q.ans;
     case "match": return q.left.map((l, i) => `${l} → ${q.right[i]}`).join("；");
@@ -370,7 +370,8 @@ function respText(q, a) {
     case "spell": return spellFull(q, r);
     case "trans": case "rewrite": return r || "（空白）";
     case "essay": return `${r.text || "（空白）"}（${wcount(r.text)} 字・${typeof r.level === "number" ? `${r.ai ? "AI 評分" : "自評"} ${r.level} / ${maxPts(q)} 分` : `自評${r.rate === "ok" ? "達到要求" : "還需加強"}`}）`;
-    case "speak": return typeof r.level === "number" ? `自評 ${r.level} / ${maxPts(q)} 分${a.resp.rec ? "（有錄音）" : ""}` : `自評${r.rate === "ok" ? "達到要求" : "還需加強"}`;
+    case "speak": if (q.gept && typeof r.level !== "number") return r.rec ? "已錄音（待批改）" : "沒有錄到音";
+      return typeof r.level === "number" ? `自評 ${r.level} / ${maxPts(q)} 分${a.resp.rec ? "（有錄音）" : ""}` : `自評${r.rate === "ok" ? "達到要求" : "還需加強"}`;
     case "cword": return r || "（空白）";
     case "scramble": { const all = q.tiles.concat(q.extra || []); return q.frame ? bsFill(q, r.map(i => all[i])) : (q.pre ? q.pre + " " : "") + r.map(i => all[i]).join(" ") + (q.post ? " " + q.post : ""); }
     case "match": return q.left.map((l, i) => `${l} → ${q.right[r[i]] ?? "?"}`).join("；");
@@ -631,8 +632,8 @@ function startTick() {
 }
 /* 總題數：適應性模擬卷還沒接上的第二階段也算進去，題數才不會中途突然變多 */
 function qTotal() { return S.qs.length + (S.adaptive || []).filter(p => !p.done).reduce((t, p) => t + Math.max(p.lower.length, p.upper.length), 0); }
-/* 補字母（Complete the Words）一段 10 格各算 1 題（照官方），但畫面上整段是一頁：回傳這一段的題號範圍 */
-function ctSpan(i) { const X = getQ(i); if (!X || !X.group || X.group.kind !== "ctest") return [i, i]; const idxs = groupIdx(X.group); return [Math.min(...idxs), Math.max(...idxs)]; }
+/* 補字母（Complete the Words）一段 10 格、英檢口說朗讀 5 句＋短文，照官方各算 1 題，但畫面上整段是一頁：回傳這一段的題號範圍 */
+function ctSpan(i) { const X = getQ(i); if (!X || !X.group || (X.group.kind !== "ctest" && X.group.kind !== "readaloud")) return [i, i]; const idxs = groupIdx(X.group); return [Math.min(...idxs), Math.max(...idxs)]; }
 function qbarHTML() {
   const last = ctSpan(S.idx)[1] === S.qs.length - 1 && !(typeof adaptPending === "function" && adaptPending());
   return `<button class="nav" data-act="prev" ${S.idx === 0 ? "disabled" : ""} aria-label="上一題">${I.chevL}<span>上一題</span></button>
@@ -667,6 +668,7 @@ function passageHTML(X, i) {
   let body = "";
   if (g.kind === "ctest") return ctestPassageHTML(X, i);
   if (g.kind === "listening") return listenGroupHTML(X, i);
+  if (g.kind === "readaloud") return "";   // 英檢朗讀：句子和短文在題目卡裡（geptspeak.js）
   if (g.kind === "cloze") {
     body = g.passage.map(p => `<p data-ctx>${p.split(/(\[\[\d\]\])/).map(seg => {
       const mm = /\[\[(\d)\]\]/.exec(seg); if (!mm) return wrapWords(seg, m);
@@ -834,6 +836,7 @@ function questionBody(X, i, a, review) {
 function feedbackHTML(X, a) {
   const q = X.q;
   if (q.type === "essay" && typeof isAiQ === "function" && isAiQ(q) && a.resp && a.resp.ai) return "";   // AI 批改結果在題目卡裡
+  if (q.type === "speak" && q.gept) return "";   // 英檢口說：狀態在題目卡裡（geptspeak.js）
   if (q.type === "speak" || q.type === "essay") { const p = ptsOf(q, X.bank, a), m = maxPts(q, X.bank);
     return `<div class="feedback ${a.correct ? "ok" : "no"}"><span class="fb-ic">${a.correct ? I.check : I.x}</span><div style="min-width:0"><b>自評 ${p} / ${m} 分</b><p>${esc(levelDesc(q, X.bank, p))}</p><p>${esc(q.exp || "")}</p></div></div>`; }
   const extra = (q.type === "trans" || q.type === "rewrite") && !a.correct ? diffHTML(q, a.resp) : "";
@@ -841,9 +844,9 @@ function feedbackHTML(X, a) {
   const self = canClaim ? `<div class="muted" style="font-size:13.5px;margin-top:10px">標準答案只列出常見寫法。如果你覺得自己的寫法也對：</div><button class="btn" data-act="claim" style="margin-top:6px">我覺得我寫的也對</button>`
     : a.claim ? `<div class="muted" style="font-size:13.5px;margin-top:8px">已反應給老師，這題先給你分數；老師批改後可能會調整。</div>` : "";
   return `<div class="feedback ${a.correct ? "ok" : "no"}"><span class="fb-ic">${a.correct ? I.check : I.x}</span><div style="min-width:0">
-  <b>${a.claim ? "已反應：我寫的也對" : a.self ? `自評 ${ptsOf(q, X.bank, a)} / ${maxPts(q, X.bank)} 分` : a.correct ? ["答對了！", "正確！", "漂亮！", "沒錯！"][Math.floor(Math.random() * 4)] : "答錯了"}</b>
+  <b>${a.aiSent && !a.claim && !a.self ? `AI 評分：${a.aiSent.score} / 2 分` : a.claim ? "已反應：我寫的也對" : a.self ? `自評 ${ptsOf(q, X.bank, a)} / ${maxPts(q, X.bank)} 分` : a.correct ? ["答對了！", "正確！", "漂亮！", "沒錯！"][Math.floor(Math.random() * 4)] : "答錯了"}</b>
   ${a.correct && !a.claim ? "" : `<p>正確答案：<b style="display:inline;color:var(--ink)">${esc(correctText(q))}</b></p>`}
-  <p>${esc(q.exp || "")}</p>${extra}${self}</div></div>`;
+  <p>${esc(q.exp || "")}</p>${typeof sentAiHTML === "function" ? sentAiHTML(X, a, S && S.work[S.idx]) : ""}${extra}${self}</div></div>`;
 }
 
 /* ---------- 作答動作 ---------- */
@@ -860,6 +863,7 @@ function commit(resp, el) {
   S.tipSeen = true; showHint = false;
   save();
   const sy = scrollY; render(); scrollTo(0, sy);
+  if (!correct && typeof isGeptSent === "function" && isGeptSent(X, S)) sentAiRun(S, i);   // 英檢單句寫作：系統判錯時請 AI 依官方 0／1／2 分再判
   const card = $("#qcard");
   if (correct) {
     sfxGood(S.combo);
@@ -1110,11 +1114,12 @@ function reviewItem(att, i) {
   body += `<dl class="kv"><dt>你的答案</dt><dd class="${a && a.correct ? "ans-ok" : "ans-no"}" style="${a && a.correct ? "" : "text-decoration:none"}">${esc(respText(q, a))}${a && a.claim ? "（學生反應：我寫的也對）" : ""}${a && (a.self || a.tmark || rubricOf(q, X.bank)) ? `（${a.tmark ? "老師評分" : a.resp && a.resp.ai ? "AI 評分" : a.self || q.type === "essay" || q.type === "speak" ? "自評" : "得分"} ${ptsOf(q, X.bank, a)} / ${maxPts(q, X.bank)}）` : ""}${a && a.hint ? ` <span class="tag">用了提示</span>` : ""}</dd>
   ${q.mail || (typeof isAiQ === "function" && isAiQ(q)) ? "" : `<dt>正確答案</dt><dd class="ans-ok">${esc(correctText(q))}</dd>`}
   ${q.type === "trans" || q.type === "rewrite" ? `<dt>可接受</dt><dd class="muted" style="font-size:14px">${q.ans.map(x => esc(x).replace(/\{([^}]*)\}/g, (m, g) => `[${g.split("|").map(s => s || "∅").join(" / ")}]`)).join("<br>")}</dd>` : ""}
+  ${a && a.aiSent && typeof sentAiHTML === "function" ? `<dt>AI 評分</dt><dd>${sentAiHTML(X, a, null)}</dd>` : ""}
   ${q.exp ? `<dt>解析</dt><dd>${esc(q.exp)}</dd>` : ""}
   ${q.hint ? `<dt>提示</dt><dd class="muted">${esc(q.hint)}</dd>` : ""}</dl>`;
   if ((q.type === "trans" || q.type === "rewrite") && a && !a.correct) body += diffHTML(q, a.resp);
   if (typeof isAiQ === "function" && isAiQ(q) && typeof aiReviewHTML === "function") body += aiReviewHTML(q, a, att, i);   // Email、AD：AI 批改結果、重寫、範文
-  if (q.type === "speak" && a && store.teacherCode) body += `<button class="btn" data-act="rec-fetch" data-att="${esc(att.id)}" data-i="${i}">${I.play}播放學生錄音</button>`;
+  if (q.type === "speak" && a && store.teacherCode) body += `<button class="btn" data-act="rec-fetch" data-att="${esc(att.id)}" data-i="${recIdx(att, i)}">${I.play}播放學生錄音</button>`;
   if (typeof gradeButtonsHTML === "function") body += gradeButtonsHTML(att, i);
   const autoOpen = animNext && att.regrade && att.regrade.some(c => c.i === i) && !(typeof isRemote === "function" && isRemote(att) && store.teacherCode);
   return `<details class="rv" id="rv-${i}" ${autoOpen ? "open" : ""}><summary><span class="st ${st}">${st === "ok" ? I.check : st === "no" ? I.x : "–"}</span><span class="tag">${i + 1}</span><span class="sum">${esc(sumText)}</span><span class="tag">${typeL}</span><span class="chev">${I.chevR.replace("<svg", '<svg width="16" height="16"')}</span></summary><div class="rv-body">${body}</div></details>`;

@@ -19,6 +19,14 @@ const RUBRICS = {
     [5, "一字不差地完整重複，發音清楚、節奏自然"], [4, "意思完整，只有一兩個小錯"],
     [3, "句子結構還在，但漏掉或改變了關鍵字"], [2, "漏掉大段內容，句子不完整"],
     [1, "只說出零星片段，或很難聽懂"], [0, "沒有回答，或內容無關"]] },
+  gp: { name: "英檢口說：發音、語調和流利度（官方 0～5 級分）", max: 5, pass: 4, levels: [
+    [5, "發音、語調正確、自然，表達流利，無礙溝通"], [4, "發音、語調大致正確、自然，雖然有錯但不妨礙了解；尚稱流利"],
+    [3, "發音、語調時有錯誤，但仍可理解；速度較慢、時有停頓，但仍可溝通"], [2, "發音、語調常有錯誤，影響理解；速度慢、時常停頓"],
+    [1, "發音、語調錯誤甚多，不當停頓甚多，難以理解"], [0, "未答或等同未答"]] },
+  gg: { name: "英檢口說：文法、字彙之正確性和適切性（官方 0～5 級分）", max: 5, pass: 4, levels: [
+    [5, "內容符合題目要求，能大致掌握基本語法及字彙"], [4, "內容大致符合要求，語法及字彙大致正確，但尚未能自在應用"],
+    [3, "內容多不可解，語法常有錯誤，字彙有限，阻礙表達"], [2, "內容難解，語法錯誤多，語句多呈片段，字彙不足"],
+    [1, "幾乎無句型語法可言，字彙嚴重不足，難以表達"], [0, "未答或等同未答"]] },
   ti: { name: "Take an Interview 評分（ETS 0～5 分）", max: 5, pass: 3, levels: [
     [5, "流暢清楚、語調自然；文法精準、用字豐富；回答完整有條理"], [4, "大致流暢清楚，偶有停頓或小錯；回答充分"],
     [3, "停頓較多但聽得懂；有些文法錯誤；回答切題但發展不足"], [2, "停頓頻繁、要費力聽；錯誤多；回答發展不足或組織不清"],
@@ -27,6 +35,7 @@ const RUBRICS = {
 function rubricOf(q, bank) {
   if (!q) return null;
   if (q.type === "essay") return RUBRICS[q.label ? "tw" : "ge"];
+  if (q.type === "speak" && q.gept) return RUBRICS[q.mode === "g-answer" ? "gg" : "gp"];   // 英檢初級口說（gept.org.tw 口說分數說明）
   if (q.type === "speak") return RUBRICS[q.mode === "repeat" ? "tr" : "ti"];
   if (q.type === "rewrite" || q.type === "trans") return RUBRICS.gs;
   if (q.type === "scramble" && !q.ctx && bank && /^gept/.test(bank.id)) return RUBRICS.gs;   // 英檢重組也是單句寫作
@@ -105,8 +114,9 @@ function applyMarks(att, marks) {
   Object.entries(att.ans || {}).forEach(([i, a]) => {
     const X = getQ(+i, att); if (!X) return;
     if (a.auto === undefined) { a.auto = a.correct; a.autoPts = ptsOf(X.q, X.bank, a); }
-    if (marks && i in marks && marks[i] !== null) {
-      const v = typeof marks[i] === "number" ? marks[i] : (marks[i] ? maxPts(X.q, X.bank) : 0);
+    const mk = marks && X.group && X.group.kind === "readaloud" ? recIdx(att, +i) : i;   // 英檢朗讀 6 題共用一個評分
+    if (marks && mk in marks && marks[mk] !== null) {
+      const v = typeof marks[mk] === "number" ? marks[mk] : (marks[mk] ? maxPts(X.q, X.bank) : 0);
       a.pts = v; a.correct = v >= passPts(X.q, X.bank); a.tmark = true;
       if (v !== a.autoPts) changes.push({ i: +i, from: a.autoPts, to: v });
     } else { a.correct = a.auto; a.pts = a.autoPts; delete a.tmark; }
@@ -116,4 +126,9 @@ function applyMarks(att, marks) {
   if ((att.qs || []).every((_, i) => getQ(i, att))) { const P = attPoints(att); att.score = P.s; att.total = P.t; }
   att.regrade = changes;
   return changes;
+}
+/* 英檢口說朗讀（5 句＋短文＝6 題）共用一段錄音：錄音、評分都記在這段的第一題 */
+function recIdx(att, i) {
+  const X = getQ(i, att); if (!X || !X.group || X.group.kind !== "readaloud") return i;
+  return (att.qs || []).findIndex((_, k) => { const y = getQ(k, att); return y && y.group === X.group; });
 }

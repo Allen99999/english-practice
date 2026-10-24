@@ -328,19 +328,21 @@ ES("e05","g7","請根據下面三格提示，寫一篇約 50 字的短文，描�
   ["kick","break","window","say sorry"],
   "Last Saturday, Kevin played soccer with his friends in the park. He kicked the ball too hard, and it flew into a house. It broke a window! Kevin was very scared, but he knocked on the door and said sorry to the owner. Then he helped clean up the broken glass. The owner was happy that Kevin was honest.",
   "照 1→2→3 的順序寫，用過去式。","重點：過去式（kicked, broke, said, helped）、用 and / but / then 連接；結尾可以寫心情或結果。"),
-ES("e06","g7","寫一篇約 50 字的短文，介紹你最好的朋友。請回答：他／她叫什麼名字？長什麼樣子？你們常一起做什麼？你為什麼喜歡他／她？",
-  null,["best friend","looks like","together","because"],
-  "My best friend is Amy. She is tall and has long black hair. We are in the same class, so we see each other every day. After school, we often go to the library together and do our homework. On weekends, we sometimes ride bikes in the park. I like her because she is funny and always helps me.",
-  "四個問題都要回答到，一般的事用現在簡單式。","重點：現在簡單式（is, has, go, ride）、頻率副詞（often, sometimes）、最後用 because 說原因。"),
+ES("e06","g7","請根據下面三格提示，寫一篇約 50 字的短文，描述 Lisa 和好朋友 Mia 之間發生的事。",
+    ["During P.E. class, Lisa falls down and hurts her leg.","Her best friend Mia helps her walk to the nurse's office.","The next day, Lisa gives Mia a thank-you card."],
+    ["fell down","hurt","nurse's office","thank-you card"],
+    "Last Monday, Lisa fell down during P.E. class and hurt her leg. It was very painful, and she couldn't walk well. Her best friend Mia helped her walk to the nurse's office. The next day, Lisa made a thank-you card and gave it to Mia. Mia was very happy. They are really good friends.",
+    "照 1→2→3 的順序寫，故事發生在過去。","重點：用過去式（fell, hurt, helped, gave）；用 The next day 交代時間，最後一句可以寫感想。"),
 ES("e07","g7","請根據下面三格提示，寫一篇約 50 字的短文，描述 Mia 的一天。",
   ["Mia sees a poster about a singing contest at school.","Mia practices singing at home every night.","Mia wins first prize at the contest and holds a trophy."],
   ["poster","contest","practice","win"],
   "One day, Mia saw a poster about a singing contest at school. She loves singing, so she decided to join it. Every night after dinner, she practiced singing at home for an hour. Her family listened and gave her advice. On the day of the contest, Mia sang very well. In the end, she won first prize. She was so happy!",
   "照圖的順序寫，故事用過去式。","重點：過去式（saw, practiced, sang, won）、用 so / In the end 把故事串起來。"),
-ES("e08","g7","寫一篇約 50 字的短文，描述你理想中的假日。請回答：你會去哪裡？和誰一起？做什麼？為什麼？",
-  null,["would like to","with","because","fun"],
-  "On my ideal holiday, I would like to go to Hualien with my family. In the morning, we would ride bikes along the beach and look at the blue sea. In the afternoon, we would visit Taroko Gorge and take a lot of pictures. At night, we would eat seafood together. I want to go there because it is beautiful and relaxing.",
-  "想像中的事可以用 would + 原形動詞。","重點：would + 原形動詞描述想像、按照時間順序（In the morning / afternoon / At night）寫。"),
+ES("e08","g7","請根據下面三格提示，寫一篇約 50 字的短文，描述 Kevin 一家人的花蓮之旅。",
+    ["Kevin and his parents take the train to Hualien.","They ride bikes along the beach and look at the blue sea.","Suddenly it starts to rain, so they go into a small cafe and drink hot chocolate."],
+    ["take the train","ride bikes","suddenly","hot chocolate"],
+    "Last summer, Kevin and his parents took the train to Hualien. They rode bikes along the beach and looked at the beautiful blue sea. Suddenly, it started to rain. They went into a small cafe and drank hot chocolate there. Kevin thought the trip was fun, and he wants to go to Hualien again.",
+    "照 1→2→3 的順序寫，用 suddenly / so 把事情接起來。","重點：用過去式（took, rode, started, drank）；第三格用 Suddenly 和 so 交代「下雨所以進咖啡店」的因果。"),
 
 /* ---------- 2026-10-24 新增：聽力一・看圖辨義（依官方題型：一張圖，題目與三個選項都用聽的；加入時鐘、標誌、數量、位置比較等生活應用題） ---------- */
 L("l113","l1",1,["What time does the clock show?"],["It's seven fifteen.","It's a quarter to eight.","It's eight forty-five."],1,"看長針和短針。","長針指 9、短針快到 8 → 7:45 = a quarter to eight（差十五分八點）。","A round wall clock showing a quarter to eight: the hour hand is almost at 8 and the minute hand points at 9. The clock hangs on a plain wall."),
@@ -375,6 +377,6 @@ L("l425","l4",4,["Our school's sports day is next Wednesday. In the morning, the
 );
 listenImages(b);
 /* 新的看圖寫作題插圖 */
-Object.assign(GEPT_IMAGES, { e05: "img/gept-e05.png", e07: "img/gept-e07.png" });
+Object.assign(GEPT_IMAGES, { e05: "img/gept-e05.png", e06: "img/gept-e06.png", e07: "img/gept-e07.png", e08: "img/gept-e08.png" });
 b.items.forEach(it => { if (GEPT_IMAGES[it.id]) it.img = GEPT_IMAGES[it.id]; });
 })();

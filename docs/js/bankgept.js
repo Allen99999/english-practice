@@ -1,6 +1,6 @@
 /* ===== 全民英檢 初級（閱讀＋寫作，原創模擬題） ===== */
 const RW = (id, tag, src, instr, start, ans, hint, exp) => ({ id, type: "rewrite", tag, src, instr, start, ans: [].concat(ans), hint, exp });
-const ES = (id, tag, prompt, scenes, keywords, model, hint, exp) => ({ id, type: "essay", tag, prompt, scenes, keywords, model, hint, exp });
+const ES = (id, tag, prompt, scenes, keywords, model, hint, exp) => ({ id, type: "essay", tag, prompt, scenes, keywords, model, hint, exp, gept: true });   // gept：段落寫作用 AI 批改（aigrade.js）
 BANKS.push({
   id: "gept-e", grade: 10, tagIsType: true,
   title: "全民英檢 初級",
@@ -245,22 +245,24 @@ BANKS.push({
     ["woke up","alarm clock","in a hurry","bus stop","Saturday"],
     "Last Saturday morning, Ben woke up at 7:30. His alarm clock didn't ring, so he was very worried. He got dressed quickly and ran to the bus stop without eating breakfast. When he got to school, the gate was closed and nobody was there. Then he remembered that it was Saturday! He laughed and went home.",
     "照 1→2→3 的順序寫，故事發生在過去，用過去式。","重點：用過去式（woke, ran, got）、照圖的順序寫、用 so / when / then 把句子連起來。"),
-  ES("e02","g7","寫一篇約 50 字的短文，介紹你最喜歡的節日。請回答：是哪個節日？你通常和誰一起過？你們會做什麼？你為什麼喜歡它？",
-    null,["Lunar New Year","family","red envelopes","because"],
-    "My favorite holiday is Lunar New Year. Every year, my family goes back to my grandparents' house in Tainan. We clean the house, eat a big dinner together, and give each other red envelopes. At night, my cousins and I play games and watch fireworks. I like this holiday because I can spend time with my whole family.",
-    "四個問題各寫一到兩句，最後用 because 說明原因。","重點：習慣的事用現在簡單式（goes, eat, play）；四個問題都要回答到。"),
+  ES("e02","g7","請根據下面三格提示，寫一篇約 50 字的短文，描述 Amy 一家人怎麼過農曆新年。",
+    ["The day before Lunar New Year, Amy and her family clean the house.","On New Year's Eve, they eat a big dinner together at Grandma's house.","After dinner, Grandma gives Amy a red envelope, and they watch fireworks."],
+    ["clean the house","New Year's Eve","red envelope","fireworks"],
+    "The day before Lunar New Year, Amy and her family cleaned the house together. On New Year's Eve, they went to Grandma's house and ate a big dinner. After dinner, Grandma gave Amy a red envelope, and Amy said, \"Thank you!\" Then they went outside and watched beautiful fireworks. Amy had a wonderful New Year.",
+    "照 1→2→3 的順序寫；已經發生的事用過去式。","重點：用過去式（cleaned, ate, gave, watched）、照圖的順序寫，用 On New Year's Eve / After dinner / Then 交代時間。"),
   ES("e03","g7","請根據下面三格提示，寫一篇約 50 字的短文。",
     ["Amy sees an old woman carrying two heavy bags on the street.","Amy helps her carry the bags across the street.","The woman gives Amy an apple and says thank you."],
     ["heavy","help","across the street","thank"],
     "Yesterday afternoon, Amy was walking home from school. She saw an old woman carrying two heavy bags on the street. The woman looked very tired, so Amy went to help her. She carried the bags and walked across the street with her. The woman was very happy. She gave Amy an apple and said, \"Thank you, kind girl!\"",
     "寫出誰、在哪裡、發生什麼事、結果如何。","重點：過去式敘述、用 so 說明 Amy 為什麼幫忙、結尾可以用引號寫出對話。"),
-  ES("e04","g7","寫一篇約 50 字的短文，描述你上個週末做了什麼。請回答：你去了哪裡？和誰一起？做了什麼？感覺如何？",
-    null,["last weekend","went","with","felt"],
-    "Last weekend, I went to Kenting with my family. On Saturday, we swam in the sea and walked on the beach. The weather was sunny and hot. In the evening, we ate seafood at a night market. On Sunday, we visited a museum and then drove home. I felt tired, but I had a wonderful time.",
-    "上週末是過去，動詞都要用過去式。","重點：全部用過去式（went, swam, ate, felt）；按照時間順序寫；用 but 表達感受的轉折。")
+  ES("e04","g7","請根據下面三格提示，寫一篇約 50 字的短文，描述 Tom 上個週末做了哪些事。",
+    ["Saturday morning: Tom helps his dad wash the car.","Saturday afternoon: Tom and his friend read books at the library.","Sunday evening: Tom cooks noodles for his family."],
+    ["wash the car","library","cook","noodles"],
+    "Last weekend, Tom was very busy. On Saturday morning, he helped his dad wash the car. In the afternoon, he went to the library with his friend, and they read some comic books there. On Sunday evening, Tom cooked noodles for his family. Everyone said the noodles were delicious, so Tom was very happy.",
+    "三格圖各寫一到兩句，用過去式。","重點：上個週末＝過去式（helped, went, cooked）；用 On Saturday morning / In the afternoon / On Sunday evening 交代時間順序。")
   ]
 });
 
 /* 看圖寫作的插圖（docs/img/ 裡的檔案；找不到圖片時網站會自動隱藏） */
-const GEPT_IMAGES = { e01: "img/gept-e01.png", e03: "img/gept-e03.png" };
+const GEPT_IMAGES = { e01: "img/gept-e01.png", e02: "img/gept-e02.png", e03: "img/gept-e03.png", e04: "img/gept-e04.png" };
 bank("gept-e").items.forEach(it => { if (GEPT_IMAGES[it.id]) it.img = GEPT_IMAGES[it.id]; });
