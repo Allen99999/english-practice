@@ -103,7 +103,7 @@ function gsRec(G, secs) {
     mr.onstop = () => {
       clearInterval(G.timer);
       G.blob = new Blob(chunks, { type: mr.mimeType || "audio/mp4" }); G.url = URL.createObjectURL(G.blob); G.phase = "done";
-      if (gsMock()) { gsSave(G, null); if (!G.aborted) gsNext(G); }
+      if (gsMock()) { gsSave(G, null); if (!G.aborted) gsNext(G); else gsRender(); }
       else { gsRelease(); if (!G.aborted) gsRender(); }
     };
     mr.start();
@@ -118,7 +118,7 @@ function gsAbort(G) {
 }
 /* 存答案：朗讀的 6 題一起存；錄音記在第一題（rec_<作答id>_<第一題>） */
 function gsSave(G, level) {
-  const [a, b] = ctSpan(G.i), rec = !!(G.blob && G.blob.size > 1000), resp = level === null ? { rec } : { level, rec };
+  const [a, b] = ctSpan(G.i), rec = !!(G.blob && G.blob.size > 200), resp = level === null ? { rec } : { level, rec };
   for (let k = a; k <= b; k++) {
     const X = getQ(k), ans = { resp, correct: grade(X.q, resp), hint: false, t: Math.round(S.elapsed) };
     ans.max = maxPts(X.q, X.bank); ans.pts = ptsOf(X.q, X.bank, ans); ans.sys = ans.correct; S.ans[k] = ans;

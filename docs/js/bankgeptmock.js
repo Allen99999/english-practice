@@ -1,22 +1,24 @@
 /* ===== 全民英檢 初級：正式考模擬卷（原創，題型、題數、順序照正式考試）
-   初試＝聽力 30 題（約 20 分鐘）＋閱讀 30 題（35 分鐘）；複試寫作＝單句寫作 15 題＋段落寫作 1 題（40 分鐘）
+   初試＝聽力 30 題（約 20 分鐘）＋閱讀 30 題（35 分鐘）；複試寫作＝單句寫作 15 題＋段落寫作 1 題（40 分鐘）；
+   複試口說＝複誦 5＋朗讀句子與短文 6（5 句＋1 篇短文）＋回答問題 7，共 18 題、約 10 分鐘（照官方流程自動進行，見 geptspeak.js）
    每份是固定的一整卷（fixed），聽讀部分用正式考模式（blind：不顯示對錯、聽力只播一遍） ===== */
 const GEPT_MOCK_TAGS = {
   l1: "聽力一・看圖辨義", l2: "聽力二・問答", l3: "聽力三・簡短對話", l4: "聽力四・短文聽解",
   r1: "閱讀一・詞彙", r2: "閱讀二・段落填空", r3: "閱讀三・閱讀理解",
-  w1: "寫作一・句子改寫", w2: "寫作一・句子合併", w3: "寫作一・重組", w4: "寫作二・段落寫作"
+  w1: "寫作一・句子改寫", w2: "寫作一・句子合併", w3: "寫作一・重組", w4: "寫作二・段落寫作",
+  s1: "口說一・複誦", s2: "口說二・朗讀句子與短文", s3: "口說三・回答問題"
 };
 function geptMock(n, items) {
-  const LR = ["l1", "l2", "l3", "l4", "r1", "r2", "r3"], W = ["w1", "w2", "w3", "w4"];
+  const LR = ["l1", "l2", "l3", "l4", "r1", "r2", "r3"], W = ["w1", "w2", "w3", "w4"], SP = ["s1", "s2", "s3"];
   const b = {
     id: "gept-m" + n, grade: 11, fixed: true, blind: LR, hidden: true,   // 不單獨列在首頁：在「全民英檢 初級」的模擬段考裡選
     title: "全民英檢初級・模擬卷 " + n,
-    range: "初試 聽力 30＋閱讀 30・複試 寫作 16",
+    range: "初試 聽力 30＋閱讀 30・複試 寫作 16＋口說 18",
     added: "2026-10-17",
     note: "",
-    exams: [{ name: "初試：聽力＋閱讀（55 分鐘）", tags: LR }, { name: "複試：寫作（40 分鐘）", tags: W }],
+    exams: [{ name: "初試：聽力＋閱讀（55 分鐘）", tags: LR }, { name: "複試：寫作（40 分鐘）", tags: W }, { name: "複試：口說（約 10 分鐘）", tags: SP }],
     timeLimits: [[["l1", "l2", "l3", "l4"], 20], [["r1", "r2", "r3"], 35], [W, 40]],
-    partNotes: ["聽力 30 題（看圖辨義、問答、簡短對話、短文聽解）＋閱讀 30 題，照正式考試順序計時 55 分鐘。", "單句寫作 15 題（改寫、合併、重組）＋段落寫作 1 題，計時 40 分鐘。"],
+    partNotes: ["聽力 30 題（看圖辨義、問答、簡短對話、短文聽解）＋閱讀 30 題，照正式考試順序計時 55 分鐘。", "單句寫作 15 題（改寫、合併、重組）＋段落寫作 1 題，計時 40 分鐘。", "複誦 5 題、朗讀句子與短文 6 題、回答問題 7 題，照正式考試流程一路自動進行（題目播兩次、嗶聲後錄音、不能重聽或重錄），錄音上傳給老師批改。"],
     tags: GEPT_MOCK_TAGS,
     items
   };
@@ -421,3 +423,56 @@ ES("w16","w4","請根據下面三格提示，寫一篇約 50 字的短文，描�
   "Last Sunday, Ben and Amy had a picnic in the park. The weather was sunny, and they brought sandwiches and juice. Suddenly, dark clouds came and it started to rain heavily. They picked up their food and ran to a small shelter. They were wet, but they laughed and ate their sandwiches there. It was a funny day.",
   "照 1→2→3 的順序寫，用過去式。","重點：過去式（had, started, ran, ate）、用 Suddenly / but 表現轉折。")
 ]);
+
+/* ================= 複試口說（三份模擬卷，各 18 題：複誦 5＋朗讀 5 句與短文＋回答問題 7） ================= */
+bank("gept-m1").items.push(
+GS1("sr01","s1","Excuse me, is this the way to the zoo?"),
+GS1("sr02","s1","My cousin works at a bank in Taipei."),
+GS1("sr03","s1","Please don't park your scooter here."),
+GS1("sr04","s1","We usually have dinner at around seven."),
+GS1("sr05","s1","How was your trip to Kenting?"),
+GS2("sa01","s2",["Where can I buy a bus ticket?","Is your brother good at playing the guitar?","The store is open from 10 a.m. to 9 p.m.","Please hand in your report by Friday.","What a wonderful idea!"],
+  "Jack has a part-time job at a fruit shop. He works there every Saturday and Sunday. He helps the owner carry boxes and sell fruit to customers. The job is hard, and his arms are often sore at night. But Jack is happy because he is saving money to buy a new bike.",
+  "a.m.、p.m. 逐字母唸；guitar 重音在第二音節（gui-TAR）；customers 重音在第一音節。"),
+GS3("sq01","s3","Where do you live? Do you like your neighborhood?","I live in Banqiao, New Taipei City. Yes, I like it because there are many shops and a big park near my home."),
+GS3("sq02","s3","Who cooks dinner in your family?","My mother usually cooks dinner. On weekends, my father sometimes cooks noodles for us."),
+GS3("sq03","s3","What do you usually do on Sunday mornings?","I usually sleep late on Sunday mornings. After breakfast, I play basketball with my friends."),
+GS3("sq04","s3","What is your favorite holiday? Why?","My favorite holiday is the Moon Festival because my family has a barbecue and we eat moon cakes together."),
+GS3("sq05","s3","How often do you exercise?","I exercise three times a week. I usually go jogging in the park after school."),
+GS3("sq06","s3","What did you do yesterday evening?","Yesterday evening I did my homework and watched TV with my family. I went to bed at ten thirty."),
+GS3("sq07","s3","Your classmate wants to borrow your notebook, but you need it tonight. What would you say?","Sorry, I need my notebook tonight because I have to study for the test. I can lend it to you tomorrow morning.")
+);
+bank("gept-m2").items.push(
+GS1("sr01","s1","Could you speak a little more slowly, please?"),
+GS1("sr02","s1","There's a big supermarket across from my school."),
+GS1("sr03","s1","My sister is afraid of big dogs."),
+GS1("sr04","s1","Let's take a taxi. We're going to be late."),
+GS1("sr05","s1","What did you buy for your mother?"),
+GS2("sa01","s2",["Why didn't you answer my phone call?","Can you show me how to use this machine?","There are 365 days in a year.","Put the milk in the fridge, please.","How cute your little cat is!"],
+  "Sandy loves taking pictures. She got her first camera when she was ten years old. Now she takes pictures of flowers, birds, and people in the street. Last month, one of her pictures won first prize in a city contest. Sandy hopes to become a famous photographer one day.",
+  "365 唸 three hundred (and) sixty-five；machine 重音在第二音節（ma-CHINE）；photographer 重音在第二音節（pho-TOG-ra-pher）。"),
+GS3("sq01","s3","How do you usually get to school?","I usually walk to school with my neighbor. It takes about fifteen minutes."),
+GS3("sq02","s3","What do you like to do with your friends?","I like to play video games and go to the movies with my friends. We also like to eat at the night market."),
+GS3("sq03","s3","What is your favorite place in your city? Why?","My favorite place is the riverside park. I can ride my bike there and watch the sunset."),
+GS3("sq04","s3","What kind of TV programs do you like to watch?","I like to watch cooking shows because I can learn how to make delicious food."),
+GS3("sq05","s3","When was the last time you went to a restaurant? What did you eat?","I went to a Japanese restaurant last Friday with my family. I ate sushi and some hot soup."),
+GS3("sq06","s3","What do you want to do during your next vacation?","During my next vacation, I want to go camping in the mountains with my family."),
+GS3("sq07","s3","You are at a restaurant, and your soup is cold. What would you say to the waiter?","Excuse me. My soup is cold. Could you please bring me a hot one? Thank you.")
+);
+bank("gept-m3").items.push(
+GS1("sr01","s1","Do you know when the library opens?"),
+GS1("sr02","s1","I've lost my wallet. I can't find it anywhere."),
+GS1("sr03","s1","It's too hot to play outside today."),
+GS1("sr04","s1","My grandfather walks in the park every morning."),
+GS1("sr05","s1","Can you tell me the way to City Hall?"),
+GS2("sa01","s2",["How much does this backpack cost?","Have you seen my blue jacket?","The meeting will start at 2:30 this afternoon.","Please turn down the music.","What a long line!"],
+  "Every year, many people visit Sun Moon Lake in central Taiwan. Some visitors ride bikes around the lake, and others take a boat across the water. Near the lake, there are many small shops that sell tea and local food. In the evening, people like to watch the sunset over the mountains.",
+  "2:30 唸 two thirty；Sun Moon Lake 三個字都要清楚；visitors 重音在第一音節。"),
+GS3("sq01","s3","What is your best friend like?","My best friend is very funny and friendly. She always makes me laugh when I'm sad."),
+GS3("sq02","s3","What do you usually do when you have free time?","When I have free time, I usually read comic books or listen to music in my room."),
+GS3("sq03","s3","Do you like rainy days? Why or why not?","No, I don't. On rainy days I can't play outside, and my shoes always get wet."),
+GS3("sq04","s3","What is something you are good at?","I'm good at drawing. I often draw pictures of animals, and my teacher says they look real."),
+GS3("sq05","s3","What do you usually do on your birthday?","On my birthday, my family eats a big cake with me, and my parents usually give me a gift."),
+GS3("sq06","s3","Where would you like to travel in the future? Why?","I would like to travel to Korea because I love Korean food and Korean dramas."),
+GS3("sq07","s3","Your friend is sad because he did badly on a test. What would you say to him?","Don't be sad. It's just one test. Let's study together next time, and I'm sure you'll do better.")
+);

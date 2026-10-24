@@ -635,11 +635,12 @@ function qTotal() { return S.qs.length + (S.adaptive || []).filter(p => !p.done)
 /* 補字母（Complete the Words）一段 10 格、英檢口說朗讀 5 句＋短文，照官方各算 1 題，但畫面上整段是一頁：回傳這一段的題號範圍 */
 function ctSpan(i) { const X = getQ(i); if (!X || !X.group || (X.group.kind !== "ctest" && X.group.kind !== "readaloud")) return [i, i]; const idxs = groupIdx(X.group); return [Math.min(...idxs), Math.max(...idxs)]; }
 function qbarHTML() {
+  const bare = S.blind || (S.mock && getQ(S.idx).q.gept);   // 正式考模式、英檢口說模擬卷：不顯示提示、生字
   const last = ctSpan(S.idx)[1] === S.qs.length - 1 && !(typeof adaptPending === "function" && adaptPending());
   return `<button class="nav" data-act="prev" ${S.idx === 0 ? "disabled" : ""} aria-label="上一題">${I.chevL}<span>上一題</span></button>
-  ${S.blind ? "" : `<button class="tb ${showHint ? "on" : ""}" data-act="hint">${I.bulb}提示</button>`}
+  ${bare ? "" : `<button class="tb ${showHint ? "on" : ""}" data-act="hint">${I.bulb}提示</button>`}
   <button class="tb" data-act="grid">${I.grid}題號</button>
-  ${S.blind ? "" : `<button class="tb ${wordMode ? "on" : ""}" data-act="wordmode">${I.aa}生字</button>`}
+  ${bare ? "" : `<button class="tb ${wordMode ? "on" : ""}" data-act="wordmode">${I.aa}生字</button>`}
   <button class="nav next" data-act="${last ? "finish" : "next"}"><span>${last ? "交卷" : "下一題"}</span>${last ? I.flag : I.chevR}</button>`;
 }
 function quizHTML() {
@@ -659,7 +660,7 @@ function quizHTML() {
     ${questionBody(X, i, a, false)}
     ${showHint && !a ? `<div class="hintbox">${I.bulb}<div>${esc(q.hint || "這題沒有提示")}</div></div>` : ""}
     ${a ? feedbackHTML(X, a) : ""}
-    ${i === 0 && !a && !S.tipSeen && !S.blind ? `<div class="muted" style="font-size:13.5px">小技巧：題目裡不會的字直接點一下就會加入生字表；選項裡的字請先打開下方「生字」。選項右邊的圓圈斜線按鈕可以先劃掉不要的答案。</div>` : ""}
+    ${i === 0 && !a && !S.tipSeen && !S.blind && q.type !== "speak" ? `<div class="muted" style="font-size:13.5px">小技巧：題目裡不會的字直接點一下就會加入生字表；選項裡的字請先打開下方「生字」。選項右邊的圓圈斜線按鈕可以先劃掉不要的答案。</div>` : ""}
   </div></div></section>`;
   return h;
 }

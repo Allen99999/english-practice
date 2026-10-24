@@ -380,3 +380,113 @@ listenImages(b);
 Object.assign(GEPT_IMAGES, { e05: "img/gept-e05.png", e06: "img/gept-e06.png", e07: "img/gept-e07.png", e08: "img/gept-e08.png" });
 b.items.forEach(it => { if (GEPT_IMAGES[it.id]) it.img = GEPT_IMAGES[it.id]; });
 })();
+
+/* ===== 全民英檢 初級：口說練習（原創，照 LTTC 官方題型；作答畫面在 geptspeak.js）
+   口說一・複誦（播兩次後跟著唸）、口說二・朗讀句子與短文（5 句＋短文＝6 題，看 1 分鐘、唸 1 分鐘）、口說三・回答問題（播兩次、答 15 秒） ===== */
+(() => {
+const b = bank("gept-e");
+b.range = "GEPT Elementary 聽力＋閱讀＋寫作＋口說";
+b.note = "依 2021 年起的新題型自編練習題：聽力＝看圖辨義、問答、簡短對話、短文聽解；閱讀＝詞彙、段落填空、閱讀理解；寫作＝句子改寫、句子合併、重組、段落寫作；口說＝複誦、朗讀句子與短文、回答問題。選「模擬段考」可以考三份照正式考試題數和時間出的完整考卷。";
+Object.assign(b.tags, { s1: "口說一・複誦", s2: "口說二・朗讀句子與短文", s3: "口說三・回答問題" });
+b.exams.push({ name: "口說測驗", tags: ["s1", "s2", "s3"] });
+b.mock.push(["s1", 5], ["s2", 1], ["s3", 7]);
+b.items.push(
+
+/* ---------- 口說一・複誦 ---------- */
+GS1("sr01","s1","Could you tell me where the post office is?"),
+GS1("sr02","s1","I usually take the bus to school."),
+GS1("sr03","s1","Don't forget to bring your umbrella tomorrow."),
+GS1("sr04","s1","My brother is two years older than me."),
+GS1("sr05","s1","What time does the next train leave?"),
+GS1("sr06","s1","We had a great time at the beach last weekend."),
+GS1("sr07","s1","Please turn off the lights when you leave."),
+GS1("sr08","s1","How much are these red apples?"),
+GS1("sr09","s1","She has been learning the piano since she was six."),
+GS1("sr10","s1","It's going to rain this afternoon."),
+GS1("sr11","s1","Would you like to come to my birthday party?"),
+GS1("sr12","s1","The library is closed on Mondays."),
+GS1("sr13","s1","I'm sorry, but I can't hear you very well."),
+GS1("sr14","s1","Mr. Chen teaches math at our school."),
+GS1("sr15","s1","Let's meet in front of the museum at ten."),
+GS1("sr16","s1","Is there a convenience store near your house?"),
+GS1("sr17","s1","My favorite season is fall because it's cool."),
+GS1("sr18","s1","You should drink more water when it's hot."),
+GS1("sr19","s1","How long have you lived in Kaohsiung?"),
+GS1("sr20","s1","The movie was so funny that we laughed a lot."),
+GS1("sr21","s1","Can I try on this jacket, please?"),
+GS1("sr22","s1","Turn right at the corner, and you'll see the bank."),
+GS1("sr23","s1","We're going to visit our grandparents this Sunday."),
+GS1("sr24","s1","Which do you like better, tea or coffee?"),
+GS1("sr25","s1","Remember to wash your hands before dinner."),
+
+/* ---------- 口說二・朗讀句子與短文（疑問句、數字與時間、祈使句、感嘆句＋約 50 字短文） ---------- */
+GS2("sa01","s2",["Where did you put my keys?","Is this seat taken?","The concert starts at 7:30 tonight.","Please write your name on the first line.","What a beautiful day it is!"],
+  "Kevin lives with his parents and his little sister in Taichung. Every Saturday morning, the whole family goes to the market near their home. Kevin's father buys fruit and vegetables, and his mother buys fresh fish. Kevin and his sister like to buy hot soy milk. After that, they all walk home together.",
+  "Wh- 問句句尾語調下降，Yes/No 問句上揚；時間 7:30 唸 seven thirty；感嘆句要唸出語氣。短文注意 Saturday、vegetables 的重音。"),
+GS2("sa02","s2",["How many students are there in your class?","Do you know when the store opens?","This shirt costs 350 dollars.","Turn left at the second traffic light.","Don't be late for the meeting."],
+  "Lisa wanted to give her mother a special gift for Mother's Day. She did not have much money, so she decided to make a card by herself. She drew some flowers on it and wrote a short letter inside. When her mother read the card, she smiled and gave Lisa a big hug.",
+  "350 唸 three hundred (and) fifty；Do you know when... 是 Yes/No 問句，句尾上揚。短文的過去式 -ed（wanted、decided、smiled）要唸清楚。"),
+GS2("sa03","s2",["Who is the tall boy next to the door?","Can you help me carry these boxes?","There are 30 days in September.","Take this medicine three times a day.","What an interesting story!"],
+  "Last Sunday, Tom and his friends went hiking on a mountain near the city. The weather was sunny in the morning, but it started to rain after lunch. Luckily, Tom had brought a raincoat. They waited in a small tea house until the rain stopped. Then they walked down the mountain happily.",
+  "medicine 重音在第一音節（MED-i-cine）；interesting 唸 IN-ter-est-ing。短文 but 前後語氣要有轉折。"),
+GS2("sa04","s2",["Why are you still awake?","Have you ever been to Japan?","The museum is open from 9 a.m. to 5 p.m.","Please keep quiet in the library.","How fast that dog runs!"],
+  "Ms. Wang is a nurse at a hospital in Tainan. She works very hard and often has to work at night. She takes care of sick people and always talks to them kindly. Sometimes she feels tired, but she loves her job because she can help others every day.",
+  "a.m.、p.m. 一個字母一個字母唸；museum 重音在第二音節（mu-SE-um）。短文 has to 唸 /hæs tə/。"),
+GS2("sa05","s2",["When is your sister's birthday?","Would you like some more tea?","My school is about 2 kilometers from my home.","Close the window before you go out.","What a big surprise!"],
+  "Andy's family has a dog named Lucky. Lucky is three years old and loves to play with a ball. Every evening after dinner, Andy takes Lucky for a walk in the park. Lucky always runs to the other dogs and wants to make friends with them. Andy thinks Lucky is the best dog in the world.",
+  "Would you 常連音成 /wʊdʒu/；kilometers 重音可在第一或第二音節。短文 named 的 -ed 唸 /d/。"),
+GS2("sa06","s2",["Which bus goes to the train station?","Is it going to snow tonight?","The tickets are 250 dollars each.","Wait for me at the bus stop.","How kind you are!"],
+  "There is a new bookstore near Mia's school. It is small, but it has many interesting books and a little coffee shop inside. Students can read books there for free after school. Mia often goes there with her best friend on Fridays. They like to read comic books and drink hot chocolate.",
+  "250 唸 two hundred (and) fifty；chocolate 通常唸兩個音節 /ˈtʃɔklət/。"),
+GS2("sa07","s2",["How often do you go swimming?","Did you finish your homework?","The train to Hualien leaves at 8:40.","Please put your bag under the seat.","What a delicious cake!"],
+  "Every summer, the students at Green Hill Junior High School clean the beach near their school. They pick up bottles, plastic bags, and other trash. Last year, they collected more than two hundred bags of trash in one morning. The students feel proud because they can help keep the beach clean and beautiful.",
+  "8:40 唸 eight forty；delicious 重音在第二音節（de-LI-cious）。列舉 bottles, plastic bags, and other trash 時前面上揚、最後下降。"),
+GS2("sa08","s2",["Whose umbrella is this?","Are you free this Saturday afternoon?","Our English class begins on September 1.","Don't touch the paintings, please.","How lucky we are!"],
+  "Ben is learning how to cook. Last weekend, he made fried rice for his family for the first time. He used eggs, ham, and some vegetables. The fried rice was a little too salty, but everyone ate it all. His father said it was a good start. Now Ben wants to try making noodles.",
+  "日期 September 1 唸 September first；umbrella 重音在第二音節（um-BREL-la）。"),
+GS2("sa09","s2",["What are you going to do this summer?","Can I borrow your dictionary for a minute?","The temperature today is 33 degrees.","Please call me when you get home.","What a terrible mistake!"],
+  "Grace moved to a new city last month. At first, she felt lonely because she didn't know anyone. Then she joined the basketball team at her new school. The other players were friendly and helped her a lot. Now Grace has many new friends, and she likes her new life very much.",
+  "temperature 唸 /ˈtɛmprətʃɚ/；33 唸 thirty-three。短文 moved、joined 的 -ed 唸 /d/，helped 唸 /t/。"),
+GS2("sa10","s2",["How long does it take to get to the airport?","Does this bus stop at City Hall?","I was born on May 12, 2012.","Be careful when you cross the street.","How tall that building is!"],
+  "Mr. and Mrs. Lin opened a small breakfast shop ten years ago. They get up at four every morning to make sandwiches, egg pancakes, and soy milk. Many students and workers stop by on their way to school or work. The shop is always busy, but Mr. and Mrs. Lin never stop smiling.",
+  "May 12, 2012 唸 May twelfth, twenty twelve（或 two thousand twelve）。breakfast 唸 /ˈbrɛkfəst/。"),
+
+/* ---------- 口說三・回答問題（自己與家人、學校、休閒、購物飲食與問路、天氣旅遊與節日；每主題最後一題是情境題） ---------- */
+GS3("sq01","s3","Please tell me something about yourself.","My name is Amy Lin, and I'm fourteen years old. I'm a junior high school student. I like reading and playing badminton.","說名字、年齡、身分，再加一個興趣，15 秒就夠了。"),
+GS3("sq02","s3","How many people are there in your family?","There are four people in my family: my parents, my younger brother, and me. My father is an engineer, and my mother is a teacher.","先說人數，再補充是誰、做什麼工作。"),
+GS3("sq03","s3","Who do you look like more, your father or your mother?","I look more like my mother. We both have big eyes and short black hair.","look like 長得像；用 We both... 說出相同的地方。"),
+GS3("sq04","s3","What do you usually do after school?","I usually go to cram school after school. When I get home, I have dinner and do my homework.","usually 搭配現在簡單式；可以用 When I get home... 多說一句。"),
+GS3("sq05","s3","What time do you usually go to bed? Why?","I usually go to bed at about eleven. I have a lot of homework, so I can't sleep earlier.","問 Why 時要說理由：because／so。"),
+GS3("sq06","s3","Do you help with the housework at home? What do you do?","Yes, I do. I wash the dishes after dinner and take out the trash every day.","先回答 Yes／No，再說做哪些家事。"),
+GS3("sq07","s3","Your classmate is sick and can't come to school today. What would you say to him on the phone?","Hi, Tom. I'm sorry to hear you're sick. Take some medicine and get some rest. I'll bring you the homework later.","情境題：直接說出你會講的話（I'm sorry to hear...、Take care...）。"),
+GS3("sq08","s3","How do you go to school every day?","I go to school by bus. It takes about twenty minutes.","by bus／on foot；可以補充花多少時間（It takes...）。"),
+GS3("sq09","s3","What's your favorite subject? Why?","My favorite subject is English because I like watching American movies. My English teacher is also very funny.","說科目＋because 理由。"),
+GS3("sq10","s3","Tell me about your best friend at school.","My best friend is Jenny. She is kind and funny, and she always helps me with math.","說名字、個性（kind、funny），再舉一件事。"),
+GS3("sq11","s3","What do you usually eat for lunch at school?","I usually eat a lunch box from home. My mother cooks rice, vegetables, and some meat for me.","用現在簡單式說習慣。"),
+GS3("sq12","s3","Are you in any school clubs? Which club are you in?","Yes. I'm in the basketball club. We practice twice a week after school.","說社團名稱和活動時間（twice a week）。"),
+GS3("sq13","s3","What do you want to be in the future? Why?","I want to be a doctor in the future because I want to help sick people.","I want to be a/an + 職業 + because...。"),
+GS3("sq14","s3","You forgot to bring your textbook to class. What would you say to your teacher?","I'm sorry, Ms. Lee. I forgot to bring my textbook today. Can I share with my classmate?","先道歉，再說明並提出解決方法。"),
+GS3("sq15","s3","What do you like to do on weekends?","I like to go hiking with my family on weekends. Sometimes I stay home and watch movies.","like to + 動詞原形；用 Sometimes... 多說一個活動。"),
+GS3("sq16","s3","What kind of music do you like?","I like pop music. My favorite singer is Jay Chou, and I often listen to his songs on the way to school.","說喜歡的類型，再說歌手或什麼時候聽。"),
+GS3("sq17","s3","Do you like sports? What sport do you play?","Yes, I love sports. I play badminton with my friends every Sunday morning.","play + 球類運動（不加 the）。"),
+GS3("sq18","s3","What was the last movie you saw? Did you like it?","The last movie I saw was a cartoon about a brave little fish. I liked it very much because it was funny and touching.","問過去的事要用過去式（saw、liked、was）。"),
+GS3("sq19","s3","Which do you like better, cats or dogs? Why?","I like dogs better because they are friendly and they love to play with people.","二選一：I like ... better because...。"),
+GS3("sq20","s3","How do you usually spend your summer vacation?","I usually visit my grandparents in the countryside. I also go swimming and read some books.","spend + 時間；說兩三件事。"),
+GS3("sq21","s3","Your friend invites you to go to the movies, but you have to study. What would you say?","Thanks for asking, but I'm sorry I can't. I have a test tomorrow, so I have to study. How about next Saturday?","婉拒：道謝＋抱歉＋理由，最好再提另一個時間。"),
+GS3("sq22","s3","Where do you usually go shopping?","I usually go shopping at the night market near my home. The clothes there are cheap and nice.","說地點，再說為什麼去那裡。"),
+GS3("sq23","s3","What's your favorite food?","My favorite food is beef noodles. My father makes very delicious beef noodles on weekends.","說食物，再補充一句誰做的或在哪裡吃。"),
+GS3("sq24","s3","Is there a park near your home? What do people do there?","Yes, there is. Many people walk their dogs there, and some old people do exercises in the morning.","Is there...? 用 Yes, there is.／No, there isn't. 回答。"),
+GS3("sq25","s3","A visitor asks you how to get to the train station. What would you say?","Go straight for two blocks and turn left at the bank. The train station is on your right. You can't miss it.","問路：go straight、turn left/right、It's on your right.。"),
+GS3("sq26","s3","What did you have for breakfast this morning?","I had a sandwich and a glass of milk this morning. I ate it at home with my sister.","this morning 已經過去，用過去式 had、ate。"),
+GS3("sq27","s3","You want to buy a T-shirt, but it is too big. What would you say to the clerk?","Excuse me, this T-shirt is too big for me. Do you have a smaller one?","購物：Do you have a smaller/bigger one? Can I try it on?"),
+GS3("sq28","s3","Do you like to cook? What can you cook?","Yes, I do. I can make fried rice and egg soup. My family says my fried rice is good.","can + 動詞原形。"),
+GS3("sq29","s3","What's the weather like today?","It's sunny and hot today. It's about thirty degrees, so I'm wearing a T-shirt.","What's the weather like? 用 It's + 天氣形容詞回答。"),
+GS3("sq30","s3","What's your favorite season? Why?","My favorite season is winter because I can eat hot pot with my family. I also like wearing warm sweaters.","說季節＋because 理由。"),
+GS3("sq31","s3","Have you ever traveled to another city or country? Where did you go?","Yes, I have. Last summer I went to Tokyo with my family. We visited many temples and ate sushi.","Have you ever...? 用 Yes, I have. 回答，再用過去式說細節。"),
+GS3("sq32","s3","What do you usually do during Chinese New Year?","During Chinese New Year, my family has a big dinner together. I get red envelopes from my grandparents.","節日習慣用現在簡單式；red envelopes 紅包。"),
+GS3("sq33","s3","What do you do when you feel sick?","When I feel sick, I go to see a doctor and take some medicine. Then I drink a lot of water and sleep early.","When I..., I...；說兩三個做法。"),
+GS3("sq34","s3","What did you do last weekend?","Last weekend I went to the zoo with my cousins. We saw pandas and took a lot of pictures.","last weekend 用過去式。"),
+GS3("sq35","s3","Your friend's birthday is tomorrow. What gift would you like to give your friend? Why?","I'd like to give my friend a storybook because she loves reading. I'll also write her a birthday card.","I'd like to give... because...。")
+
+);
+})();
