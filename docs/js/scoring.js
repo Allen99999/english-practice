@@ -88,7 +88,7 @@ function geptWritingHTML(att) {
   let p1 = 0, m1 = 0, p2 = [], any = false;
   (att.qs || []).forEach((_, i) => {
     const X = getQ(i, att); if (!X || !X.bank || !/^gept/.test(X.bank.id)) return;
-    const r = rubricOf(X.q, X.bank); if (!r) return; any = true;
+    const r = rubricOf(X.q, X.bank); if (r !== RUBRICS.gs && r !== RUBRICS.ge) return; any = true;   // 只算寫作（口說也有級分）
     const p = ptsOf(X.q, X.bank, (att.ans || {})[i]);
     if (r === RUBRICS.gs) { p1 += p; m1 += r.max; } else if (r === RUBRICS.ge) p2.push(p);
   });

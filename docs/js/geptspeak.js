@@ -29,7 +29,7 @@ function geptSpeakHTML(q, i, a) {
 }
 function gsStatusHTML(q, G, done, mock) {
   if (done && mock) return `<span class="gsp-st">${I.check}<span>這題已錄音${(S.ans[ctSpan(S.idx)[0]].resp || {}).rec ? "" : "（沒有錄到聲音）"}。正式考試不能重錄。</span></span>`;
-  if (done) return `<span class="gsp-st">${I.check}<span>這題已完成。</span></span>`;
+  if (done) return `${G && G.url ? `<audio controls src="${G.url}" style="width:100%"></audio>` : `<span class="gsp-st">${I.check}<span>這題已完成。</span></span>`}<button class="btn" data-act="gsp-redo">重新作答</button>`;
   if (!G) {
     const label = mock ? (S.gspStarted ? "繼續口說測驗" : "開始口說測驗") : q.mode === "g-read" ? "開始（先看 1 分鐘）" : "播放題目";
     return `<button class="btn primary" data-act="gsp-go">${q.mode === "g-read" ? I.play : I.speaker}<span>${label}</span></button>
@@ -42,14 +42,15 @@ function gsStatusHTML(q, G, done, mock) {
   return `${G.url ? `<audio controls src="${G.url}" style="width:100%"></audio>` : `<span class="muted">沒有錄到聲音。</span>`}<button class="btn" data-act="gsp-redo">重新作答</button>`;
 }
 function gsRevealHTML(q, X, done) {
-  const btn = t => `<button class="btn sm" data-act="gsp-model">${I.speaker}<span>${t}</span></button>`;
-  let h = "";
+  const btn = t => `<button class="btn sm" data-act="gsp-model">${I.speaker}<span>${t}</span></button>`, i = S.idx;
+  const aiH = typeof gsaQuizHTML === "function" ? gsaQuizHTML(q, i) : "", aiWait = typeof gsaBusy === "function" && (gsaBusy(S, i) || gsaHasAi(i) || (gsaOn() && !(S.work[ctSpan(i)[0]] || {}).gsaErr));
+  let h = aiH;
   if (q.mode === "g-repeat") h += `<div class="model"><div class="step-label">原句</div><div class="ptext" style="font-size:16px">${esc(q.text)}</div>${btn("再聽一次")}</div>`;
   if (q.mode === "g-read") h += `<div class="model"><div class="step-label">示範朗讀</div>${btn("聽示範朗讀")}</div>`;
   if (q.mode === "g-answer") h += `<div class="model"><div class="step-label">題目</div><div class="ptext" style="font-size:16px">${esc(q.text)}</div>
     <div class="step-label" style="margin-top:8px">參考回答</div><div class="ptext" style="font-size:16px">${esc(q.model)}</div>${btn("聽參考回答")}</div>`;
   if (q.exp) h += `<div class="muted" style="font-size:14px">${esc(q.exp)}</div>`;
-  if (!done) h += selfButtonsHTML(q, X.bank, "gsp-rate");
+  if (!done && !aiWait) h += `<div class="muted" style="font-size:13px">先自己評一次：</div>` + selfButtonsHTML(q, X.bank, "gsp-rate");
   return h;
 }
 
@@ -71,13 +72,18 @@ async function gsGo(i) {
   const G = GSP = { key: gsKey(i), i: ctSpan(i)[0] };
   if (q.mode === "g-read") gsCount(G, "prep", 60, () => gsRec(G, 60)); else gsPlay(G, q);
 }
+/* 播一次題目；最多等 12 秒（瀏覽器語音偶爾不會回報「播完」，不能讓考試卡住） */
+function gsPlayOnce(items, cb) {
+  let fin = false; const end = () => { if (fin) return; fin = true; clearTimeout(tm); cb(); }, tm = setTimeout(() => { stopReading(); end(); }, 12000);
+  playItems(items, end);
+}
 function gsPlay(G, q) {
   const one = questionSpeech(q);
   G.phase = "play"; G.n = 1; gsRender();
-  playItems(one, () => setTimeout(() => {
+  gsPlayOnce(one, () => setTimeout(() => {
     if (!gsAlive(G)) return;
     G.n = 2; gsRender();
-    playItems(one, () => { if (gsAlive(G)) gsRec(G, q.secs); });
+    gsPlayOnce(one, () => { if (gsAlive(G)) gsRec(G, q.secs); });
   }, 1500));
 }
 /* 倒數（準備或錄音）：每 0.25 秒更新畫面上的時間；離開這題就中止 */
@@ -103,10 +109,11 @@ function gsRec(G, secs) {
     mr.onstop = () => {
       clearInterval(G.timer);
       G.blob = new Blob(chunks, { type: mr.mimeType || "audio/mp4" }); G.url = URL.createObjectURL(G.blob); G.phase = "done";
-      if (gsMock()) { gsSave(G, null); if (!G.aborted) gsNext(G); else gsRender(); }
-      else { gsRelease(); if (!G.aborted) gsRender(); }
+      const ai = typeof gsaRun === "function";
+      if (gsMock()) { gsSave(G, null); if (ai) gsaRun(S, G.i, G.blob); if (!G.aborted) gsNext(G); else gsRender(); }   // 模擬卷：背景批改，不顯示結果
+      else { gsRelease(); if (!G.aborted) { gsRender(); if (ai) gsaRun(S, G.i, G.blob); } }
     };
-    mr.start();
+    try { mr.start(); } catch (e) { gsRelease(); if (GSP === G) GSP = null; gsRender(); toast("麥克風沒有辦法開始錄音，請再按一次開始"); return; }
     gsCount(G, "rec", secs, () => { if (mr.state === "recording") mr.stop(); });
   }, 350);
 }
@@ -147,7 +154,7 @@ document.addEventListener("click", e => {
   if (a === "gsp-go" && !G) gsGo(i);
   if (a === "gsp-skip" && G && G.phase === "prep" && !gsMock()) { clearInterval(G.timer); gsRec(G, 60); }
   if (a === "gsp-stop" && G && G.mr && G.mr.state === "recording" && !gsMock()) G.mr.stop();
-  if (a === "gsp-redo" && G && !gsMock()) { if (G.url) URL.revokeObjectURL(G.url); GSP = null; gsGo(i); }
+  if (a === "gsp-redo" && !gsMock() && !(typeof gsaBusy === "function" && gsaBusy(S, i))) { if (G && G.url) URL.revokeObjectURL(G.url); GSP = null; gsGo(i); }
   if (a === "gsp-rate" && G && G.phase === "done" && !gsMock()) { gsSave(G, +el.dataset.v); gsRender(); }
   if (a === "gsp-model" && !gsMock()) {
     const X = getQ(i), q = X.q;

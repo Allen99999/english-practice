@@ -246,13 +246,14 @@ const GEPT_SENT_SCHEMA = { type: "OBJECT", properties: { score: { type: "INTEGER
 /* 檢查並登記一次 AI 使用：回傳 "" 表示可以，或錯誤代碼（limit-1h、limit-5h、busy）。
    計數存在 Script Properties（快取最多只能存 6 小時，存不了 12 小時的全站計數），用短暫的鎖避免同時寫入算錯。 */
 function aiQuota_(name, exempt, bucket) {
-  const sent = bucket === "sent", userLimits = sent ? SENT_USER_LIMITS : AI_USER_LIMITS, total = sent ? SENT_TOTAL : AI_TOTAL, pre = sent ? "ai:s:" : "ai:";
+  const sent = bucket === "sent", speak = bucket === "speak";
+  const userLimits = sent ? SENT_USER_LIMITS : speak ? SPEAK_USER_LIMITS : AI_USER_LIMITS, total = sent ? SENT_TOTAL : speak ? SPEAK_TOTAL : AI_TOTAL, pre = sent ? "ai:s:" : speak ? "ai:k:" : "ai:";
   const lock = LockService.getScriptLock(); if (!lock.tryLock(5000)) return "busy";
   try {
     const P = PropertiesService.getScriptProperties(), now = Date.now(), H = 3600000;
     const slot = h => Math.floor(now / (h * H));
     const keys = [[pre + "all:" + total[1] + "h:" + slot(total[1]), total[0], "busy"]];
-    if (!exempt) userLimits.forEach(([n, h]) => keys.push([pre + "n:" + name.toLowerCase() + ":" + h + "h:" + slot(h), n, (sent ? "slimit-" : "limit-") + h + "h"]));
+    if (!exempt) userLimits.forEach(([n, h]) => keys.push([pre + "n:" + name.toLowerCase() + ":" + h + "h:" + slot(h), n, (sent ? "slimit-" : speak ? "klimit-" : "limit-") + h + "h"]));
     for (const [k, max, err] of keys) if (Number(P.getProperty(k) || 0) >= max) return err;
     keys.forEach(([k]) => P.setProperty(k, String(Number(P.getProperty(k) || 0) + 1)));
     if (Math.random() < .05) {   // 偶爾清掉已經過期時段的計數
@@ -263,6 +264,7 @@ function aiQuota_(name, exempt, bucket) {
   } finally { lock.releaseLock(); }
 }
 function aiGrade_(body) {
+  if (body.kind === "gept-speak") return speakGrade_(body);   // 英檢初級口說（AiSpeak.gs）
   const teacher = body.teacherCode && String(body.teacherCode) === TEACHER_CODE;
   const name = name_(body.name);
   if (!teacher) { const err = check_(name, code_(body.code)); if (err) return json_({ ok: false, error: err }); }

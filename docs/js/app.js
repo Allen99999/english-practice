@@ -370,7 +370,8 @@ function respText(q, a) {
     case "spell": return spellFull(q, r);
     case "trans": case "rewrite": return r || "（空白）";
     case "essay": return `${r.text || "（空白）"}（${wcount(r.text)} 字・${typeof r.level === "number" ? `${r.ai ? "AI 評分" : "自評"} ${r.level} / ${maxPts(q)} 分` : `自評${r.rate === "ok" ? "達到要求" : "還需加強"}`}）`;
-    case "speak": if (q.gept && typeof r.level !== "number") return r.rec ? "已錄音（待批改）" : "沒有錄到音";
+    case "speak": if (q.gept && r.ai) return r.ai.transcript ? `「${r.ai.transcript.slice(0, 160)}」` : "（沒有聽到英文）";
+      if (q.gept && typeof r.level !== "number") return r.rec ? "已錄音（待批改）" : "沒有錄到音";
       return typeof r.level === "number" ? `自評 ${r.level} / ${maxPts(q)} 分${a.resp.rec ? "（有錄音）" : ""}` : `自評${r.rate === "ok" ? "達到要求" : "還需加強"}`;
     case "cword": return r || "（空白）";
     case "scramble": { const all = q.tiles.concat(q.extra || []); return q.frame ? bsFill(q, r.map(i => all[i])) : (q.pre ? q.pre + " " : "") + r.map(i => all[i]).join(" ") + (q.post ? " " + q.post : ""); }
@@ -1078,6 +1079,7 @@ function resultHTML(id) {
   if (typeof teacherResultBar === "function") h += teacherResultBar(att);
   if (typeof geptLRHTML === "function") h += geptLRHTML(att);   // 英檢初試（聽力＋閱讀）估算
   if (typeof geptWritingHTML === "function") h += geptWritingHTML(att);
+  if (typeof gsaReportHTML === "function") h += gsaReportHTML(att);   // 英檢口說（AI 估算）
   if (typeof toeflBandHTML === "function") h += toeflBandHTML(att);
   // 細項分析
   if (att.kind !== "vocab") {
@@ -1120,6 +1122,7 @@ function reviewItem(att, i) {
   ${q.hint ? `<dt>提示</dt><dd class="muted">${esc(q.hint)}</dd>` : ""}</dl>`;
   if ((q.type === "trans" || q.type === "rewrite") && a && !a.correct) body += diffHTML(q, a.resp);
   if (typeof isAiQ === "function" && isAiQ(q) && typeof aiReviewHTML === "function") body += aiReviewHTML(q, a, att, i);   // Email、AD：AI 批改結果、重寫、範文
+  if (q.gept && q.type === "speak" && typeof gsaReviewHTML === "function") body += gsaReviewHTML(q, a, att, i);   // 英檢口說 AI 批改
   if (q.type === "speak" && a && store.teacherCode) body += `<button class="btn" data-act="rec-fetch" data-att="${esc(att.id)}" data-i="${recIdx(att, i)}">${I.play}播放學生錄音</button>`;
   if (typeof gradeButtonsHTML === "function") body += gradeButtonsHTML(att, i);
   const autoOpen = animNext && att.regrade && att.regrade.some(c => c.i === i) && !(typeof isRemote === "function" && isRemote(att) && store.teacherCode);
