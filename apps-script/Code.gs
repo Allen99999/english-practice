@@ -180,6 +180,11 @@ function doGet(e) {
     const blob = it.next().getBlob();
     return json_({ ok: true, mime: blob.getContentType(), data: Utilities.base64Encode(blob.getBytes()) });
   }
+  if (p.action === "drive") {   // 老師檢查雲端硬碟空間（錄音存不進去時用）
+    const terr = teacherErr_(p.teacherCode); if (terr) return json_({ ok: false, error: terr });
+    let n = 0, bytes = 0; const it = recFolder_().getFiles(); while (it.hasNext()) { const f = it.next(); n++; bytes += f.getSize(); }
+    return json_({ ok: true, used: DriveApp.getStorageUsed(), limit: DriveApp.getStorageLimit(), recFiles: n, recBytes: bytes });
+  }
   if (p.action !== "list") return json_({ ok: false, error: "unknown action" });
   const terr = teacherErr_(p.teacherCode); if (terr) return json_({ ok: false, error: terr });   // 連續輸錯 10 次鎖 15 分鐘
   const sh = sheet_(), st = students_();
