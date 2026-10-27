@@ -29,7 +29,7 @@ function geptSpeakHTML(q, i, a) {
 }
 function gsStatusHTML(q, G, done, mock) {
   if (done && mock) return `<span class="gsp-st">${I.check}<span>這題已錄音${(S.ans[ctSpan(S.idx)[0]].resp || {}).rec ? "" : "（沒有錄到聲音）"}。正式考試不能重錄。</span></span>`;
-  if (done) return `${G && G.url ? `<audio controls src="${G.url}" style="width:100%"></audio>` : `<span class="gsp-st">${I.check}<span>這題已完成。</span></span>`}<button class="btn" data-act="gsp-redo">重新作答</button>`;
+  if (done) return `${G && G.url ? `<audio controls src="${G.url}" style="width:100%"></audio>` : myRecBtnHTML(S.id, ctSpan(S.idx)[0])}<button class="btn" data-act="gsp-redo">重新作答</button>`;
   if (!G) {
     const label = mock ? (S.gspStarted ? "繼續口說測驗" : "開始口說測驗") : q.mode === "g-read" ? "開始（先看 1 分鐘）" : "播放題目";
     return `<button class="btn primary" data-act="gsp-go">${q.mode === "g-read" ? I.play : I.speaker}<span>${label}</span></button>
@@ -42,7 +42,7 @@ function gsStatusHTML(q, G, done, mock) {
   return `${G.url ? `<audio controls src="${G.url}" style="width:100%"></audio>` : `<span class="muted">沒有錄到聲音。</span>`}<button class="btn" data-act="gsp-redo">重新作答</button>`;
 }
 function gsRevealHTML(q, X, done) {
-  const btn = t => `<button class="btn sm" data-act="gsp-model">${I.speaker}<span>${t}</span></button>`, i = S.idx;
+  const btn = t => gsModelBtn(t), i = S.idx;
   const aiH = typeof gsaQuizHTML === "function" ? gsaQuizHTML(q, i) : "", aiWait = typeof gsaBusy === "function" && (gsaBusy(S, i) || gsaHasAi(i) || (gsaOn() && !(S.work[ctSpan(i)[0]] || {}).gsaErr));
   let h = aiH;
   if (q.mode === "g-repeat") h += `<div class="model"><div class="step-label">原句</div><div class="ptext" style="font-size:16px">${esc(q.text)}</div>${btn("再聽一次")}</div>`;
@@ -69,6 +69,7 @@ async function gsGo(i) {
   try { GACTX = GACTX || new (window.AudioContext || window.webkitAudioContext)(); GACTX.resume(); } catch (e) { }
   try { await gsStream(); } catch (e) { toast("無法使用麥克風：請在瀏覽器允許麥克風權限後再試一次"); return; }
   if (gsMock()) { S.gspStarted = true; save(); }
+  gsModelStop();
   const G = GSP = { key: gsKey(i), i: ctSpan(i)[0] };
   if (q.mode === "g-read") gsCount(G, "prep", 60, () => gsRec(G, 60)); else gsPlay(G, q);
 }
@@ -111,7 +112,7 @@ function gsRec(G, secs) {
       G.blob = new Blob(chunks, { type: mr.mimeType || "audio/mp4" }); G.url = URL.createObjectURL(G.blob); G.phase = "done";
       const ai = typeof gsaRun === "function";
       if (gsMock()) { gsSave(G, null); if (ai) gsaRun(S, G.i, G.blob); if (!G.aborted) gsNext(G); else gsRender(); }   // 模擬卷：背景批改，不顯示結果
-      else { gsRelease(); if (!G.aborted) { gsRender(); if (ai) gsaRun(S, G.i, G.blob); } }
+      else { gsRelease(); if (!G.aborted) { if (G.blob.size > 200) { uploadRec(G.blob, S.id, G.i, S.who); G.up = true; } gsRender(); if (ai) gsaRun(S, G.i, G.blob); } }   // 練習：錄完就上傳（老師可聽、學生可重聽）
     };
     try { mr.start(); } catch (e) { gsRelease(); if (GSP === G) GSP = null; gsRender(); toast("麥克風沒有辦法開始錄音，請再按一次開始"); return; }
     gsCount(G, "rec", secs, () => { if (mr.state === "recording") mr.stop(); });
@@ -131,7 +132,7 @@ function gsSave(G, level) {
     ans.max = maxPts(X.q, X.bank); ans.pts = ptsOf(X.q, X.bank, ans); ans.sys = ans.correct; S.ans[k] = ans;
   }
   S.tipSeen = true; save();
-  if (rec) uploadRec(G.blob, S.id, a, S.who);
+  if (rec && !G.up) uploadRec(G.blob, S.id, a, S.who);
 }
 /* 正式模擬卷：自動進下一題；口說考完就停下來等交卷 */
 function gsNext(G) {
@@ -145,8 +146,26 @@ function gsNext(G) {
   }, 1200);
 }
 
+/* ---------- 示範朗讀（預先產生的 MP3）：播放／暫停／繼續 ---------- */
+let GSM = null;   // { key, paused }
+const gsmKey = () => S ? S.id + ":" + S.idx : "";
+function gsModelBtn(t) {
+  const on = GSM && GSM.key === gsmKey(), lab = !on ? t : GSM.paused ? "繼續播放" : "暫停";
+  return `<div class="row gsm" data-t="${esc(t)}" style="gap:8px"><button class="btn sm" data-act="gsp-model">${on && !GSM.paused ? I.pause : on ? I.play : I.speaker}<span>${lab}</span></button>${on ? `<button class="btn sm" data-act="gsp-model-re">${I.redo}<span>從頭播放</span></button>` : ""}</div>`;
+}
+function gsModelSync() { document.querySelectorAll(".gsm").forEach(b => { b.outerHTML = gsModelBtn(b.dataset.t); }); }
+function gsModelStop() { if (GSM) { GSM = null; stopReading(); } }
+function gsModelPlay() {
+  const X = getQ(S.idx), q = X.q;
+  const items = q.mode === "g-read" ? passageSpeech(X.group).map(x => Object.assign({ gap: 500 }, x)) : q.mode === "g-answer" ? gsModelSpeech(q) : questionSpeech(q);
+  if (!PLAYER.gsmHook) { PLAYER.gsmHook = true; PLAYER.addEventListener("play", () => { if (GSM && GSM.paused) PLAYER.pause(); }); }   // 暫停時剛好遇到句子之間的空檔：下一句一開始就停住
+  const G0 = GSM = { key: gsmKey(), paused: false };
+  playItems(items, () => { if (GSM === G0) { GSM = null; gsModelSync(); } });
+  gsModelSync();
+}
+
 /* 換題時中止進行中的口說流程 */
-{ const go0 = gotoQ; gotoQ = function (n) { if (GSP) gsAbort(GSP); return go0(n); }; }
+{ const go0 = gotoQ; gotoQ = function (n) { if (GSP) gsAbort(GSP); gsModelStop(); return go0(n); }; }
 
 document.addEventListener("click", e => {
   const el = e.target.closest("[data-act]"); if (!el || !S || view !== "quiz") return;
@@ -157,8 +176,9 @@ document.addEventListener("click", e => {
   if (a === "gsp-redo" && !gsMock() && !(typeof gsaBusy === "function" && gsaBusy(S, i))) { if (G && G.url) URL.revokeObjectURL(G.url); GSP = null; gsGo(i); }
   if (a === "gsp-rate" && G && G.phase === "done" && !gsMock()) { gsSave(G, +el.dataset.v); gsRender(); }
   if (a === "gsp-model" && !gsMock()) {
-    const X = getQ(i), q = X.q;
-    const items = q.mode === "g-read" ? passageSpeech(X.group).map(x => Object.assign({ gap: 500 }, x)) : q.mode === "g-answer" ? gsModelSpeech(q) : questionSpeech(q);
-    playItems(items);
+    if (!GSM || GSM.key !== gsmKey()) gsModelPlay();
+    else if (!GSM.paused) { GSM.paused = true; PLAYER.pause(); try { speechSynthesis.pause(); } catch (e) { } gsModelSync(); }
+    else { GSM.paused = false; if (PLAYER.src && !PLAYER.ended && PLAYER.currentTime > 0) PLAYER.play().catch(() => { }); try { speechSynthesis.resume(); } catch (e) { } gsModelSync(); }
   }
+  if (a === "gsp-model-re" && !gsMock()) { gsModelStop(); gsModelPlay(); }
 });

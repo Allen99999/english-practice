@@ -37,8 +37,9 @@ function gsaRun(sess, i, blob) {
   if (GSA_BUSY.has(key)) return GSA_BUSY.get(key);
   const X = getQ(a0, sess), q = X.q, sub = GSA_SUB[q.mode], w = sess.work[a0] || (sess.work[a0] = {});
   const refresh = () => { save(true); if (S === sess && view === "quiz" && span.includes(sess.idx) && !(GSP && GSP.phase === "rec")) rerenderKeep(); };
+  w.gsaErr = "";
   const job = (async () => {
-    w.gsaErr = ""; refresh();
+    await null;   // 先登記「批改中」再更新畫面（不然畫面要等批完才出現狀態）
     try {
       if (!gsaOn()) { const e = new Error("offline"); e.server = true; throw e; }
       const metrics = await gsaMetrics(blob);
@@ -59,7 +60,7 @@ function gsaRun(sess, i, blob) {
     } catch (e) { w.gsaErr = e.server ? e.message : e.name === "AbortError" ? "timeout" : "error"; }
     GSA_BUSY.delete(key); refresh();
   })();
-  GSA_BUSY.set(key, job);
+  GSA_BUSY.set(key, job); refresh();
   return job;
 }
 const gsaBusy = (sess, i) => GSA_BUSY.has(sess.id + ":" + gsaSpan(sess, i)[0]);
@@ -107,7 +108,7 @@ function gsaShortHTML(q, ai) {
     (ai.errors || []).forEach(e => { h += `<div class="sp-fix">${gsaTag(e.code)}<div><s>${esc(e.original)}</s> → <b>${esc(e.corrected)}</b><div class="muted">${esc(e.why)}</div></div></div>`; });
   }
   (ai.problems || []).forEach(p => { h += `<div class="sp-fix">${gsaTag(p.code)}<div><b>${esc(p.word)}</b><div class="muted">${esc(p.tip)}</div></div></div>`; });
-  if (sub === "answer" && ai.better) h += `<div class="sp-better"><div class="sp-k">💬 可以這樣說</div><div>${esc(ai.better)}</div><button class="btn sm" data-act="gsa-say" data-t="${esc(ai.better)}">${I.speaker}<span>聽一次</span></button></div>`;
+  if (sub === "answer" && ai.better) h += `<div class="sp-better"><div class="sp-k">💬 可以這樣說</div><div>${esc(ai.better)}</div></div>`;
   if (ai.tip) h += `<div class="sp-tip">📌 ${esc(ai.tip)}</div>`;
   return h + `</div>`;
 }
@@ -125,7 +126,7 @@ function gsaReadHTML(g, ai, s0) {
     ${s.note || GSA_TONE[s.intonation] ? `<div class="sp-note">${GSA_TONE[s.intonation] ? `<b>${GSA_TONE[s.intonation]}</b>　` : ""}${esc(s.note || "")}</div>` : ""}</div></div>`; }).join("")}</div>
   ${words.length ? `<ol class="sp-wlist">${words.map(w => `<li>${gsaTag(w.code)}<div><b>${esc(w.word)}</b>${w.heard && w.heard.toLowerCase() !== String(w.word).toLowerCase() ? `<span class="muted">　聽起來像「${esc(w.heard)}」</span>` : ""}<div class="muted">${esc(w.tip)}</div></div></li>`).join("")}</ol>` : ""}</div>`;
   if ((ai.fixes || []).length) h += `<div class="sp-sec"><h4>先改這三件事</h4><div class="sp-fixes">${ai.fixes.slice(0, 3).map((f, k) => `<div class="sp-pri ${gsaKind(f.code)}"><b><span class="tnum">${k + 1}</span>${esc(f.title)}</b><div>${esc(f.how)}</div></div>`).join("")}</div></div>`;
-  if ((ai.drill || []).length) h += `<div class="sp-sec"><h4>跟讀練習</h4><div class="sp-drill">${ai.drill.map(d => `<button class="sp-dw" data-act="gsa-say" data-t="${esc(d)}">${I.speaker}<span>${esc(d)}</span></button>`).join("")}</div></div>`;
+  if ((ai.drill || []).length) h += `<div class="sp-sec"><h4>跟讀練習</h4><div class="muted" style="font-size:12.5px">先聽一次示範朗讀，再把這幾個字詞慢慢唸 3 遍、放回句子裡唸一次。</div><div class="sp-drill">${ai.drill.map(d => `<span class="sp-dw">${esc(d)}</span>`).join("")}</div></div>`;
   if (ai.transcript) h += `<details class="pfold" data-key="gsa-tr-${s0}"><summary><span>📝 AI 聽到的內容</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext muted" style="font-size:15px;margin-top:8px">${esc(ai.transcript)}</div></details>`;
   return h;
 }
@@ -219,7 +220,6 @@ function gsaReportHTML(att) {
 document.addEventListener("click", e => {
   const el = e.target.closest("[data-act]"); if (!el) return;
   const a = el.dataset.act;
-  if (a === "gsa-say") playItems([{ text: el.dataset.t, voice: SITE_CONFIG.TTS.narrator }]);
   if (a === "gsa-skip") { closeSheet(); if (S) { const left = S.qs.length - Object.keys(S.ans).length; left ? askFinishPlain() : finish(); } }
   if (a === "gsa-retry" && S && GSP && GSP.blob) { gsaRun(S, S.idx, GSP.blob); }
 });

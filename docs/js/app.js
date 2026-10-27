@@ -28,6 +28,7 @@ const I = {
   sound: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>',
   save: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.5h11l3.5 3.5V18a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 18V6A1.5 1.5 0 0 1 6 4.5z"/><path d="M8 4.5v4.5h7V4.5M8 19.5v-5.5h8v5.5"/></svg>',
   stop: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5"/></svg>',
+  pause: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="5" width="4" height="14" rx="1.5"/><rect x="13.5" y="5" width="4" height="14" rx="1.5"/></svg>',
   chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16M7 16v-5M12 16V7M17 16v-8"/></svg>',
   mute: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/><path d="M3 3l18 18"/></svg>'
 };
@@ -1123,6 +1124,7 @@ function reviewItem(att, i) {
   if ((q.type === "trans" || q.type === "rewrite") && a && !a.correct) body += diffHTML(q, a.resp);
   if (typeof isAiQ === "function" && isAiQ(q) && typeof aiReviewHTML === "function") body += aiReviewHTML(q, a, att, i);   // Email、AD：AI 批改結果、重寫、範文
   if (q.gept && q.type === "speak" && typeof gsaReviewHTML === "function") body += gsaReviewHTML(q, a, att, i);   // 英檢口說 AI 批改
+  if (q.type === "speak" && a && a.resp && a.resp.rec && !store.teacherCode && recIdx(att, i) === i && typeof myRecBtnHTML === "function") body += myRecBtnHTML(att.id, i);   // 學生重聽自己的錄音
   if (q.type === "speak" && a && store.teacherCode) body += `<button class="btn" data-act="rec-fetch" data-att="${esc(att.id)}" data-i="${recIdx(att, i)}">${I.play}播放學生錄音</button>`;
   if (typeof gradeButtonsHTML === "function") body += gradeButtonsHTML(att, i);
   const autoOpen = animNext && att.regrade && att.regrade.some(c => c.i === i) && !(typeof isRemote === "function" && isRemote(att) && store.teacherCode);

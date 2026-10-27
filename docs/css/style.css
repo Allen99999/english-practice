@@ -1019,7 +1019,7 @@ html.intro-on body{overflow:hidden}
 .sp-pri.pr{box-shadow:inset 3px 0 0 var(--sp-pr),inset 0 0 0 1px var(--edge)}.sp-pri.fl{box-shadow:inset 3px 0 0 var(--sp-fl),inset 0 0 0 1px var(--edge)}
 .sp-pri.ct{box-shadow:inset 3px 0 0 var(--sp-ct),inset 0 0 0 1px var(--edge)}.sp-pri.gr{box-shadow:inset 3px 0 0 var(--sp-gr),inset 0 0 0 1px var(--edge)}
 .sp-drill{display:flex;flex-wrap:wrap;gap:6px}
-.sp-dw{display:inline-flex;gap:6px;align-items:center;padding:6px 12px;border-radius:99px;border:0;background:var(--accent-soft);color:var(--ink);font:inherit;font-size:14px;cursor:pointer}
+.sp-dw{display:inline-flex;gap:6px;align-items:center;padding:6px 12px;border-radius:99px;border:0;background:var(--accent-soft);color:var(--ink);font:inherit;font-size:14px}
 .sp-dw svg{width:16px;height:16px}
 .sp-report{display:flex;flex-direction:column;gap:14px}
 .sp-dials{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}

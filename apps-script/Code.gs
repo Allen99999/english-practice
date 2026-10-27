@@ -61,7 +61,8 @@ function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
     if (CLASS_CODE && String(body.classCode || "").trim() !== CLASS_CODE) return json_({ ok: false, error: "wrong class code" });
-    if (body.action === "aigrade") return aiGrade_(body);   // AI 批改要跑幾十秒，不佔用鎖（見 Ai.gs）
+    if (body.action === "aigrade") return aiGrade_(body);
+    if (body.action === "myaudio") return myAudio_(body);   // 學生重聽自己的錄音（只讀，不佔用鎖）   // AI 批改要跑幾十秒，不佔用鎖（見 Ai.gs）
     const lock = LockService.getScriptLock(); lock.waitLock(10000);
     try {
       switch (body.action) {
@@ -152,6 +153,21 @@ function audioUpload_(body) {
   const file = folder.createFile(Utilities.newBlob(Utilities.base64Decode(data), mime, fname));
   file.setDescription(name + "｜" + new Date().toISOString());
   return json_({ ok: true });
+}
+
+/* 學生拿回自己的錄音：名字＋個人代碼要對，而且檔案是這個名字上傳的（檔案說明開頭是名字） */
+function myAudio_(body) {
+  const name = name_(body.name), code = code_(body.code), st = findStudent_(name);
+  if (!st || st.code !== code) return json_({ ok: false, error: "wrong code" });
+  if (rateLimited_("myaudio", 300)) return json_({ ok: false, error: "busy" });
+  const it = recFolder_().getFilesByName(recName_(body.att, body.i));
+  while (it.hasNext()) {
+    const f = it.next();
+    if (String(f.getDescription() || "").split("｜")[0] !== name) continue;
+    const blob = f.getBlob();
+    return json_({ ok: true, mime: blob.getContentType(), data: Utilities.base64Encode(blob.getBytes()) });
+  }
+  return json_({ ok: false, error: "no audio" });
 }
 
 function doGet(e) {

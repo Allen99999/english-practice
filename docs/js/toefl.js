@@ -79,7 +79,7 @@ function speakHTML(q, i, a) {
   <div class="rec-box">${rec && rec.mr && rec.mr.state === "recording"
     ? `<button class="btn danger" data-act="rec-stop"><span class="rec-dot"></span>停止錄音</button><span class="tnum muted" id="rectime">0:00 / ${fmtTime(q.secs)}</span>`
     : `<button class="btn" data-act="rec-start"><span class="rec-dot"></span>${rec && rec.url ? "重新錄音" : "開始錄音"}</button><span class="muted" style="font-size:13px">建議作答時間約 ${q.secs} 秒；${typeof SYNC_ON !== "undefined" && SYNC_ON ? "自評後錄音會上傳給老師" : "錄音只存在這台裝置"}</span>`}
-  ${rec && rec.url ? `<audio controls src="${rec.url}" style="width:100%;margin-top:8px"></audio>` : ""}</div>
+  ${rec && rec.url ? `<audio controls src="${rec.url}" style="width:100%;margin-top:8px"></audio>` : locked && a.resp && a.resp.rec ? myRecBtnHTML(S.id, i) : ""}</div>
   ${!reveal ? `<div class="row"><button class="btn ${rec && rec.url ? "primary" : ""}" data-act="sp-reveal">${q.mode === "repeat" ? "看原句並自評" : "看參考回答並自評"}</button></div>`
     : `<div class="model"><div class="step-label">${q.mode === "repeat" ? "原句" : "參考回答"}</div><div class="ptext" style="font-size:16px">${esc(q.mode === "repeat" ? q.text : q.model)}</div></div>
     ${locked ? "" : selfButtonsHTML(q, null, "sp-rate")}`}`;
@@ -144,7 +144,8 @@ function toeflBandHTML(att) {
 
 /* ---------- 事件 ---------- */
 document.addEventListener("click", e => {
-  const ra = e.target.closest('[data-act="rec-fetch"]'); if (ra) { fetchRec(ra); return; }   // 老師總覽、結果頁也要能播（不在作答中）
+  const ra = e.target.closest('[data-act="rec-fetch"]'); if (ra) { fetchRec(ra); return; }
+  const mr = e.target.closest('[data-act="my-rec"]'); if (mr && !mr.disabled) { playMyRec(mr); return; }   // 老師總覽、結果頁也要能播（不在作答中）
   const act = e.target.closest("[data-act]"); if (!act || !S) return;
   const d = act.dataset, a = d.act;
   if (a === "ct-submit") ctSubmit();
@@ -167,6 +168,7 @@ document.addEventListener("input", e => {
 
 /* ---------- 錄音上傳給老師（學生要有個人代碼）；老師在解析裡播放 ---------- */
 function uploadRec(blob, attemptId, idx, who, tries = 0) {
+  if (!tries) recKeep(blob, attemptId, idx);
   if (typeof SYNC_ON === "undefined" || !SYNC_ON || !store.codes[who]) return;
   if (blob.size > 2900000) { toast("錄音太長，沒有上傳"); return; }
   const fr = new FileReader();
@@ -175,6 +177,44 @@ function uploadRec(blob, attemptId, idx, who, tries = 0) {
     catch (e) { if (tries < 1 && !e.server) setTimeout(() => uploadRec(blob, attemptId, idx, who, tries + 1), 4000); else toast("錄音上傳失敗"); }
   };
   fr.readAsDataURL(blob);
+}
+/* ---------- 學生重聽自己的錄音：先找這台裝置存的（IndexedDB，保留最近 80 段），沒有再用名字＋個人代碼向雲端拿 ---------- */
+const REC_MEM = new Map();
+function recDB() {
+  return new Promise((ok, no) => { try { const r = indexedDB.open("apex-rec", 1); r.onupgradeneeded = () => r.result.createObjectStore("rec"); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); } catch (e) { no(e); } });
+}
+async function recKeep(blob, att, i) {
+  const key = att + ":" + i; REC_MEM.set(key, blob);
+  try {
+    const db = await recDB(), tx = db.transaction("rec", "readwrite"), st = tx.objectStore("rec");
+    st.put({ blob, t: Date.now() }, key);
+    const all = st.getAll(), keys = st.getAllKeys();
+    tx.oncomplete = () => db.close();
+    keys.onsuccess = () => { if (keys.result.length <= 80) return; const order = keys.result.map((k, n) => [k, (all.result[n] || {}).t || 0]).sort((a, b) => a[1] - b[1]); order.slice(0, keys.result.length - 80).forEach(([k]) => st.delete(k)); };
+  } catch (e) { }
+}
+async function recLocal(att, i) {
+  const key = att + ":" + i; if (REC_MEM.has(key)) return REC_MEM.get(key);
+  try { const db = await recDB(); return await new Promise(ok => { const r = db.transaction("rec").objectStore("rec").get(key); r.onsuccess = () => { db.close(); ok(r.result && r.result.blob || null); }; r.onerror = () => { db.close(); ok(null); }; }); } catch (e) { return null; }
+}
+const myRecBtnHTML = (att, i) => `<button class="btn" data-act="my-rec" data-att="${esc(att)}" data-i="${i}">${I.play}<span>聽自己的錄音</span></button>`;
+const b64Blob = (data, mime) => { const bin = atob(data), buf = new Uint8Array(bin.length); for (let k = 0; k < bin.length; k++) buf[k] = bin.charCodeAt(k); return new Blob([buf], { type: mime }); };
+const recMime = d0 => d0.startsWith("GkXf") ? "audio/webm" : d0.startsWith("T2dn") ? "audio/ogg" : /^(SUQz|\/\/)/.test(d0) ? "audio/mpeg" : "audio/mp4";   // 依檔案內容判斷格式
+async function playMyRec(btn) {
+  const att = btn.dataset.att, i = +btn.dataset.i;
+  btn.disabled = true; btn.innerHTML = `<span>載入錄音中…</span>`;
+  let blob = await recLocal(att, i);
+  if (!blob) {
+    const a = (store.attempts || []).find(x => x.id === att) || (store.sessions || []).find(x => x.id === att), who = a && a.who;
+    try {
+      if (!who || !store.codes[who] || typeof SYNC_ON === "undefined" || !SYNC_ON) throw new Error("no audio");
+      const r = await postSync({ action: "myaudio", name: who, code: store.codes[who], att, i }, 30000);
+      blob = b64Blob(r.data, recMime(r.data.slice(0, 8)));
+      REC_MEM.set(att + ":" + i, blob);
+    } catch (e) { btn.disabled = false; btn.innerHTML = `${I.play}<span>${String(e.message).includes("no audio") ? "找不到錄音（這台裝置沒有存，雲端也還沒有）" : "載入失敗，再試一次"}</span>`; return; }
+  }
+  const au = document.createElement("audio"); au.controls = true; au.style.width = "100%"; au.preload = "auto"; au.src = URL.createObjectURL(blob);
+  btn.replaceWith(au); au.play().catch(() => { });
 }
 async function fetchRec(btn) {
   const code = store.teacherCode; if (!code) { toast("請先在總覽輸入老師代碼"); return; }
