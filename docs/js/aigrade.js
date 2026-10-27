@@ -46,7 +46,7 @@ function emailHTML(X, i, a, st, m) {
   <div class="muted tnum" id="wc" style="font-size:13.5px">${wcText(q, txt)}</div>`;
   if (!sub) return h + `<div class="row"><button class="btn primary" data-act="ai-submit">${I.check}寫好了，交給 AI 批改</button></div>
     <div class="muted" style="font-size:12.5px">${isGeptQ(q) ? "AI 依全民英檢官方 0～5 級分標準批改" : "AI 依 ETS 官方 0～5 分標準批改"}，約需 30～90 秒；老師之後也會再看。練習時建議關掉自動校正。</div>`;
-  if (st.aiBusy && !a) return h + aiBusyHTML(`AI 正在依 ETS 標準批改你的${K.what}…`);
+  if (st.aiBusy && !a) return h + aiBusyHTML(`AI 正在依${isGeptQ(q) ? "全民英檢官方" : " ETS "}標準批改你的${K.what}…`);
   if (!a) return h + `<div class="feedback no"><span class="fb-ic">${I.x}</span><div><b>AI 批改沒有完成</b><p>${esc(aiErrText(st.aiErr))}</p></div></div>
     <div class="row"><button class="btn primary" data-act="ai-retry">再試一次</button></div>
     <div class="muted" style="font-size:13px">也可以先看範文自評，之後老師會批改：</div>${modelsHTML(q)}${selfButtonsHTML(q, X.bank, "essay-rate")}`;
