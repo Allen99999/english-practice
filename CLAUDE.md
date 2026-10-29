@@ -126,6 +126,10 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
     觸發的封頂、題目要求逐張圖檢核、原文標註＋錯誤（錯誤代碼用白話名稱 GEPT_CODE）、換字 3 個、5 級分示範（收起）、參考範文、下一篇只練一件事、英檢錯誤日誌與級分趨勢。
     單句寫作（改寫、合併）系統判錯時自動送 Gemini 3.5 Flash 依 0／1／2 分再判（`sentAiRun`），額度另計：每人每小時 10 句、每 5 小時 30 句（Test、Allen 不限），全站 12 小時 1500 句；重組題不送 AI（官方：增減字就 0 分）。
     段落寫作 8 題練習已全部改成三格看圖題（官方題型）。
+- **學生專區（2026-10-29 加入）**：`docs/js/bankstudent.js` 的 `STUDENT_ZONE`（Ayden、Yuri、Jovi、Wei，名字不分大小寫）；作答人是這些名字時首頁多一列「學生專區」，列出 Allen 為他準備的考卷。
+  每份考卷用 `studentPaper({...})` 建（hidden＋fixed、選項照紙本順序不平衡、`minutes` 限時），整回照順序、正式考模式（做完才公布分數與對錯），再把 id 加到該學生的清單。
+  `SPF` 是不給提示字母的拼字／詞形變化題（`full: true`），`TF` 是非題；克漏字空格可以用兩位數（`[[40]]`）。學生專區的題目不做語音。
+  - 第一份：Jovi「A 範圍單字考・基礎」（`jovi-a1`，44 題、20 分鐘，原稿在 `~/Documents/Tutor/Jovi/A範圍單字考_基礎.docx`）。
 - **有正式模擬卷的題庫（英檢、托福）**：題庫設 `mockPapers`；首頁選這個題庫時，「正式模擬卷 N」＝模擬段考、「隨機組卷」＝自訂練習（不顯示「模式」切換）。
   模擬卷題庫設 `hidden`、`fixed`、`exams`（可考的部分）、`partNotes`、`timeLimits`、`blind`（不顯示對錯的部分）。
 - **托福（2026 新制）**：練習題在 `banktoefl.js`（題庫設定＋閱讀）、`banktoefl2.js`（聽力、寫作、口說），共約 236 題；正式模擬卷在 `banktoeflmock.js`、`banktoeflmock2.js`（各 128 題）。

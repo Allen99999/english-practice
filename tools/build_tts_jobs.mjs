@@ -14,6 +14,7 @@ const jobs = new Map();
 const add = (voice, text) => { text = ctx.ttsClean(text); if (!/[A-Za-z]/.test(text)) return; const name = ctx.ttsName(voice, text); jobs.set(name, { name, voice, text }); };
 const V = SITE_CONFIG.TTS;
 for (const b of BANKS) for (const it of b.items) {
+  if (b.student) continue;   // 學生專區的考卷：正式考模式不朗讀，不做語音
   // 托福：只做聽力（聽一句選回應、聽力題組的錄音）和口說的語音；閱讀、寫作、題目文字都不朗讀
   if (/^toefl/.test(b.id)) {
     if (it.type === "group" && it.kind === "listening") ctx.passageSpeech(it).forEach(s => add(s.voice, s.text));

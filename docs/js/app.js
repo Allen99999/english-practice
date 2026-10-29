@@ -327,9 +327,9 @@ function diffHTML(q, resp) {
   const ref = b.rw.map((w, j) => b.L.keepB.has(j) ? esc(w) : `<span class="miss">${esc(w)}</span>`).join(" ");
   return `<div class="diff"><div><span class="muted">你寫的：</span>${mine || "（空白）"}</div><div><span class="muted">對照：</span>${ref}</div></div>`;
 }
-function spellParts(ans) { const show = ans.length >= 4; return { first: ans[0], last: show ? ans[ans.length - 1] : "", mid: ans.length - 1 - (show ? 1 : 0) }; }
+function spellParts(ans, full) { if (full) return { first: "", last: "", mid: Math.max(8, ans.length + 2) }; const show = ans.length >= 4; return { first: ans[0], last: show ? ans[ans.length - 1] : "", mid: ans.length - 1 - (show ? 1 : 0) }; }   // full：不給提示字母（學生專區）
 function spellFull(q, typed) {
-  const p = spellParts(q.ans); const t = String(typed || "").trim();
+  const p = spellParts(q.ans, q.full); const t = String(typed || "").trim();
   if (t.toLowerCase() === q.ans.toLowerCase()) return t;
   return p.first + t + p.last;
 }
@@ -523,6 +523,20 @@ document.addEventListener("click", e => {
 
 /* ================= 首頁 ================= */
 function countBy(sel, t) { return unitsFor(Object.assign({}, sel, { types: [t] })).reduce((n, u) => n + u.refs.length, 0); }
+/* 學生專區（bankstudent.js）：作答人是 STUDENT_ZONE 裡的名字時，首頁多一列老師準備的考卷 */
+function zoneHTML() {
+  const zn = typeof zoneName === "function" && zoneName(store.who); if (!zn) return "";
+  const papers = STUDENT_ZONE[zn].map(bankById).filter(Boolean);
+  const mine = id => store.attempts.filter(a => (a.who || "").trim().toLowerCase() === zn.toLowerCase() && (a.banks || []).includes(id));
+  return `<div class="section-h"><h2>學生專區・${esc(zn)}</h2><span class="muted" style="font-size:13px">老師為你準備的題目</span></div>
+  <div class="glass card resume-list zone-list">${papers.length ? papers.map(b => {
+    const n = b.items.reduce((t, it) => t + (it.type === "group" ? it.qs.length : 1), 0), done = mine(b.id), last = done[0];
+    return `<div class="resume"><div style="min-width:0"><div style="font-weight:700;font-size:16px">${esc(b.title)}</div>
+      <div class="muted tnum" style="font-size:13.5px;margin-top:4px">${esc(b.range)}・共 ${n} 題・限時 ${b.minutes} 分鐘・整回做完才公布分數和對錯</div>
+      ${last ? `<div class="muted tnum" style="font-size:13.5px;margin-top:2px">已做 ${done.length} 次・上次 ${last.score} / ${last.total} 分（${fmtDate(last.date)}）</div>` : ""}</div>
+      <div class="row">${last ? `<button class="btn ghost" data-act="open-att" data-id="${esc(last.id)}">看結果</button>` : ""}<button class="btn primary" data-act="zone-start" data-id="${esc(b.id)}">${I.play}${last ? "再做一次" : "開始作答"}</button></div></div>`;
+  }).join("") : `<div class="muted" style="padding:6px 2px">老師還沒有放題目，敬請期待！</div>`}</div>`;
+}
 function homeHTML() {
   const sel = store.sel;
   const sess = store.sessions;
@@ -541,6 +555,7 @@ function homeHTML() {
     ${typeof syncHomeHTML === "function" ? syncHomeHTML() : ""}
     ${store.names.length ? `<div class="chips">${store.names.map(n => `<button class="chip" data-act="pick-who" data-n="${esc(n)}" aria-pressed="${n === store.who}">${esc(n)}</button>`).join("")}</div>` : ""}
     ${typeof cardCtaHTML === "function" ? cardCtaHTML() : ""}</div></div>${typeof questCardHTML === "function" ? questCardHTML(store.who) : ""}</div></div>`;   // 今日任務（card.js）
+  h += zoneHTML();
   const fr = store.who && sel.banks.length === 1 && famRoot(sel.banks[0]);
   if (fr) h += skillBarsHTML(fr, store.attempts.filter(a => (a.who || "未署名") === store.who), store.who, true);
   if (sess.length) {
@@ -673,11 +688,11 @@ function passageHTML(X, i) {
   if (g.kind === "listening") return listenGroupHTML(X, i);
   if (g.kind === "readaloud") return "";   // 英檢朗讀：句子和短文在題目卡裡（geptspeak.js）
   if (g.kind === "cloze") {
-    body = g.passage.map(p => `<p data-ctx>${p.split(/(\[\[\d\]\])/).map(seg => {
-      const mm = /\[\[(\d)\]\]/.exec(seg); if (!mm) return wrapWords(seg, m);
+    body = g.passage.map(p => `<p data-ctx>${p.split(/(\[\[\d+\]\])/).map(seg => {
+      const mm = /\[\[(\d+)\]\]/.exec(seg); if (!mm) return wrapWords(seg, m);
       const n = +mm[1]; const qi = S.qs.findIndex((r, k) => { const y = getQ(k); return y && y.group === g && y.q.blank === n; });
       const qa = qi >= 0 ? S.ans[qi] : null; const qq = qi >= 0 ? getQ(qi).q : null;
-      if (qa) return `<span class="cz done">${n}. ${esc(qq.opts[qq.ans])}</span>`;
+      if (qa) return `<span class="cz done">${n}. ${esc(qq.opts[S.blind ? qa.resp : qq.ans])}</span>`;   // 正式考模式：顯示自己選的，不洩漏答案
       return `<span class="cz ${qi === i ? "now" : ""}">${n}</span>`;
     }).join("")}</p>`).join("");
   } else if (g.kind === "dialogue") {
@@ -763,11 +778,11 @@ function questionBody(X, i, a, review) {
     ${locked ? "" : `<div class="row"><button class="btn ghost" data-act="order-reset">重排</button><button class="btn primary" data-act="submit" ${pick.length === q.items.length ? "" : "disabled"}>確認順序</button></div>`}`;
   }
   else if (q.type === "spell") {
-    const p = spellParts(q.ans); const val = locked ? a.resp : (st.val || "");
+    const p = spellParts(q.ans, q.full); const val = locked ? a.resp : (st.val || "");
     const inp = `<span class="spellwrap"><span class="fixed">${esc(p.first)}</span><input id="spellin" style="--n:${p.mid}" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="latin" value="${esc(val)}" ${locked ? `readonly class="${a.correct ? "ok" : "no"}"` : ""} aria-label="填入單字中間的字母"><span class="fixed">${esc(p.last)}</span></span>`;
     if (q.zhPrompt) h += `<div class="zh">${esc(q.zhPrompt)}</div>`;
     h += `<div class="stem" data-ctx>${q.stem.split("___").map((s, k, arr) => wrapWords(s, m) + (k < arr.length - 1 ? inp : "")).join("")}</div>
-    <div class="muted" style="font-size:13.5px">提示字母已給：第一個字母${p.last ? "和最後一個字母" : ""}，請填入中間 ${p.mid} 個字母（也可以打完整單字）。</div>
+    <div class="muted" style="font-size:13.5px">${S.blind && S.ans[i] ? "✓ 已作答（要修改就改完再按確認）・" : ""}${q.full ? "請寫出完整的英文單字。" : `提示字母已給：第一個字母${p.last ? "和最後一個字母" : ""}，請填入中間 ${p.mid} 個字母（也可以打完整單字）。`}</div>
     ${locked ? "" : `<div class="row"><button class="btn primary" data-act="submit">確認</button></div>`}`;
   }
   else if (q.type === "trans") {
@@ -1113,7 +1128,7 @@ function reviewItem(att, i) {
   let body = "";
   if (X.group && X.group.kind === "listening") body += `<details class="pfold"><summary><span class="muted">聽力原文：${esc(X.group.title)}</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext dialogue" style="margin-top:8px;font-size:15.5px">${listenGroupScript(X.group).map(l => `<p>${esc(l)}</p>`).join("")}</div></details>`;
   else if (X.group && X.group.kind === "ctest") body += `<div class="ptext" style="font-size:15.5px">${esc(X.group.passage[0].replace(/\{([^}]*)\}/g, "$1"))}</div>`;
-  else if (X.group) body += `<details class="pfold"><summary><span class="muted">題組：${esc(X.group.title)}（展開文章）</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext ${X.group.kind}" style="margin-top:8px;font-size:15.5px">${insMarks(X.group.passage.map(p => `<p>${esc(p).replace(/\[\[(\d)\]\]/g, '<span class="cz">$1</span>')}</p>`).join(""), X.group, true)}</div></details>`;
+  else if (X.group) body += `<details class="pfold"><summary><span class="muted">題組：${esc(X.group.title)}（展開文章）</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext ${X.group.kind}" style="margin-top:8px;font-size:15.5px">${insMarks(X.group.passage.map(p => `<p>${esc(p).replace(/\[\[(\d+)\]\]/g, '<span class="cz">$1</span>')}</p>`).join(""), X.group, true)}</div></details>`;
   body += `<div>${questionReview(q)}</div>`;
   body += `<dl class="kv"><dt>你的答案</dt><dd class="${a && a.correct ? "ans-ok" : "ans-no"}" style="${a && a.correct ? "" : "text-decoration:none"}">${esc(respText(q, a))}${a && a.claim ? "（學生反應：我寫的也對）" : ""}${a && (a.self || a.tmark || rubricOf(q, X.bank)) ? `（${a.tmark ? "老師評分" : a.resp && a.resp.ai ? "AI 評分" : a.self || q.type === "essay" || q.type === "speak" ? "自評" : "得分"} ${ptsOf(q, X.bank, a)} / ${maxPts(q, X.bank)}）` : ""}${a && a.hint ? ` <span class="tag">用了提示</span>` : ""}</dd>
   ${q.mail || (typeof isAiQ === "function" && isAiQ(q)) ? "" : `<dt>正確答案</dt><dd class="ans-ok">${esc(correctText(q))}</dd>`}
@@ -1135,7 +1150,7 @@ function questionReview(q) {
   if (q.type === "listen") return `${q.img ? `<div class="limg ${q.part === 4 ? "tri" : ""}" style="max-width:420px"><img src="${esc(q.img)}" alt="" onerror="this.parentNode.remove()">${q.part === 4 ? "<span>A</span><span>B</span><span>C</span>" : ""}</div>` : ""}<div class="script">${listenScript(q).map(l => `<div>${esc(l)}</div>`).join("")}</div>${q.part === 1 ? "" : opts}`;
   if (isMC(q)) return `${q.blank ? `<b>第 ${q.blank} 格</b>` : [].concat(q.stem).map(l => `<div>${esc(l)}</div>`).join("")}${q.box ? `<div class="boxed" style="font-size:15px;margin-top:6px">${q.box.map(esc).join("<br>")}</div>` : ""}${q.post ? `<div>${esc(q.post)}</div>` : ""}${opts}`;
   if (q.type === "order") return `<div>${esc(q.stem)}</div><div style="margin-top:6px">${q.items.map((t, k) => `<div><b>${"abcd"[k]}.</b> ${esc(t)}</div>`).join("")}</div>`;
-  if (q.type === "spell") return `${q.zhPrompt ? `<div>${esc(q.zhPrompt)}</div>` : ""}<div>${esc(q.stem).replace("___", `<b>${esc(spellParts(q.ans).first)}____${esc(spellParts(q.ans).last)}</b>`)}</div>`;
+  if (q.type === "spell") return `${q.zhPrompt ? `<div>${esc(q.zhPrompt)}</div>` : ""}<div>${esc(q.stem).replace("___", `<b>${esc(spellParts(q.ans, q.full).first)}____${esc(spellParts(q.ans, q.full).last)}</b>`)}</div>`;
   if (q.type === "trans") return `<div style="font-weight:650">${esc(q.zh)}</div>`;
   if (q.type === "rewrite") return `<div class="muted">${esc(q.instr)}</div>${[].concat(q.src).map(s => `<div style="font-weight:650">${esc(s)}</div>`).join("")}`;
   if (q.type === "essay") return `<div>${esc(q.prompt)}</div>${q.scenario ? `<div class="muted">${esc(q.scenario)}</div>` : ""}${(q.bullets || []).map(b => `<div class="muted">• ${esc(b)}</div>`).join("")}${(q.posts || []).map(([w, t]) => `<div class="muted"><b>${esc(w)}：</b>${esc(t)}</div>`).join("")}${(q.scenes || []).map((s, k) => `<div class="muted">${k + 1}. ${esc(s)}</div>`).join("")}<div style="margin-top:8px"><b>參考範文：</b>${esc(q.model)}</div>`;
@@ -1325,6 +1340,16 @@ document.addEventListener("click", e => {
       else newSession(refs, opts);
       break;
     }
+    case "zone-start": {   // 學生專區：整回照順序、正式考模式（做完才公布對錯）
+      const b = bankById(d.id); if (!b) break;
+      const nm = (($("#who") || {}).value || store.who || "").trim();
+      store.who = nm; store.names = [nm, ...store.names.filter(n => n !== nm)].slice(0, 8);
+      const refs = b.items.flatMap(it => it.type === "group" ? it.qs.map(q => b.id + ":" + q.id) : [b.id + ":" + it.id]);
+      const opts = { kind: "exam", limit: b.minutes * 60, blind: true, title: `學生專區・${b.title}`, banks: [b.id] };
+      if (typeof ensureCode === "function" && !store.codes[nm]) { act.disabled = true; ensureCode(nm).then(ok => { act.disabled = false; if (ok) newSession(refs, opts); }); }
+      else newSession(refs, opts);
+      break;
+    }
     case "resume": S = store.sessions.find(x => x.id === d.id); if (S) { if (S.who) store.who = S.who; wordMode = false; showHint = false; go("quiz"); } break;
     case "discard": sheet(`<h3>刪除這份存檔？</h3><p class="muted" style="margin:0 0 16px">還沒交卷的答案和生字都不會保存。</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="close-sheet">取消</button><button class="btn danger" data-act="discard-now" data-id="${d.id}">刪除</button></div>`); break;
     case "discard-now": store.sessions = store.sessions.filter(x => x.id !== d.id); save(true); closeSheet(); render(); break;
@@ -1436,6 +1461,8 @@ document.addEventListener("input", e => {
   if (e.target.id === "errfix") { w.fix = e.target.value; save(); }
   if (e.target.id === "essayin") { w.val = e.target.value; save(); const c = $("#wc"); if (c) c.textContent = `${wcount(w.val)} 字（建議 ${getQ(S.idx).q.minWords || 50} 字以上）`; }
 });
+/* 名字輸入完（Enter 或離開輸入框）：學生專區出現或消失 */
+document.addEventListener("change", e => { if (e.target && e.target.id === "who" && view === "home" && !!document.querySelector(".zone-list") !== !!zoneName(store.who)) rerenderKeep(); });
 document.addEventListener("keydown", e => {
   if (view !== "quiz" || !S || $("#scrim")) return;
   const tag = (e.target.tagName || "").toLowerCase();
