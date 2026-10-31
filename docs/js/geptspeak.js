@@ -33,7 +33,7 @@ function geptSpeakHTML(q, i, a) {
 }
 function gsStatusHTML(q, G, done, mock) {
   if (done && mock) return `<span class="gsp-st">${I.check}<span>這題已錄音${(S.ans[ctSpan(S.idx)[0]].resp || {}).rec ? "" : "（沒有錄到聲音）"}。正式考試不能重錄。</span></span>`;
-  if (done) return `${G && G.url ? `<audio controls src="${G.url}" style="width:100%"></audio>` : myRecBtnHTML(S.id, ctSpan(S.idx)[0])}<button class="btn" data-act="gsp-redo">重新作答</button>`;
+  if (done) return G && G.url ? `<audio controls src="${G.url}" style="width:100%"></audio><button class="btn" data-act="gsp-redo">重新作答</button>` : `<div class="row" style="gap:10px">${myRecBtnHTML(S.id, ctSpan(S.idx)[0])}<button class="btn" data-act="gsp-redo">重新作答</button></div>`;
   if (!G) {
     const label = mock ? (S.gspStarted ? "繼續口說測驗" : "開始口說測驗") : q.mode === "g-read" ? "開始（先看 1 分鐘）" : "播放題目";
     return `<button class="btn primary" data-act="gsp-go">${q.mode === "g-read" ? I.play : I.speaker}<span>${label}</span></button>
@@ -53,7 +53,7 @@ function gsRevealHTML(q, X, done) {
   if (q.mode === "g-read") h += `<div class="model"><div class="step-label">示範朗讀</div>${btn("聽示範朗讀")}</div>`;
   if (q.mode === "g-answer") h += `<div class="model"><div class="step-label">題目</div><div class="ptext" style="font-size:16px">${esc(q.text)}</div>
     <div class="step-label" style="margin-top:8px">參考回答</div><div class="ptext" style="font-size:16px">${esc(q.model)}</div>${btn("聽參考回答")}</div>`;
-  if (q.mode === "repeat") h += `<div class="model"><div class="step-label">原句</div><div class="ptext" style="font-size:16px">${esc(q.text)}</div>${btn("再聽一次")}</div>`;
+  if (q.mode === "repeat") h += aiH && gsaHasAi(i) ? `<div class="row">${btn("再聽一次原句")}</div>` : `<div class="model"><div class="step-label">原句</div><div class="ptext" style="font-size:16px">${esc(q.text)}</div>${btn("再聽一次")}</div>`;   // AI 卡片已經有標好的原句，不重複印
   if (q.mode === "interview") h += `<div class="model"><div class="step-label">訪談者的問題</div><div class="ptext" style="font-size:16px">${esc(q.text)}</div>${btn("再聽一次問題", "q")}
     ${q.model ? `<details class="pfold" data-key="tsm-${esc(q.id)}"><summary><span class="step-label">參考回答（5 分範例）</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext" style="font-size:16px;margin-top:6px">${esc(q.model)}</div>${btn("聽參考回答")}</details>` : ""}</div>`;
   if (q.exp) h += `<div class="muted" style="font-size:14px">${esc(q.exp)}</div>`;

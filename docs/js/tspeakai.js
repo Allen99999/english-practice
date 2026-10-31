@@ -63,10 +63,10 @@ function tsaIvHTML(q, ai) {
   // 原文標註
   if (ai.transcript) {
     let t = esc(ai.transcript);
-    (ai.errors || []).forEach((e, j) => { const o = esc(e.original || ""); if (o && t.includes(o)) t = t.replace(o, `<span class="sp-w gr" title="${esc(e.corrected + "：" + e.why)}">${o}<sup>${j + 1}</sup></span>`); });
+    (ai.errors || []).forEach((e, j) => { const o = esc(e.original || ""); if (o && t.includes(o)) t = t.replace(o, `<mark class="ts-hl" title="${esc(e.corrected + "：" + e.why)}">${o}<sup>${j + 1}</sup></mark>`); });
     t = t.replace(/\(\.\.\.\)/g, `<span class="ts-pause" title="停頓">⏸</span>`);
     h += `<div class="sp-sec"><h4>你說的內容</h4><div class="ptext" style="font-size:15.5px;line-height:1.9">${t}</div>`;
-    if ((ai.errors || []).length) h += `<ol class="sp-wlist">${ai.errors.map(e => `<li>${gsaTag(e.code)}<div><s>${esc(e.original)}</s> → <b>${esc(e.corrected)}</b><div class="muted">${esc(e.why)}</div></div></li>`).join("")}</ol>`;
+    if ((ai.errors || []).length) h += `<ol class="sp-wlist">${ai.errors.map(e => `<li>${gsaTag(e.code)}<div><div class="ts-diff">${tsaDiff(e.original, e.corrected)}</div><div class="muted">${esc(e.why)}</div></div></li>`).join("")}</ol>`;
     h += `</div>`;
   }
   if ((ai.pronWords || []).length) h += `<div class="sp-sec"><h4>發音要注意</h4>${ai.pronWords.map(p => `<div class="sp-fix">${gsaTag(p.code)}<div><b>${esc(p.word)}</b>${p.heard && p.heard.toLowerCase() !== String(p.word).toLowerCase() ? `<span class="muted">　聽起來像「${esc(p.heard)}」</span>` : ""}<div class="muted">${esc(p.tip)}</div></div></div>`).join("")}</div>`;
@@ -110,8 +110,8 @@ async function tsaReport(sess) {
 function tsaReportHTML(att) {
   const items = tsaItems(att), done = items.filter(x => x.done); if (!done.length) return "";
   const est = done.length === items.length ? tsaEstimate(items) : null, rep = (att.ans[items[0].i] || {}).resp && att.ans[items[0].i].resp.report;
-  let h = `<div class="glass card sp-report"><div class="section-h" style="margin:0"><h2>🎙️ 托福口說成績（AI 估算）</h2>${est ? `<span class="tag">Speaking ${est.band.toFixed(1)}・${est.cefr}</span>` : ""}</div>`;
-  if (est) h += `<div class="sp-dials">${[["口說級分", est.band.toFixed(1), est.band / 6 * 100, `1～6・CEFR ${est.cefr}`], ["原始分", est.raw, est.raw / 55 * 100, "滿分 55（11 題 × 5）"]].map(([n, v, p, s]) => `<div class="sp-dial"><div class="sp-ring" style="--p:${p};--c:${gsaCol(Math.round(p / 20))}"><b>${v}</b></div><div><b>${n}</b><div class="muted" style="font-size:12.5px">${s}</div></div></div>`).join("")}
+  let h = `<div class="glass card sp-report"><div class="section-h" style="margin:0"><h2>🎙️ 托福口說成績（AI 估算）</h2>${est ? `<span class="tag" style="white-space:nowrap">Speaking ${est.band.toFixed(1)}・${est.cefr}</span>` : ""}</div>`;
+  if (est) h += `<div class="sp-dials four">${[["口說級分", est.band.toFixed(1), est.band / 6 * 100, `1～6・CEFR ${est.cefr}`], ["原始分", est.raw, est.raw / 55 * 100, "滿分 55（11 題 × 5）"]].map(([n, v, p, s]) => `<div class="sp-dial"><div class="sp-ring" style="--p:${p};--c:${gsaCol(Math.round(p / 20))}"><b>${v}</b></div><div><b>${n}</b><div class="muted" style="font-size:12.5px">${s}</div></div></div>`).join("")}
     ${[["Listen and Repeat", est.lr], ["Take an Interview", est.iv]].filter(x => x[1] !== null).map(([n, v]) => `<div class="sp-dial"><div class="sp-ring" style="--p:${v / 5 * 100};--c:${gsaCol(Math.floor(v))}"><b>${v}</b></div><div><b>${n}</b><div class="muted" style="font-size:12.5px">每題平均・滿分 5</div></div></div>`).join("")}</div>`;
   else h += `<div class="muted">AI 已批改 ${done.length} / ${items.length} 題，全部批完才換算級分。</div>`;
   h += `<div class="sp-parts">${items.map(x => `<span class="sp-pc" title="${esc(x.q.text || "")}" style="--c:${x.done ? gsaCol(x.level) : "var(--ink-3)"}">${x.kind === "lr" ? "複述" : "訪談"} ${x.i + 1}<b>${x.done ? x.level : "–"}</b></span>`).join("")}</div>`;
@@ -123,4 +123,20 @@ function tsaReportHTML(att) {
   }
   h += `<div class="muted" style="font-size:12px">每題依 ETS 官方量表 0～5 分；ETS 沒有公布原始分換成 1～6 級分的方法，這裡用得分率估算（和其他科同一套）${est && !est.full ? "，這次不是完整的 11 題，原始分已換算成 55 分制" : ""}。每題的回饋在下方解析裡。</div></div>`;
   return h;
+}
+
+/* 改錯只標出不一樣的字：Last year, I ~~go~~ **went** to Japan（逐字比對，相同的字照原樣） */
+function tsaDiff(a, b) {
+  const A = String(a || "").split(/\s+/).filter(Boolean), B = String(b || "").split(/\s+/).filter(Boolean), n = A.length, m = B.length, nz = w => w.toLowerCase().replace(/[^a-z0-9']/g, "");
+  if (!n || !m || n + m > 80) return `<s>${esc(a)}</s> → <b>${esc(b)}</b>`;
+  const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = nz(A[i]) === nz(B[j]) ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+  if (dp[0][0] < Math.min(n, m) / 3) return `<s>${esc(a)}</s> → <b>${esc(b)}</b>`;   // 幾乎整句改寫：整句對照比較清楚
+  const out = []; let i = 0, j = 0;
+  while (i < n || j < m) {
+    if (i < n && j < m && nz(A[i]) === nz(B[j])) { out.push(esc(B[j])); i++; j++; }
+    else if (i < n && (j >= m || dp[i + 1][j] >= dp[i][j + 1])) { out.push(`<s class="ts-del">${esc(A[i])}</s>`); i++; }   // 先劃掉錯的字，再接正確的字
+    else { out.push(`<b class="ts-add">${esc(B[j])}</b>`); j++; }
+  }
+  return out.join(" ").replace(/(<\/s>) (<b class="ts-add">)/g, "$1$2");
 }

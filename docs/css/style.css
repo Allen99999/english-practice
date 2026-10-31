@@ -975,7 +975,7 @@ html.intro-on body{overflow:hidden}
 .sp-desc{font-size:13.5px;color:var(--ink-2)}
 .sp-chips{display:flex;flex-wrap:wrap;gap:6px}
 .sp-chips span{font-size:12.5px;padding:3px 9px;border-radius:99px;background:var(--accent-soft);color:var(--ink-2);white-space:nowrap}
-.sp-say{font-size:15.5px;font-weight:600}
+.sp-say{font-size:15.5px;font-weight:500;line-height:1.65}
 .sp-line{display:flex;gap:10px;align-items:baseline;font-size:15.5px;line-height:1.6}
 .sp-k{flex:none;font-size:12px;font-weight:700;color:var(--ink-3);letter-spacing:.05em;min-width:30px}
 .sp-miss{color:var(--bad);text-decoration:underline wavy;text-underline-offset:4px;font-weight:700}
@@ -1054,3 +1054,10 @@ html.intro-on body{overflow:hidden}
 .ts-chain span.on{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good);font-weight:700}
 .ts-chain i{font-style:normal;color:var(--ink-3)}
 .ts-pause{color:var(--sp-fl);font-size:13px;margin:0 2px}
+.ts-hl{background:color-mix(in srgb,var(--sp-gr) 16%,transparent);color:inherit;border-radius:4px;padding:1px 2px;cursor:help}
+.ts-hl sup{font-size:10px;font-weight:700;color:var(--sp-gr);margin-left:1px;font-family:var(--round,inherit)}
+.ts-diff{line-height:1.7}.ts-del{color:var(--bad);text-decoration-thickness:2px}.ts-add{color:var(--good);margin-left:4px}
+.sp-dials.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:820px){.sp-dials.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.sp-dials.four .sp-dial{flex-direction:row;text-align:left;gap:10px;padding:10px}.sp-dials.four .sp-dial b{font-size:13.5px}}
+.sp-better>div:last-child,.sp-sec>.ptext{max-width:78ch}   /* 電腦版：英文段落不要拉太寬，比較好讀 */
