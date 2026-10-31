@@ -1,4 +1,5 @@
-/* ===== 全民英檢初級口說：照 LTTC 官方流程自動進行 =====
+/* ===== 口說作答流程（全民英檢初級＋托福 2026 新制）：照官方流程自動進行 =====
+   托福 Listen and Repeat：句子播一次 → 嗶 → 照原句說一次（8／10／12 秒）；Take an Interview：問題播一次 → 嗶 → 回答 45 秒，沒有準備時間
    複誦：題目播兩次（間隔約 1.5 秒）→ 嗶一聲 → 跟著唸（錄音，時間到自動停）
    朗讀句子與短文：看 1 分鐘 → 嗶 → 錄 1 分鐘（5 句＋短文照官方算 6 題，共用一段錄音）
    回答問題：題目播兩次 → 嗶 → 回答 15 秒
@@ -9,7 +10,9 @@ let GSTREAM = null, GACTX = null;
 const GS_PART = {
   "g-repeat": ["第一部分・複誦", "題目不印在試卷上，會播出兩次，兩次之間約有 1～2 秒的間隔。聽完兩次、聽到嗶聲後，請立刻跟著唸一次。"],
   "g-read": ["第二部分・朗讀句子與短文", "請先用 1 分鐘的時間閱讀下面的句子與短文，聽到嗶聲後，以正常的速度在 1 分鐘內將句子和短文清楚正確地唸出來。"],
-  "g-answer": ["第三部分・回答問題", "題目不印在試卷上，每題播出兩次。聽到嗶聲後請馬上回答，每題回答時間 15 秒；不一定要用完整的句子，請在作答時間內盡量表達。"]
+  "g-answer": ["第三部分・回答問題", "題目不印在試卷上，每題播出兩次。聽到嗶聲後請馬上回答，每題回答時間 15 秒；不一定要用完整的句子，請在作答時間內盡量表達。"],
+  "repeat": ["Listen and Repeat", "句子只播一次。聽到嗶聲後，照你聽到的原句完整說一次（只能說一次）。"],
+  "interview": ["Take an Interview", "訪談者的問題只播一次。聽到嗶聲後馬上回答，作答時間 45 秒，沒有準備時間；請回答問題並說明理由或例子。"]
 };
 const gsKey = i => S.id + ":" + ctSpan(i)[0];
 const gsCur = i => GSP && GSP.key === gsKey(i) ? GSP : null;
@@ -21,7 +24,8 @@ function gsRender() { if (view === "quiz") rerenderKeep(); }
 /* ---------- 畫面 ---------- */
 function geptSpeakHTML(q, i, a) {
   const X = getQ(i), mock = gsMock(), G = gsCur(i), done = gsAnswered(i), [part, instr] = GS_PART[q.mode], s0 = ctSpan(i)[0];
-  let h = `<div class="eyebrow">全民英檢初級口說・${part}</div><div class="instr">${instr}</div>`;
+  let h = `<div class="eyebrow">${q.gept ? "全民英檢初級口說" : "TOEFL Speaking"}・${part}</div><div class="instr">${instr}</div>`;
+  if (q.scenario) h += `<div class="boxed" style="font-size:15px">${esc(q.scenario)}</div>`;
   if (q.mode === "g-read") h += `<div class="gsp-read">${X.group.passage.map((t, k, arr) => `<div class="gsp-line ${k === arr.length - 1 ? "psg" : ""}"><span class="tag">${s0 + k + 1}</span><span>${esc(t)}</span></div>`).join("")}</div>`;
   h += `<div class="rec-box">${gsStatusHTML(q, G, done, mock)}</div>`;
   if (!mock && (done || (G && G.phase === "done"))) h += gsRevealHTML(q, X, done);
@@ -35,20 +39,23 @@ function gsStatusHTML(q, G, done, mock) {
     return `<button class="btn primary" data-act="gsp-go">${q.mode === "g-read" ? I.play : I.speaker}<span>${label}</span></button>
     <span class="muted" style="font-size:13px">${mock ? "開始後會一路自動進行到口說測驗結束：播題目 → 嗶聲 → 錄音 → 下一題，中間不能重聽或重錄。請先確認麥克風可以使用、周圍安靜。" : "播完題目會嗶一聲，接著自動錄音。"}${typeof SYNC_ON !== "undefined" && SYNC_ON ? "錄音會上傳給老師。" : "錄音只存在這台裝置。"}</span>`;
   }
-  if (G.phase === "play") return `<span class="gsp-st">${I.speaker}<span>播放題目中（第 ${G.n} 次，共 2 次）…</span></span>`;
+  if (G.phase === "play") return `<span class="gsp-st">${I.speaker}<span>${q.gept ? `播放題目中（第 ${G.n} 次，共 2 次）…` : "播放中，仔細聽…"}</span></span>`;
   if (G.phase === "prep") return `<span class="gsp-st">閱讀準備時間，剩 <b class="tnum" id="gsp-time">${fmtTime(G.dur)}</b></span>${mock ? "" : `<button class="btn" data-act="gsp-skip">準備好了，開始朗讀</button>`}`;
   if (G.phase === "rec") return `<span class="gsp-st"><span class="rec-dot"></span>錄音中 <b class="tnum" id="gsp-time">0:00 / ${fmtTime(G.dur)}</b></span>${mock ? "" : `<button class="btn danger" data-act="gsp-stop"><span class="rec-dot"></span>${q.mode === "g-read" ? "唸完了" : "停止錄音"}</button>`}`;
   if (mock) return `<span class="gsp-st">${I.check}<span>錄音完成，準備下一題…</span></span>`;
   return `${G.url ? `<audio controls src="${G.url}" style="width:100%"></audio>` : `<span class="muted">沒有錄到聲音。</span>`}<button class="btn" data-act="gsp-redo">重新作答</button>`;
 }
 function gsRevealHTML(q, X, done) {
-  const btn = t => gsModelBtn(t), i = S.idx;
+  const btn = (t, w) => gsModelBtn(t, w), i = S.idx;
   const aiH = typeof gsaQuizHTML === "function" ? gsaQuizHTML(q, i) : "", aiWait = typeof gsaBusy === "function" && (gsaBusy(S, i) || gsaHasAi(i) || (gsaOn() && !(S.work[ctSpan(i)[0]] || {}).gsaErr));
   let h = aiH;
   if (q.mode === "g-repeat") h += `<div class="model"><div class="step-label">原句</div><div class="ptext" style="font-size:16px">${esc(q.text)}</div>${btn("再聽一次")}</div>`;
   if (q.mode === "g-read") h += `<div class="model"><div class="step-label">示範朗讀</div>${btn("聽示範朗讀")}</div>`;
   if (q.mode === "g-answer") h += `<div class="model"><div class="step-label">題目</div><div class="ptext" style="font-size:16px">${esc(q.text)}</div>
     <div class="step-label" style="margin-top:8px">參考回答</div><div class="ptext" style="font-size:16px">${esc(q.model)}</div>${btn("聽參考回答")}</div>`;
+  if (q.mode === "repeat") h += `<div class="model"><div class="step-label">原句</div><div class="ptext" style="font-size:16px">${esc(q.text)}</div>${btn("再聽一次")}</div>`;
+  if (q.mode === "interview") h += `<div class="model"><div class="step-label">訪談者的問題</div><div class="ptext" style="font-size:16px">${esc(q.text)}</div>${btn("再聽一次問題", "q")}
+    ${q.model ? `<details class="pfold" data-key="tsm-${esc(q.id)}"><summary><span class="step-label">參考回答（5 分範例）</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext" style="font-size:16px;margin-top:6px">${esc(q.model)}</div>${btn("聽參考回答")}</details>` : ""}</div>`;
   if (q.exp) h += `<div class="muted" style="font-size:14px">${esc(q.exp)}</div>`;
   if (!done && !aiWait) h += `<div class="muted" style="font-size:13px">先自己評一次：</div>` + selfButtonsHTML(q, X.bank, "gsp-rate");
   return h;
@@ -73,14 +80,16 @@ async function gsGo(i) {
   const G = GSP = { key: gsKey(i), i: ctSpan(i)[0] };
   if (q.mode === "g-read") gsCount(G, "prep", 60, () => gsRec(G, 60)); else gsPlay(G, q);
 }
-/* 播一次題目；最多等 12 秒（瀏覽器語音偶爾不會回報「播完」，不能讓考試卡住） */
+/* 播一次題目；最多等 12 秒（托福訪談的問題較長，依字數放寬）：瀏覽器語音偶爾不會回報「播完」，不能讓考試卡住 */
 function gsPlayOnce(items, cb) {
-  let fin = false; const end = () => { if (fin) return; fin = true; clearTimeout(tm); cb(); }, tm = setTimeout(() => { stopReading(); end(); }, 12000);
+  const words = items.reduce((t, x) => t + String(x.text).split(/\s+/).length, 0);
+  let fin = false; const end = () => { if (fin) return; fin = true; clearTimeout(tm); cb(); }, tm = setTimeout(() => { stopReading(); end(); }, Math.max(12, words * 0.55 + 6) * 1000);
   playItems(items, end);
 }
 function gsPlay(G, q) {
   const one = questionSpeech(q);
   G.phase = "play"; G.n = 1; gsRender();
+  if (!q.gept) { gsPlayOnce(one, () => { if (gsAlive(G)) gsRec(G, q.secs); }); return; }   // 托福：只播一次
   gsPlayOnce(one, () => setTimeout(() => {
     if (!gsAlive(G)) return;
     G.n = 2; gsRender();
@@ -141,7 +150,7 @@ function gsNext(G) {
     if (!gsAlive(G)) return;
     const n = ctSpan(G.i)[1] + 1, X = n < S.qs.length ? getQ(n) : null;
     GSP = null;
-    if (X && X.q.gept && X.q.type === "speak" && !gsAnswered(n)) { gotoQ(n); gsGo(n); }
+    if (X && X.q.type === "speak" && !gsAnswered(n)) { gotoQ(n); gsGo(n); }
     else { gsRelease(); gsRender(); toast("口說測驗結束，請按「交卷」"); }
   }, 1200);
 }
@@ -149,17 +158,17 @@ function gsNext(G) {
 /* ---------- 示範朗讀（預先產生的 MP3）：播放／暫停／繼續 ---------- */
 let GSM = null;   // { key, paused }
 const gsmKey = () => S ? S.id + ":" + S.idx : "";
-function gsModelBtn(t) {
-  const on = GSM && GSM.key === gsmKey(), lab = !on ? t : GSM.paused ? "繼續播放" : "暫停";
-  return `<div class="row gsm" data-t="${esc(t)}" style="gap:8px"><button class="btn sm" data-act="gsp-model">${on && !GSM.paused ? I.pause : on ? I.play : I.speaker}<span>${lab}</span></button>${on ? `<button class="btn sm" data-act="gsp-model-re">${I.redo}<span>從頭播放</span></button>` : ""}</div>`;
+function gsModelBtn(t, w) {
+  const on = GSM && GSM.key === gsmKey() + (w || ""), lab = !on ? t : GSM.paused ? "繼續播放" : "暫停";
+  return `<div class="row gsm" data-t="${esc(t)}" data-w="${w || ""}" style="gap:8px"><button class="btn sm" data-act="gsp-model">${on && !GSM.paused ? I.pause : on ? I.play : I.speaker}<span>${lab}</span></button>${on ? `<button class="btn sm" data-act="gsp-model-re">${I.redo}<span>從頭播放</span></button>` : ""}</div>`;
 }
-function gsModelSync() { document.querySelectorAll(".gsm").forEach(b => { b.outerHTML = gsModelBtn(b.dataset.t); }); }
+function gsModelSync() { document.querySelectorAll(".gsm").forEach(b => { b.outerHTML = gsModelBtn(b.dataset.t, b.dataset.w); }); }
 function gsModelStop() { if (GSM) { GSM = null; stopReading(); } }
-function gsModelPlay() {
+function gsModelPlay(w) {
   const X = getQ(S.idx), q = X.q;
-  const items = q.mode === "g-read" ? passageSpeech(X.group).map(x => Object.assign({ gap: 500 }, x)) : q.mode === "g-answer" ? gsModelSpeech(q) : questionSpeech(q);
+  const items = q.mode === "g-read" ? passageSpeech(X.group).map(x => Object.assign({ gap: 500 }, x)) : (q.mode === "g-answer" || q.mode === "interview") && w !== "q" ? gsModelSpeech(q) : questionSpeech(q);
   if (!PLAYER.gsmHook) { PLAYER.gsmHook = true; PLAYER.addEventListener("play", () => { if (GSM && GSM.paused) PLAYER.pause(); }); }   // 暫停時剛好遇到句子之間的空檔：下一句一開始就停住
-  const G0 = GSM = { key: gsmKey(), paused: false };
+  const G0 = GSM = { key: gsmKey() + (w || ""), paused: false };
   playItems(items, () => { if (GSM === G0) { GSM = null; gsModelSync(); } });
   gsModelSync();
 }
@@ -175,10 +184,11 @@ document.addEventListener("click", e => {
   if (a === "gsp-stop" && G && G.mr && G.mr.state === "recording" && !gsMock()) G.mr.stop();
   if (a === "gsp-redo" && !gsMock() && !(typeof gsaBusy === "function" && gsaBusy(S, i))) { if (G && G.url) URL.revokeObjectURL(G.url); GSP = null; gsGo(i); }
   if (a === "gsp-rate" && G && G.phase === "done" && !gsMock()) { gsSave(G, +el.dataset.v); gsRender(); }
+  const w = (el.closest(".gsm") || {}).dataset ? el.closest(".gsm").dataset.w || "" : "";
   if (a === "gsp-model" && !gsMock()) {
-    if (!GSM || GSM.key !== gsmKey()) gsModelPlay();
+    if (!GSM || GSM.key !== gsmKey() + w) { gsModelStop(); gsModelPlay(w); }
     else if (!GSM.paused) { GSM.paused = true; PLAYER.pause(); try { speechSynthesis.pause(); } catch (e) { } gsModelSync(); }
     else { GSM.paused = false; if (PLAYER.src && !PLAYER.ended && PLAYER.currentTime > 0) PLAYER.play().catch(() => { }); try { speechSynthesis.resume(); } catch (e) { } gsModelSync(); }
   }
-  if (a === "gsp-model-re" && !gsMock()) { gsModelStop(); gsModelPlay(); }
+  if (a === "gsp-model-re" && !gsMock()) { gsModelStop(); gsModelPlay(w); }
 });

@@ -68,7 +68,7 @@ function playListenGroup() {
 /* ---------- 口說：播放題目、錄音、重聽、看參考答案自評 ---------- */
 let REC = null;   // { mr, chunks, url, idx, t0, timer }
 function speakHTML(q, i, a) {
-  if (q.gept) return geptSpeakHTML(q, i, a);   // 英檢初級口說（geptspeak.js）
+  return geptSpeakHTML(q, i, a);   // 英檢初級、托福口說都用同一套自動流程（geptspeak.js）；下面舊的手動錄音畫面留著備用
   const w = S.work[i] || {}, rec = REC && REC.idx === i ? REC : null, locked = !!a;
   const reveal = locked || w.reveal;
   return `<div class="eyebrow">${q.mode === "repeat" ? "Speaking・Listen and Repeat" : "Speaking・Take an Interview"}</div>

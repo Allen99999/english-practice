@@ -73,7 +73,7 @@ const AD = (id, tag, course, professor, posts, model, exp) => ({ id, type: "essa
   prompt: `Your professor is teaching a class on ${course}. Write a post responding to the professor's question. In your response, you should express and support your opinion and make a contribution to the discussion in your own words. An effective response will contain at least 100 words. You have 10 minutes to write.`,
   posts: [professor].concat(posts), model, exp, keywords: null });
 /* 口說：Listen and Repeat（聽一句、照著說）／Take an Interview（回答訪問的問題） */
-const SR = (id, tag, scenario, line, exp) => ({ id, type: "speak", mode: "repeat", tag, scenario, script: [line], text: line.replace(/^[A-Z]{1,2}\d?: /, ""), exp: exp || "重點：完整、正確地照原句說出來，注意重音和語調。", secs: Math.max(8, Math.ceil(line.split(/\s+/).length * 0.75)) });
+const SR = (id, tag, scenario, line, exp) => ({ id, type: "speak", mode: "repeat", tag, scenario, script: [line], text: line.replace(/^[A-Z]{1,2}\d?: /, ""), exp: exp || "重點：完整、正確地照原句說出來，注意重音和語調。", secs: (n => n <= 8 ? 8 : n <= 12 ? 10 : 12)(line.replace(/^[A-Z]{1,2}\d?: /, "").split(/\s+/).length) });   // ETS：每句最多 8～12 秒，依句長
 const SI = (id, tag, scenario, question, model, exp) => ({ id, type: "speak", mode: "interview", tag, scenario, script: [question], text: question.replace(/^[A-Z]{1,2}\d?: /, ""), model, exp, secs: 45 });
 
 /* ===== 全民英檢初級口說（照 LTTC 官方流程；作答畫面在 geptspeak.js） =====

@@ -163,8 +163,16 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
   - 正式模擬卷「考哪一部分」可以按「複選」同時考好幾個部分（`sel.gMulti`／`sel.gParts`）。
   - 語音只做聽力和口說（build_tts_jobs.mjs 會跳過托福的閱讀、寫作和 dict7.js、dict8.js 的單字），托福頁面也不顯示「念題目／朗讀全文」。
   - 托福題目用到的字收在 `dict7.js`、`dict8.js`（點字時用瀏覽器內建語音）；題目裡不要用 é、ā 這類字母（點字查詢會拆錯），寫成 cafe、resume、Maori。
-  - 寫作、口說是自評＋範文；口說錄音在學生自評後上傳給老師（見下方「口說錄音」）。結果頁會顯示依答對率估算的 1～6 級分。
+  - 寫作、口說都有 AI 批改（見下方），AI 不能用時才自評；口說錄音錄完就上傳給老師（見下方「口說錄音」）。結果頁會顯示依答對率估算的 1～6 級分。
   - Allen 提供的「新托福模擬小題本」只當格式參考，內容含 ETS 官方題，不可照搬到網站。
+- **托福口說 AI 批改（2026-11-01 加入）**：評分基準＝本機 `新制托福 Speaking 評分與回饋系統.md`（ETS 官方量表 © 2025，不可改；第十節是 A／B／C 三方案比較測試結果，改提示詞或模型後要重跑）。
+  後端 `apps-script/AiToeflSpeak.gs`（`aigrade` 的 kind `toefl-speak`，sub＝lr／iv／report；共用 AiSpeak.gs 的模型清單、gsGemini_ 和 speak 額度），前端畫面 `docs/js/tspeakai.js`，送出與批改中沿用 gspeakai.js 的 gsaRun。
+  - Listen and Repeat：2.5-flash **不給原句**逐字轉寫＋判斷清晰度 → 程式比對（`tsLrScore_`：功能字／內容字、字尾標記、只說前半句）依官方量表給分，再用清晰度封頂（約 2～5 秒、NT$0.01）。給原句的話 AI 會照原句「聽」（實測重口音 light 被聽成 right 給 5 分）。
+  - Take an Interview：2.5-flash 盲轉寫 → 3.1-pro 拿題目＋轉寫＋錄音＋音量數據依官方量表批改（約 15～30 秒、NT$0.7）：四面向（診斷用）、封頂（X0／ISO／OFF／UNC／THIN／CHOP／PART）、問題檢核、回答結構、原文標註、三個優先、5 分改寫、換字。
+    實測 AI 比 ETS 嚴（ETS 5 分範例 um 很多、65～90 字），提示詞裡的「5 分還是 4 分」規則和 CHOP（說話比例 < 55% 且 2 秒以上停頓 ≥ 3 次）都是校準後的結果，不要隨便改。
+  - 作答流程和英檢共用 `geptspeak.js`：托福題目只播一次（英檢兩次），Listen and Repeat 依句長 8／10／12 秒（helpers.js 的 SR），訪談 45 秒；模擬卷一路自動考完、背景批改，交卷時等批完並寫總回饋（原始分 /55 → 用 `BAND_CUTS` 估 1～6 級分＋CEFR）。
+  - 訪談的參考回答做成 MP3（`gsModelSpeech` 也涵蓋 interview）；AI 產生的句子不念。舊的手動錄音畫面（toefl.js 的 speakHTML 後半）已不用。
+  - `rec-lab/`（gitignore）：比較測試用的錄音小工具和 Allen 的 16 段測試錄音（`python3 rec-lab/server.py`，http://localhost:8790）。
 - **AI 批改（托福 Write an Email、Write for an Academic Discussion）**：前端 `docs/js/aigrade.js`，後端 `apps-script/Ai.gs`（評分指令＝`新制托福 Write an Email 評分與回饋系統.md`、`新制托福 Academic Discussion 評分與回饋系統.md` 的標準；兩份文件在本機、不上傳。**評分基準不可改動**）。
   - AD 的回饋：估分卡（A 回應與貢獻、B 展開與連貫、C 句法與用字、D 正確性＋封頂規則）、一句診斷、任務檢核（教授問句／兩位同學 ↗️↔️⛔／🧩 新增點）、論證鏈、原文標註＋錯誤清單、替換字 3 個、升級一句、下一篇只練一件事；錯誤日誌與 Email 共用（標 E1／AD1），分數趨勢分題型。刻意不放：語氣轉換、對照課本。AD 正式模擬卷限時 10 分鐘、限時重寫 7 分鐘。
   - 部署：`clasp deploy -i <deploymentId>` 一定要帶對 ID（用 `clasp deployments` 查標 @數字 的那一個）；ID 空白時只會建新版本，網站不會更新。

@@ -391,8 +391,8 @@ function respText(q, a) {
     case "spell": return spellFull(q, r);
     case "trans": case "rewrite": return r || "（空白）";
     case "essay": return `${r.text || "（空白）"}（${wcount(r.text)} 字・${typeof r.level === "number" ? `${r.ai ? "AI 評分" : "自評"} ${r.level} / ${maxPts(q)} 分` : `自評${r.rate === "ok" ? "達到要求" : "還需加強"}`}）`;
-    case "speak": if (q.gept && r.ai) return r.ai.transcript ? `「${r.ai.transcript.slice(0, 160)}」` : "（沒有聽到英文）";
-      if (q.gept && typeof r.level !== "number") return r.rec ? "已錄音（待批改）" : "沒有錄到音";
+    case "speak": if (r.ai) return r.ai.transcript ? `「${r.ai.transcript.slice(0, 160)}」` : "（沒有聽到英文）";
+      if (typeof r.level !== "number") return r.rec ? "已錄音（待批改）" : "沒有錄到音";
       return typeof r.level === "number" ? `自評 ${r.level} / ${maxPts(q)} 分${a.resp.rec ? "（有錄音）" : ""}` : `自評${r.rate === "ok" ? "達到要求" : "還需加強"}`;
     case "cword": return r || "（空白）";
     case "scramble": { const all = q.tiles.concat(q.extra || []); return q.frame ? bsFill(q, r.map(i => all[i])) : (q.pre ? q.pre + " " : "") + r.map(i => all[i]).join(" ") + (q.post ? " " + q.post : ""); }
@@ -672,7 +672,7 @@ function qTotal() { return S.qs.length + (S.adaptive || []).filter(p => !p.done)
 /* 補字母（Complete the Words）一段 10 格、英檢口說朗讀 5 句＋短文，照官方各算 1 題，但畫面上整段是一頁：回傳這一段的題號範圍 */
 function ctSpan(i) { const X = getQ(i); if (!X || !X.group || (X.group.kind !== "ctest" && X.group.kind !== "readaloud")) return [i, i]; const idxs = groupIdx(X.group); return [Math.min(...idxs), Math.max(...idxs)]; }
 function qbarHTML() {
-  const bare = S.blind || (S.mock && getQ(S.idx).q.gept);   // 正式考模式、英檢口說模擬卷：不顯示提示、生字
+  const bare = S.blind || (S.mock && getQ(S.idx).q.type === "speak");   // 正式考模式、英檢口說模擬卷：不顯示提示、生字
   const last = ctSpan(S.idx)[1] === S.qs.length - 1 && !(typeof adaptPending === "function" && adaptPending());
   return `<button class="nav" data-act="prev" ${S.idx === 0 ? "disabled" : ""} aria-label="上一題">${I.chevL}<span>上一題</span></button>
   ${bare ? "" : `<button class="tb ${showHint ? "on" : ""}" data-act="hint">${I.bulb}提示</button>`}
@@ -878,7 +878,7 @@ function blindSavedHTML(q, a) {
 function feedbackHTML(X, a) {
   const q = X.q;
   if (q.type === "essay" && typeof isAiQ === "function" && isAiQ(q) && a.resp && a.resp.ai) return "";   // AI 批改結果在題目卡裡
-  if (q.type === "speak" && q.gept) return "";   // 英檢口說：狀態在題目卡裡（geptspeak.js）
+  if (q.type === "speak") return "";   // 英檢口說：狀態在題目卡裡（geptspeak.js）
   if (q.type === "speak" || q.type === "essay") { const p = ptsOf(q, X.bank, a), m = maxPts(q, X.bank);
     return `<div class="feedback ${a.correct ? "ok" : "no"}"><span class="fb-ic">${a.correct ? I.check : I.x}</span><div style="min-width:0"><b>自評 ${p} / ${m} 分</b><p>${esc(levelDesc(q, X.bank, p))}</p><p>${esc(q.exp || "")}</p></div></div>`; }
   const cn = (q.type === "trans" || q.type === "rewrite") && !a.correct ? caseNote(q, a.resp) : "";
@@ -1194,7 +1194,7 @@ function reviewItem(att, i) {
   ${q.hint ? `<dt>提示</dt><dd class="muted">${esc(q.hint)}</dd>` : ""}</dl>`;
   if ((q.type === "trans" || q.type === "rewrite") && a && !a.correct) body += diffHTML(q, a.resp);
   if (typeof isAiQ === "function" && isAiQ(q) && typeof aiReviewHTML === "function") body += aiReviewHTML(q, a, att, i);   // Email、AD：AI 批改結果、重寫、範文
-  if (q.gept && q.type === "speak" && typeof gsaReviewHTML === "function") body += gsaReviewHTML(q, a, att, i);   // 英檢口說 AI 批改
+  if (q.type === "speak" && typeof gsaReviewHTML === "function") body += gsaReviewHTML(q, a, att, i);   // 英檢口說 AI 批改
   if (q.type === "speak" && a && a.resp && a.resp.rec && !store.teacherCode && recIdx(att, i) === i && typeof myRecBtnHTML === "function") body += myRecBtnHTML(att.id, i);   // 學生重聽自己的錄音
   if (q.type === "speak" && a && store.teacherCode) body += `<button class="btn" data-act="rec-fetch" data-att="${esc(att.id)}" data-i="${recIdx(att, i)}">${I.play}播放學生錄音</button>`;
   if (typeof gradeButtonsHTML === "function") body += gradeButtonsHTML(att, i);

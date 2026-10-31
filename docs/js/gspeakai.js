@@ -1,10 +1,10 @@
 /* ===== 英檢初級口說 AI 批改（畫面）：後端 apps-script/AiSpeak.gs；評分規則見本機「全民英檢初級口說 評分與回饋系統.md」
    練習：錄完自動送 AI（複誦、回答約 3～5 秒；朗讀約 15～35 秒），AI 分數就是這題的分數；AI 不能用時才退回自評。
    正式模擬卷：考試中在背景批改、不顯示結果；交卷前等批改完成，再整理整份口說的官方換算與總回饋。 ===== */
-const GSA_SUB = { "g-repeat": "repeat", "g-read": "read", "g-answer": "answer" };
+const GSA_SUB = { "g-repeat": "repeat", "g-read": "read", "g-answer": "answer", repeat: "lr", interview: "iv" };   // 托福（lr、iv）的畫面在 tspeakai.js
 const GSA_CODE = { P1: "尾音", P2: "th 音", P3: "v／f／w 音", P4: "l／r／n 音", P5: "母音", P6: "單字重音", P7: "句子語調", P8: "字尾 -s／-ed", P9: "節奏與連音",
-  F1: "停頓", F2: "速度", F3: "重複、um", C1: "漏字", C2: "加字或換字", C3: "數字時間唸法",
-  G1: "動詞時間", G2: "主詞動詞搭配", G3: "be 動詞混用", G4: "單複數", G5: "a／an／the", G6: "介系詞", G7: "詞性", G8: "句子不完整", G9: "語序", G11: "助動詞與問句", V1: "用字", V2: "中式英文" };
+  F1: "停頓", F2: "速度", F3: "重複、um", C1: "漏字", C2: "加字或換字", C3: "數字時間唸法", C4: "字的順序",
+  G1: "動詞時間", G2: "主詞動詞搭配", G3: "be 動詞混用", G4: "單複數", G5: "a／an／the", G6: "介系詞", G7: "詞性", G8: "句子不完整", G9: "語序", G11: "助動詞與問句", V1: "用字", V2: "中式英文", V3: "字彙太簡單重複" };
 const gsaKind = c => /^P/.test(c) ? "pr" : /^F/.test(c) ? "fl" : /^C/.test(c) ? "ct" : "gr";   // 顏色分類：發音、流利、內容、文法用字
 const GSA_SEG = { ok: ["ok", "唸得好"], minor: ["mi", "小問題"], major: ["ma", "要改"], skipped: ["sk", "沒唸到"] };
 const GSA_TONE = { flat: "語調太平", wrong: "語調方向不對" };
@@ -23,8 +23,8 @@ async function gsaMetrics(blob) {
     for (let f = 0; f < n; f++) if (rms[f] > thr) { const t = f * 0.02, last = segs[segs.length - 1]; if (last && t - last[1] < 0.25) last[1] = t + 0.02; else segs.push([t, t + 0.02]); }
     const sp = segs.filter(s => s[1] - s[0] >= 0.1);
     if (!sp.length) return { dur, speech: 0, pauses: 0, longest: 0, onset: 0, span: 0 };
-    const gaps = sp.slice(1).map((s, k) => s[0] - sp[k][1]).filter(g => g >= 0.6), r1 = x => Math.round(x * 10) / 10;
-    return { dur, speech: r1(sp.reduce((t, s) => t + s[1] - s[0], 0)), pauses: gaps.length, longest: r1(gaps.length ? Math.max(...gaps) : 0), onset: r1(sp[0][0]), span: r1(sp[sp.length - 1][1] - sp[0][0]) };   // span：第一個字到最後一個字（算語速）
+    const gaps = sp.slice(1).map((s, k) => s[0] - sp[k][1]).filter(g => g >= 0.6), r1 = x => Math.round(x * 10) / 10, speech = sp.reduce((t, s) => t + s[1] - s[0], 0), span = sp[sp.length - 1][1] - sp[0][0];
+    return { dur, speech: r1(speech), pauses: gaps.length, pauses2: gaps.filter(g => g >= 2).length, longest: r1(gaps.length ? Math.max(...gaps) : 0), onset: r1(sp[0][0]), span: r1(span), ratio: Math.round(speech / Math.max(0.1, span) * 100) };   // span：第一個字到最後一個字（算語速）；ratio：說話比例（托福判斷斷斷續續）
   } catch (e) { return null; }
 }
 const gsaB64 = blob => new Promise((ok, no) => { const fr = new FileReader(); fr.onload = () => ok(String(fr.result).split(",")[1]); fr.onerror = no; fr.readAsDataURL(blob); });
@@ -43,12 +43,12 @@ function gsaRun(sess, i, blob) {
     try {
       if (!gsaOn()) { const e = new Error("offline"); e.server = true; throw e; }
       const metrics = await gsaMetrics(blob);
-      const payload = { action: "aigrade", kind: "gept-speak", sub, name: sess.who, code: store.codes[sess.who] || "", mime: blob.type || "audio/webm", audio: await gsaB64(blob),
-        task: sub === "read" ? { segs: X.group.passage } : sub === "answer" ? { question: q.text } : { text: q.text } };
+      const payload = { action: "aigrade", kind: q.gept ? "gept-speak" : "toefl-speak", sub, name: sess.who, code: store.codes[sess.who] || "", mime: blob.type || "audio/webm", audio: await gsaB64(blob),
+        task: sub === "read" ? { segs: X.group.passage } : sub === "answer" || sub === "iv" ? { question: q.text } : { text: q.text } };
       if (metrics) payload.metrics = metrics;
       if (!payload.code && store.teacherCode) payload.teacherCode = store.teacherCode;
       if (!payload.code && !payload.teacherCode && typeof ensureCode === "function") { await ensureCode(sess.who); payload.code = store.codes[sess.who] || ""; }
-      const r = await postSync(payload, sub === "read" ? 150000 : 60000), ai = r.result;
+      const r = await postSync(payload, sub === "read" || sub === "iv" ? 150000 : 60000), ai = r.result;
       ai.m = metrics || {};
       const lv = Math.max(0, Math.min(5, Math.round(Number(ai.level)) || 0));
       span.forEach(k => {
@@ -133,8 +133,8 @@ function gsaReadHTML(g, ai, s0) {
 /* 作答頁（練習）：批改中、結果、失敗 */
 function gsaQuizHTML(q, i) {
   const span = gsaSpan(S, i), a = S.ans[span[0]], w = S.work[span[0]] || {};
-  if (gsaBusy(S, i)) return `<div class="ai-busy glass"><span class="ai-spin"></span><div><b>AI 正在聽你的錄音…</b><div class="muted" style="font-size:13px">${q.mode === "g-read" ? "朗讀會逐句檢查，大約 15～35 秒" : "大約 3～5 秒"}</div></div></div>`;
-  if (a && a.resp && a.resp.ai) return q.mode === "g-read" ? gsaReadHTML(getQ(i).group, a.resp.ai, span[0]) : gsaShortHTML(q, a.resp.ai);
+  if (gsaBusy(S, i)) return `<div class="ai-busy glass"><span class="ai-spin"></span><div><b>AI 正在聽你的錄音…</b><div class="muted" style="font-size:13px">${q.mode === "g-read" ? "朗讀會逐句檢查，大約 15～35 秒" : q.mode === "interview" ? "依 ETS 官方量表詳細批改，大約 15～30 秒" : "大約 3～5 秒"}</div></div></div>`;
+  if (a && a.resp && a.resp.ai) return !q.gept ? tsaHTML(q, a.resp.ai) : q.mode === "g-read" ? gsaReadHTML(getQ(i).group, a.resp.ai, span[0]) : gsaShortHTML(q, a.resp.ai);
   if (w.gsaErr) return `<div class="sp-err">${esc(gsaErrText(w.gsaErr))}${w.gsaErr !== "offline" && GSP && GSP.blob ? ` <button class="btn sm" data-act="gsa-retry">再試一次</button>` : ""}</div>`;
   return "";
 }
@@ -143,6 +143,7 @@ const gsaHasAi = i => { const a = S.ans[gsaSpan(S, i)[0]]; return !!(a && a.resp
 /* ---------- 解析頁（每題） ---------- */
 function gsaReviewHTML(q, a, att, i) {
   if (!a || !a.resp || !a.resp.ai) return "";
+  if (!q.gept) return tsaHTML(q, a.resp.ai);
   if (q.mode === "g-read") { const span = gsaSpan(att, i); return span[0] === i ? gsaReadHTML(getQ(i, att).group, a.resp.ai, i) : `<div class="muted" style="font-size:13.5px">朗讀 6 題一起批改，詳細回饋在第 ${span[0] + 1} 題。</div>`; }
   return gsaShortHTML(q, a.resp.ai);
 }
@@ -179,7 +180,7 @@ async function gsaReport(sess) {
   } catch (e) { first.resp.report = { est, err: true }; }
 }
 function gsaReportHTML(att) {
-  const items = gsaItems(att); if (!items.length) return "";
+  const items = gsaItems(att); if (!items.length) return typeof tsaReportHTML === "function" ? tsaReportHTML(att) : "";
   const done = items.filter(x => x.done), est = done.length === items.length ? gsaEstimate(items) : null;
   const rep = (att.ans[items[0].i] || {}).resp && att.ans[items[0].i].resp.report;
   const full = items.length === 13;
@@ -203,16 +204,18 @@ function gsaReportHTML(att) {
 /* 交卷：口說 AI 還在批改就先等（模擬卷再整理總回饋），不然 AI 分數來不及跟著成績上傳 */
 { const ask0 = askFinish;
   askFinish = function () {
-    if (!S || !S.qs.some((_, i) => { const y = getQ(i); return y && y.q.gept && y.q.type === "speak"; })) return ask0();
+    if (!S || !S.qs.some((_, i) => { const y = getQ(i); return y && y.q.type === "speak"; })) return ask0();
+    const gept = gsaItems(S).length > 0, items = () => gept ? gsaItems(sess) : tsaItems(sess), report = () => gept ? gsaReport(sess) : tsaReport(sess);
     const sess = S, tick = async () => {
       if (S !== sess) return;
       const left = gsaPending(sess);
       if (left) { const p = document.getElementById("gsa-left"); if (p) p.textContent = left; setTimeout(tick, 600); return; }
-      if (sess.mock) { const p = document.getElementById("gsa-msg"); if (p) p.textContent = "正在整理整份口說的總回饋…"; await gsaReport(sess); }
+      if (sess.mock) { const p = document.getElementById("gsa-msg"); if (p) p.textContent = "正在整理整份口說的總回饋…"; await report(); }
       if (S === sess && document.getElementById("gsa-wait")) { closeSheet(); ask0(); }
     };
-    if (!gsaPending(sess) && !(sess.mock && gsaItems(sess).every(x => x.done) && !(sess.ans[gsaItems(sess)[0].i].resp || {}).report)) return ask0();
-    sheet(`<div id="gsa-wait"><h3>🎙️ AI 正在批改口說</h3><p class="muted" id="gsa-msg" style="margin:0 0 12px">還有 <b id="gsa-left">${gsaPending(sess)}</b> 題在批改，完成後會自動交卷。</p><div class="ai-busy" style="margin-bottom:12px"><span class="ai-spin"></span><div class="muted" style="font-size:13px">短題約 3～5 秒、朗讀約 15～35 秒</div></div>
+    const its = items();
+    if (!gsaPending(sess) && !(sess.mock && its.length && its.every(x => x.done) && !(sess.ans[its[0].i].resp || {}).report)) return ask0();
+    sheet(`<div id="gsa-wait"><h3>🎙️ AI 正在批改口說</h3><p class="muted" id="gsa-msg" style="margin:0 0 12px">還有 <b id="gsa-left">${gsaPending(sess)}</b> 題在批改，完成後會自動交卷。</p><div class="ai-busy" style="margin-bottom:12px"><span class="ai-spin"></span><div class="muted" style="font-size:13px">${gept ? "短題約 3～5 秒、朗讀約 15～35 秒" : "複述約 3～5 秒、訪談約 15～30 秒"}</div></div>
     <div class="row" style="justify-content:flex-end"><button class="btn" data-act="gsa-skip">不等了，直接交卷</button></div></div>`);
     tick();
   };

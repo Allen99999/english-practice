@@ -1040,3 +1040,17 @@ html.intro-on body{overflow:hidden}
   .sp-dial .muted{display:none}
   .sp-num{font-size:34px}
 }
+/* 托福口說 AI 批改（tspeakai.js） */
+.ts-chg{display:inline-flex;flex-direction:column;align-items:center;line-height:1.15;vertical-align:bottom}
+.ts-chg s{color:var(--bad);font-weight:700}.ts-chg i{font-style:normal;font-size:12px;color:var(--ink-3)}
+.ts-cap{font-size:13.5px;color:var(--sp-warn);font-weight:600}
+.ts-dims{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px}
+@media (max-width:520px){.ts-dims{grid-template-columns:1fr}}
+.ts-parts{display:flex;flex-direction:column;gap:8px}
+.ts-part{display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border-radius:12px;background:var(--glass-lo)}
+.ts-part.no{box-shadow:inset 3px 0 0 var(--bad)}.ts-part.partial{box-shadow:inset 3px 0 0 var(--gold)}.ts-part.yes{box-shadow:inset 3px 0 0 var(--good)}
+.ts-chain{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ts-chain span{padding:5px 12px;border-radius:99px;font-size:14px;background:var(--glass-lo);color:var(--ink-3)}
+.ts-chain span.on{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good);font-weight:700}
+.ts-chain i{font-style:normal;color:var(--ink-3)}
+.ts-pause{color:var(--sp-fl);font-size:13px;margin:0 2px}
