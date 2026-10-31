@@ -67,7 +67,7 @@ b.items.push(
   SP("es7","e5","Turn ___ at the corner, and you'll see the hotel.","right","右","turn right（右轉）。"),
   SP("es8","e5","The post office is ___ from the park, on the other side of the street.","across","在對面","across from（在…對面）。"),
   SP("es9","e5","Can you tell me the ___ to the station?","way","路","the way to...（去…的路）。"),
-  T("et3","e5","請問到火車站要怎麼走？",["{Excuse me, |}how {can|do} I get to the train station?","{Excuse me, |}{could|can} you tell me the way to the train station?"],"How do I get to ...?","Excuse me, how do I get to the train station?"),
+  T("et3","e5","請問到火車站要怎麼走？",["{Excuse me, how|How} {can|do} I get to the train station?","{Excuse me, could|Excuse me, can|Could|Can} you tell me the way to the train station?"],"How do I get to ...?","Excuse me, how do I get to the train station?"),
   R("er3","e5","我搭公車上學要花三十分鐘。",["It","takes","me","thirty minutes","to go to school","by bus."],"It takes + 人 + 時間 + to V。","It takes me thirty minutes to go to school by bus." ),
   E("ee3","e5","My dad goes to work by his car.","by","in","有 his 的時候不能用 by。","by car（不加所有格）；有 his 時要說 in his car。"),
   /* U6 */

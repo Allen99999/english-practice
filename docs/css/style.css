@@ -229,6 +229,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .feedback{border-radius:var(--r-lg);padding:14px 16px;display:flex;gap:12px;align-items:flex-start;animation:viewIn .35s}
 .feedback.ok{background:var(--good-soft)}
 .feedback.no{background:var(--bad-soft)}
+.feedback.saved{background:var(--accent-soft)} .feedback.saved .fb-ic{background:var(--accent);color:var(--accent-ink,#fff)}
 .feedback .fb-ic{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff}
 .feedback.ok .fb-ic{background:var(--good)} .feedback.no .fb-ic{background:var(--bad)}
 .feedback .fb-ic svg{width:18px;height:18px}

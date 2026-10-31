@@ -333,17 +333,37 @@ function spellFull(q, typed) {
   if (t.toLowerCase() === q.ans.toLowerCase()) return t;
   return p.first + t + p.last;
 }
+/* 大小寫：norm 會忽略大小寫，所以另外檢查。句首要大寫；I 和專有名詞要大寫（以標準答案為準）；其他字不能亂用大寫 */
+function caseToks(s) {
+  const out = []; const re = /[A-Za-z]+(?:'[A-Za-z]+)?/g; const t = String(s || "").replace(/[’‘`]/g, "'"); let m;
+  while ((m = re.exec(t))) { const before = t.slice(0, m.index).replace(/[\s"“”'(]+$/, ""); out.push({ w: m[0], first: !before || /[.!?]$/.test(before) }); }
+  return out;
+}
+function caseErr(resp, ref) {
+  const forms = new Map(); caseToks(ref).forEach(x => { if (!x.first) { const k = x.w.toLowerCase(); (forms.get(k) || forms.set(k, new Set()).get(k)).add(x.w); } });
+  for (const { w, first } of caseToks(resp)) {
+    const k = w.toLowerCase(), f = forms.get(k);
+    if (k === "i" || k.startsWith("i'")) { if (w[0] !== "I" || /[A-Z]/.test(w.slice(1))) return `「${w}」的 I 要大寫`; continue; }
+    if (first) { if (!/^[A-Z]/.test(w)) return `句子開頭的「${w}」要大寫`; if (/[A-Z]/.test(w.slice(1)) && !(f && f.has(w))) return `「${w}」不用大寫`; continue; }
+    if (/[A-Z]/.test(w)) { if (!(f && f.has(w))) return `「${w}」不用大寫`; }
+    else if (f && !f.has(w)) return `「${w}」要大寫（${[...f][0]}）`;
+  }
+  return "";
+}
+const caseSame = (a, b) => /[A-Z]/.test(a) === /[A-Z]/.test(b) && /^[A-Z]/.test(a) === /^[A-Z]/.test(b);
+/* 寫對了但大小寫錯：回傳說明（給回饋用） */
+function caseNote(q, resp) { const n = norm(resp), rs = transRefs(q).filter(r => norm(r) === n); return rs.length && !rs.some(r => !caseErr(resp, r)) ? caseErr(resp, rs[0]) : ""; }
 function grade(q, resp) {
   switch (q.type) {
     case "mc": case "dict": case "listen": return resp === q.ans;
     case "order": return JSON.stringify(resp) === JSON.stringify(q.ans);
-    case "spell": return spellFull(q, resp).toLowerCase() === q.ans.toLowerCase();
-    case "trans": case "rewrite": { const n = norm(resp); return transRefs(q).some(r => norm(r) === n); }
+    case "spell": return spellFull(q, resp) === q.ans;   // 大小寫也要對
+    case "trans": case "rewrite": { const n = norm(resp); return transRefs(q).some(r => norm(r) === n && !caseErr(resp, r)); }
     case "essay": case "speak": return !!resp && (typeof resp.level === "number" ? resp.level >= passPts(q) : resp.rate === "ok");
-    case "cword": return [q.ans, ...(q.alt || [])].some(x => norm(x) === norm(resp));
+    case "cword": return [q.ans, ...(q.alt || [])].some(x => norm(x) === norm(resp) && caseSame(x, String(resp || "").trim()));
     case "scramble": { const all = q.tiles.concat(q.extra || []); const s = norm(resp.map(i => all[i]).join(" ")); return [q.ans, ...(q.alt || [])].some(a => norm(a) === s); }
     case "match": return resp.every((r, i) => r === i);
-    case "error": return resp.tok === q.wrong && q.fix.some(f => norm(f) === norm(resp.fix));
+    case "error": return resp.tok === q.wrong && q.fix.some(f => norm(f) === norm(resp.fix) && caseSame(f, String(resp.fix || "").trim()));
   }
   return false;
 }
@@ -674,9 +694,9 @@ function quizHTML() {
   const passage = X.group ? passageHTML(X, i) : "";
   h += `<div class="qlayout ${passage ? "has-passage" : ""}">${passage}<div class="glass card qcard" id="qcard" data-i="${i}">
     <div class="qhead"><span class="qnum">Q${ctSpan(i)[0] === ctSpan(i)[1] ? i + 1 : `${ctSpan(i)[0] + 1}–${ctSpan(i)[1] + 1}`}</span>${["trans", "essay", "listen", "cword", "speak"].includes(q.type) || (X.group && X.group.kind === "listening") || (X.bank && /^toefl/.test(X.bank.id)) || q.zhPrompt || S.blind ? "" : `<button class="speak" data-act="read-q" aria-label="念題目" title="念題目">${I.speaker}</button>`}<span class="tag">${typeLabel}</span>${X.group ? "" : X.bank ? `<span class="tag">${esc(tagName(X.bank, q.tag))}</span>` : ""}</div>
-    ${questionBody(X, i, a, false)}
+    ${S.blind && S.ans[i] ? questionBody(X, i, a, false).replace(/class="btn primary" data-act="submit"([^>]*)>確認</g, 'class="btn" data-act="submit"$1>重新確認<') : questionBody(X, i, a, false)}
     ${showHint && !a ? `<div class="hintbox">${I.bulb}<div>${esc(q.hint || "這題沒有提示")}</div></div>` : ""}
-    ${a ? feedbackHTML(X, a) : ""}
+    ${a ? feedbackHTML(X, a) : S.blind && S.ans[i] && !isMC(q) && !["speak", "essay", "cword"].includes(q.type) ? blindSavedHTML(q, S.ans[i]) : ""}
     ${i === 0 && !a && !S.tipSeen && !S.blind && q.type !== "speak" ? `<div class="muted" style="font-size:13.5px">小技巧：題目裡不會的字直接點一下就會加入生字表；選項裡的字請先打開下方「生字」。選項右邊的圓圈斜線按鈕可以先劃掉不要的答案。</div>` : ""}
   </div></div></section>`;
   return h;
@@ -782,7 +802,7 @@ function questionBody(X, i, a, review) {
     const inp = `<span class="spellwrap"><span class="fixed">${esc(p.first)}</span><input id="spellin" style="--n:${p.mid}" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="latin" value="${esc(val)}" ${locked ? `readonly class="${a.correct ? "ok" : "no"}"` : ""} aria-label="填入單字中間的字母"><span class="fixed">${esc(p.last)}</span></span>`;
     if (q.zhPrompt) h += `<div class="zh">${esc(q.zhPrompt)}</div>`;
     h += `<div class="stem" data-ctx>${q.stem.split("___").map((s, k, arr) => wrapWords(s, m) + (k < arr.length - 1 ? inp : "")).join("")}</div>
-    <div class="muted" style="font-size:13.5px">${S.blind && S.ans[i] ? "✓ 已作答（要修改就改完再按確認）・" : ""}${q.full ? "請寫出完整的英文單字。" : `提示字母已給：第一個字母${p.last ? "和最後一個字母" : ""}，請填入中間 ${p.mid} 個字母（也可以打完整單字）。`}</div>
+    <div class="muted" style="font-size:13.5px">${q.full ? "請寫出完整的英文單字。" : `提示字母已給：第一個字母${p.last ? "和最後一個字母" : ""}，請填入中間 ${p.mid} 個字母（也可以打完整單字）。`}</div>
     ${locked ? "" : `<div class="row"><button class="btn primary" data-act="submit">確認</button></div>`}`;
   }
   else if (q.type === "trans") {
@@ -851,13 +871,18 @@ function questionBody(X, i, a, review) {
   }
   return h;
 }
+/* 正式考模式（不公布對錯）按下確認後：顯示已作答，確認鍵改成「重新確認」 */
+function blindSavedHTML(q, a) {
+  return `<div class="feedback saved"><span class="fb-ic">${I.check}</span><div style="min-width:0"><b>已作答</b><p>你的答案：<b style="display:inline;color:var(--ink)">${esc(respText(q, a))}</b></p><p class="muted">交卷後才公布對錯。要修改就改好再按「重新確認」。</p></div></div>`;
+}
 function feedbackHTML(X, a) {
   const q = X.q;
   if (q.type === "essay" && typeof isAiQ === "function" && isAiQ(q) && a.resp && a.resp.ai) return "";   // AI 批改結果在題目卡裡
   if (q.type === "speak" && q.gept) return "";   // 英檢口說：狀態在題目卡裡（geptspeak.js）
   if (q.type === "speak" || q.type === "essay") { const p = ptsOf(q, X.bank, a), m = maxPts(q, X.bank);
     return `<div class="feedback ${a.correct ? "ok" : "no"}"><span class="fb-ic">${a.correct ? I.check : I.x}</span><div style="min-width:0"><b>自評 ${p} / ${m} 分</b><p>${esc(levelDesc(q, X.bank, p))}</p><p>${esc(q.exp || "")}</p></div></div>`; }
-  const extra = (q.type === "trans" || q.type === "rewrite") && !a.correct ? diffHTML(q, a.resp) : "";
+  const cn = (q.type === "trans" || q.type === "rewrite") && !a.correct ? caseNote(q, a.resp) : "";
+  const extra = cn ? `<div class="diff"><div><b>大小寫有錯：</b>${esc(cn)}</div></div>` : (q.type === "trans" || q.type === "rewrite") && !a.correct ? diffHTML(q, a.resp) : "";
   const canClaim = (q.type === "trans" || q.type === "rewrite") && !a.correct && !a.claim && !a.self;
   const self = canClaim ? `<div class="muted" style="font-size:13.5px;margin-top:10px">標準答案只列出常見寫法。如果你覺得自己的寫法也對：</div><button class="btn" data-act="claim" style="margin-top:6px">我覺得我寫的也對</button>`
     : a.claim ? `<div class="muted" style="font-size:13.5px;margin-top:8px">已反應給老師，這題先給你分數；老師批改後可能會調整。</div>` : "";
@@ -948,6 +973,21 @@ function streakOf(att) {
   return best;
 }
 function attCombo(att) { return Math.max(att.maxCombo || 0, att.kind === "vocab" ? 0 : streakOf(att)) || att.maxCombo || 0; }
+/* 學生專區：答錯的題目把正確答案的單字加進這次的生字表（中文選項的題目用題目的英文字） */
+function addMissedWords(sess) {
+  sess.qs.forEach((r, i) => {
+    const a = sess.ans[i]; if (a && a.correct) return;
+    const q = getQ(i, sess).q; const cands = [];
+    if (q.type === "mc") cands.push(q.opts[q.ans], q.stem); else if (q.type === "spell") cands.push(q.ans); else if (q.type === "scramble") cands.push(...q.tiles);
+    cands.forEach(c => {
+      if (typeof c !== "string" || !/^[A-Za-z][A-Za-z' -]*$/.test(c.trim()) || c.trim().split(/\s+/).length > 2) return;
+      const surface = c.trim(), lk = lookup(surface), k = lk && lk.key && DICT[lk.key] ? lk.key : surface.toLowerCase(), e = DICT[k];
+      if (!e || sess.words[k]) return;
+      const ctx = q.type === "scramble" && q.frame ? bsFill(q, q.tiles) : typeof q.stem === "string" && q.stem.includes("___") && !/[\u3400-\u9fff]/.test(q.stem) && (q.stem.match(/[A-Za-z]{2,}/g) || []).length >= 3 ? q.stem.replace(/\s*\([^)]*\)/, "").replace("___", surface) : "";
+      sess.words[k] = { k, pos: e.pos, zh: e.zh, ctx, surface, q: i, missed: true };
+    });
+  });
+}
 let justFinished = null;   // 剛交卷的那份：結果頁才顯示經驗值、任務、解鎖（card.js）
 function finish() {
   const P = attPoints(S), total = P.t, ok = P.s;   // 依官方配分：客觀題 1 分、單句寫作 2 分、作文與口說 5 分
@@ -959,6 +999,7 @@ function finish() {
   store.attempts.unshift(att); justFinished = att.id;
   if (typeof onAttemptSaved === "function") { try { onAttemptSaved(att); } catch (e) { } }
   // 單字本
+  if (studentBankOf(S)) addMissedWords(S);
   const VB = store.vocab[att.who] || (store.vocab[att.who] = {});
   Object.values(S.words).forEach(w => {
     const v = VB[w.k] || (VB[w.k] = { k: w.k, pos: w.pos, zh: w.zh, ph: !!w.ph, surf: w.surf || null, n: 0, ctx: [], ok: 0, miss: 0, first: Date.now() });
@@ -1006,10 +1047,23 @@ function markWord(el) {
   }
   showPop(el, k, true);
 }
+/* 學生專區考卷（bank.student）用到的英文字（字典原形）：考試中點字不顯示中文、詞性；單字練習的干擾選項也從這裡挑 */
+const paperWordsCache = {};
+function paperWords(bid) {
+  if (paperWordsCache[bid]) return paperWordsCache[bid];
+  const b = bankById(bid), set = new Set(); if (!b) return set;
+  const txt = [];
+  b.items.forEach(it => (it.type === "group" ? [it, ...it.qs] : [it]).forEach(q => txt.push(q.stem, q.opts, q.ans, q.tiles, q.frame, q.passage, q.box, q.sent)));
+  (JSON.stringify(txt).match(/[A-Za-z]+(?:'[A-Za-z]+)?/g) || []).forEach(w => { const r = lookup(w); if (r && r.key && DICT[r.key]) set.add(r.key); });
+  return paperWordsCache[bid] = set;
+}
+const studentBankOf = sess => sess && (sess.banks || []).map(bankById).find(b => b && b.student) || null;
 let popEl = null;
 function showPop(el, k, inSession, isPh) {
   closePop(); popEl = el;
-  const e = (isPh ? PHR[k] : DICT[k]) || (inSession && S.words[k]) || { pos: "", zh: "（字典未收錄）" };
+  let e = (isPh ? PHR[k] : DICT[k]) || (inSession && S.words[k]) || { pos: "", zh: "（字典未收錄）" };
+  const sb = inSession && view === "quiz" && studentBankOf(S);
+  if (sb && paperWords(sb.id).has(k)) e = { pos: "", zh: "考試範圍的字：交卷後才看得到中文" };   // 學生專區考試中：不洩漏範圍內單字的意思
   const p = document.createElement("div"); p.className = "wpop glass"; p.id = "wpop";
   const marked = inSession && S.words[k];
   p.innerHTML = `<div class="wh"><div><span class="ww">${esc(k)}</span><span class="wpos">${esc(e.pos)}</span></div><button class="speak" data-act="speak" data-w="${esc(k)}" aria-label="發音">${I.speaker}</button></div>
@@ -1024,16 +1078,20 @@ function showPop(el, k, inSession, isPh) {
 }
 
 /* ---------- 單字練習生成 ---------- */
-function distractors(k, field, n, ph) {
+/* 干擾選項：先從同一份考卷／同一批生字（pool）挑；不夠再從字典挑，同開頭字母、同詞性的優先（不然開頭字母一看就知道答案） */
+function distractors(k, field, n, ph, pool) {
   const pos0 = ph ? "phr" : (DICT[k] && DICT[k].pos || "").split(/[./]/)[0];
-  const pool = ph ? shuffle(PHRASES.filter(p => p.k !== k).map(p => ({ w: p.k, zh: p.zh, pos: "phr." })))
+  const all = ph ? shuffle(PHRASES.filter(p => p.k !== k).map(p => ({ w: p.k, zh: p.zh, pos: "phr." })))
     : shuffle(Object.values(DICT).filter(e => e.w !== k && e.zh !== "人名" && !/[A-Z]/.test(e.zh) && e.w.length > 2));
-  const same = pool.filter(e => e.pos.split(/[./]/)[0] === pos0), rest = pool.filter(e => e.pos.split(/[./]/)[0] !== pos0);
+  const ok = e => e.w !== k && e.zh !== "人名", mine = ph ? [] : shuffle((pool || []).map(w => DICT[w]).filter(e => e && ok(e)));
+  const samePos = e => e.pos.split(/[./]/)[0] === pos0, sameL = e => e.w[0] === k[0];
+  const order = [mine, all].flatMap(L => [L.filter(e => sameL(e) && samePos(e)), L.filter(sameL)]).concat(mine.filter(samePos), mine, all.filter(samePos), all).flat();
   const out = []; const seen = new Set([DICT[k] ? DICT[k][field] : k]);
-  for (const e of same.concat(rest)) { if (out.length >= n) break; if (seen.has(e[field])) continue; seen.add(e[field]); out.push(e[field]); }
+  for (const e of order) { if (out.length >= n) break; if (seen.has(e[field])) continue; seen.add(e[field]); out.push(e[field]); }
   return out;
 }
-function makeDrill(words, max) {
+function makeDrill(words, max, pool) {
+  pool = pool || words.map(w => w.k);
   const items = [];
   const kinds = ["en2zh", "ctx", "zh2en", "spell"];
   const list = shuffle(words);
@@ -1041,28 +1099,28 @@ function makeDrill(words, max) {
   list.forEach((w, wi) => {
     const ph = !!(w.ph || PHR[w.k]);
     const e = (ph ? PHR[w.k] && { w: w.k, pos: "phr.", zh: PHR[w.k].zh } : DICT[w.k]) || { w: w.k, pos: w.pos, zh: w.zh };
-    const ks = ph ? shuffle(["en2zh", "zh2en"]).slice(0, per) : shuffle(kinds.filter(x => x !== "ctx" || (w.ctx && new RegExp("\\b" + (w.surface || w.k) + "\\b", "i").test(w.ctx)))).slice(0, per);
+    const ks = ph ? shuffle(["en2zh", "zh2en"]).slice(0, per) : shuffle(kinds.filter(x => x !== "ctx" || (w.ctx && (w.ctx.match(/[A-Za-z]+/g) || []).length >= 4 && new RegExp("\\b" + (w.surface || w.k) + "\\b", "i").test(w.ctx)))).slice(0, per);
     ks.forEach(kind => {
       const id = "v-" + uid();
       if (kind === "en2zh") {
-        const opts = shuffle([e.zh, ...distractors(w.k, "zh", 3, ph)]);
+        const opts = shuffle([e.zh, ...distractors(w.k, "zh", 3, ph, pool)]);
         items.push({ id, type: "mc", tag: "vocab-drill", word: w.k, zhOpts: true, stem: `What does "${w.k}" mean?`, opts, ans: opts.indexOf(e.zh), hint: `詞性：${e.pos}`, exp: `${w.k}（${e.pos}）${e.zh}` });
       } else if (kind === "zh2en") {
-        const opts = shuffle([w.k, ...distractors(w.k, "w", 3, ph)]);
+        const opts = shuffle([w.k, ...distractors(w.k, "w", 3, ph, pool)]);
         items.push({ id, type: "mc", tag: "vocab-drill", word: w.k, stem: `「${e.zh}」的英文是哪一個？`, opts, ans: opts.indexOf(w.k), hint: `開頭字母是 ${w.k[0]}`, exp: `${e.zh} = ${w.k}（${e.pos}）` });
       } else if (kind === "spell") {
         items.push({ id, type: "spell", tag: "vocab-drill", word: w.k, zhPrompt: `${e.zh}（${e.pos}）`, stem: "___", ans: w.k, hint: `共 ${w.k.length} 個字母`, exp: `${w.k}（${e.pos}）${e.zh}` });
       } else {
         const surf = (w.ctx.match(new RegExp("\\b" + (w.surface || w.k) + "\\b", "i")) || [w.surface])[0];
-        items.push({ id, type: "spell", tag: "vocab-drill", word: w.k, stem: w.ctx.replace(/_{3,}/g, "…").replace(new RegExp("\\b" + surf + "\\b", "i"), "___"), ans: surf, hint: `意思：${e.zh}`, exp: `${surf}：${w.k}（${e.pos}）${e.zh}` });
+        items.push({ id, type: "spell", tag: "vocab-drill", word: w.k, zhPrompt: `${e.zh}（${e.pos}）`, stem: w.ctx.replace(/_{3,}/g, "…").replace(new RegExp("\\b" + surf + "\\b", "i"), "___"), ans: surf, hint: `意思：${e.zh}`, exp: `${surf}：${w.k}（${e.pos}）${e.zh}` });
       }
     });
   });
   return shuffle(items).slice(0, max || items.length);
 }
-function startDrill(words, title, who) {
+function startDrill(words, title, who, pool) {
   if (!words.length) { toast("還沒有生字"); return; }
-  const items = makeDrill(words, 30);
+  const items = makeDrill(words, 30, pool);
   newSession(items, { kind: "vocab", who: who || store.who, title: title || "單字練習" });
 }
 function vocabOwner() {
@@ -1373,7 +1431,9 @@ document.addEventListener("click", e => {
       break;
     }
     case "goto": closeSheet(); gotoQ(+d.i); break;
-    case "exit": sheet(`<h3>要離開嗎？</h3><p class="muted" style="margin:0 0 16px">選「暫存離開」之後可以從首頁繼續。</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="close-sheet">繼續作答</button><button class="btn" data-act="save-exit">暫存離開</button><button class="btn primary" data-act="finish">交卷</button></div>`); break;
+    case "exit": sheet(`<h3>要離開嗎？</h3><p class="muted" style="margin:0 0 16px">選「暫存離開」之後可以從首頁繼續。</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="close-sheet">繼續作答</button><button class="btn" data-act="save-exit">暫存離開</button><button class="btn danger" data-act="quit-nosave">不存檔離開</button><button class="btn primary" data-act="finish">交卷</button></div>`); break;
+    case "quit-nosave": sheet(`<h3>不存檔離開？</h3><p class="muted" style="margin:0 0 16px">這份的答案和生字都不會保存，也不會留在「繼續作答」。</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="close-sheet">取消</button><button class="btn danger" data-act="quit-now">確定離開</button></div>`); break;
+    case "quit-now": closeSheet(); store.sessions = store.sessions.filter(x => x.id !== S.id); S = null; save(true); go("home"); toast("已離開，沒有存檔"); break;
     case "save-exit": S.saved = Date.now(); save(true); S = null; go("home"); toast("已存檔"); break;
     case "finish": closeSheet(); askFinish(); break;
     case "finish-now": closeSheet(); finish(); break;
@@ -1410,7 +1470,7 @@ document.addEventListener("click", e => {
     // results
     case "open-att": rvWrongOnly = false; resultBack = view === "teacher" ? "teacher" : "hist"; go("result", d.id); break;
     case "rv-filter": rvWrongOnly = d.v === "wrong"; rerenderKeep(); break;
-    case "drill-att": { const att = findAtt(d.id); startDrill(Object.values(att.words || {}), "單字練習・" + att.title.split("・")[0], att.who); break; }
+    case "drill-att": { const att = findAtt(d.id), sb = studentBankOf(att); startDrill(Object.values(att.words || {}), "單字練習・" + (sb ? sb.title : att.title.split("・")[0]), att.who, sb ? [...paperWords(sb.id)] : null); break; }
     case "retry-wrong": {
       const att = findAtt(d.id);
       const refs = att.qs.filter((r, i) => !(att.ans[i] && att.ans[i].correct) && getQ(i, att));   // 已從題庫刪除的題目不能重練
