@@ -828,7 +828,7 @@ function questionBody(X, i, a, review) {
     ${q.img ? `<img class="essay-img" src="${esc(q.img)}" alt="看圖寫作的圖片" onerror="this.remove()">` : ""}
     ${q.scenes ? `<div class="scenes">${q.scenes.map((s, k) => `<div class="scene"><span class="sn">${k + 1}</span><span data-ctx>${wrapWords(s, m)}</span></div>`).join("")}</div>` : ""}
     ${q.keywords ? `<div class="row" style="gap:6px"><span class="step-label">可以用的字：</span>${q.keywords.map(k => `<span class="tag">${esc(k)}</span>`).join("")}</div>` : ""}
-    <textarea class="field essay" id="essayin" spellcheck="false" placeholder="在這裡寫你的短文…" ${sub ? "readonly" : ""}>${esc(txt)}</textarea>
+    <textarea class="field essay" id="essayin" spellcheck="false" placeholder="${q.part === "trans" ? "在這裡寫你的英文譯文…" : "在這裡寫你的短文…"}" ${sub ? "readonly" : ""}>${esc(txt)}</textarea>
     <div class="muted tnum" id="wc" style="font-size:13.5px">${wcount(txt)} 字（建議 ${q.minWords || 50} 字以上）</div>
     ${!sub ? `<div class="row"><button class="btn primary" data-act="essay-submit">寫好了，看範文和檢查表</button></div>` : `
     <div class="model"><div class="step-label">${q.part === "trans" ? "參考譯文" : "參考範文"}</div><div class="ptext" style="font-size:16px">${String(q.model).split(/\n+/).map(p => `<p>${esc(p)}</p>`).join("")}</div></div>
@@ -1181,8 +1181,8 @@ function reviewItem(att, i) {
   if (!X) return `<details class="rv"><summary><span class="st skip">?</span><span class="sum">題目已從題庫移除</span></summary></details>`;
   const q = X.q, a = att.ans[i];
   const st = !a ? "skip" : a.correct ? "ok" : "no";
-  const sumText = q.type === "cword" ? `${X.group.title}・第 ${q.blank} 格` : q.type === "speak" ? q.text : q.type === "listen" ? `${tagName(X.bank, q.tag)}・${(q.part === 1 ? listenScript(q)[0] : listenScript(q).slice(-1)[0]) || ""}` : q.zh || q.zhPrompt || q.prompt || (q.src ? [].concat(q.src).join(" ") : "") || (q.blank ? `${X.group.title}・第 ${q.blank} 格` : [].concat(q.stem || q.sent || "").join(" "));
-  const typeL = X.ftype === "vocab" ? "單字" : X.group && KIND_LABEL[X.group.kind] ? KIND_LABEL[X.group.kind] : TYPE_LABEL[X.ftype];
+  const sumText = q.type === "cword" ? `${X.group.title}・第 ${q.blank} 格` : q.type === "speak" ? q.text : q.type === "listen" ? `${tagName(X.bank, q.tag)}・${(q.part === 1 ? listenScript(q)[0] : listenScript(q).slice(-1)[0]) || ""}` : q.gi && q.scenario ? q.scenario : q.zh || q.zhPrompt || q.prompt || (q.src ? [].concat(q.src).join(" ") : "") || (q.blank ? `${X.group.title}・第 ${q.blank} 格` : [].concat(q.stem || q.sent || "").join(" "));
+  const typeL = X.ftype === "vocab" ? "單字" : q.gi && q.label ? q.label : X.group && KIND_LABEL[X.group.kind] ? KIND_LABEL[X.group.kind] : TYPE_LABEL[X.ftype];
   let body = "";
   if (X.group && X.group.kind === "listening") body += `<details class="pfold"><summary><span class="muted">聽力原文：${esc(X.group.title)}</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext dialogue" style="margin-top:8px;font-size:15.5px">${listenGroupScript(X.group).map(l => `<p>${esc(l)}</p>`).join("")}</div></details>`;
   else if (X.group && X.group.kind === "ctest") body += `<div class="ptext" style="font-size:15.5px">${esc(X.group.passage[0].replace(/\{([^}]*)\}/g, "$1"))}</div>`;

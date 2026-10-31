@@ -177,4 +177,39 @@ happytrails|n.|（公司名）
 lakeside|n.|湖畔；（飯店名）
 coldest|adj.|最冷的（cold 的最高級）
 gentlemen|n.|紳士們、先生們（gentleman 的複數）
+achievement|n.|成就、成績
+anytime|adv.|在任何時候
+athlete|n.|運動員、擅長運動的人
+attraction|n.|吸引力；景點（tourist attraction）
+candy|n.|糖果
+cliff|n.|懸崖、峭壁
+doze|v./n.|打瞌睡、小睡
+elementary|adj.|初級的、基礎的
+eve|n.|前夕
+failure|n.|失敗、故障
+fool|n./v.|傻瓜；欺騙、愚弄
+grandson|n.|孫子
+master|n./v.|主人；精通
+nowadays|adv.|現今
+orphanage|n.|孤兒院
+pacific|n./adj.|太平洋(的)
+peaceful|adj.|和平的、平靜的
+praise|v./n.|稱讚
+pronunciation|n.|發音
+puppy|n.|小狗
+rush|v./n.|趕緊；匆忙
+scenery|n.|風景
+scold|v.|訓斥、責罵
+slave|n./v.|奴隸；拚命工作
+thanksgiving|n.|感恩節
+troublesome|adj.|令人煩惱的
+whistle|v./n.|吹哨子；哨子、哨聲
+guesthouse|n.|民宿、小旅館
+homeroom|n.|（班導師的）班級（homeroom teacher 導師）
+omelet|n.|煎蛋捲（oyster omelet 蚵仔煎）
+oyster|n.|牡蠣、蚵仔
+taitung|n.|台東
+taroko|n.|太魯閣
+unforgettable|adj.|難忘的
+wag|v.|搖（尾巴）
 `;
