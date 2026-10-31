@@ -1047,14 +1047,12 @@ function markWord(el) {
   }
   showPop(el, k, true);
 }
-/* 學生專區考卷（bank.student）用到的英文字（字典原形）：考試中點字不顯示中文、詞性；單字練習的干擾選項也從這裡挑 */
+/* 學生專區考卷的單字表（bank.vocab → bankstudent.js 的 WORDLISTS，轉成字典原形）：考試中點到這些字不顯示中文、詞性（其他字照常）；單字練習的干擾選項也從這裡挑 */
 const paperWordsCache = {};
 function paperWords(bid) {
   if (paperWordsCache[bid]) return paperWordsCache[bid];
-  const b = bankById(bid), set = new Set(); if (!b) return set;
-  const txt = [];
-  b.items.forEach(it => (it.type === "group" ? [it, ...it.qs] : [it]).forEach(q => txt.push(q.stem, q.opts, q.ans, q.tiles, q.frame, q.passage, q.box, q.sent)));
-  (JSON.stringify(txt).match(/[A-Za-z]+(?:'[A-Za-z]+)?/g) || []).forEach(w => { const r = lookup(w); if (r && r.key && DICT[r.key]) set.add(r.key); });
+  const b = bankById(bid), set = new Set();
+  (b && b.vocab ? wordListOf(b.vocab) : []).forEach(w => { const r = lookup(w); set.add(r && DICT[r.key] ? r.key : w.toLowerCase()); });
   return paperWordsCache[bid] = set;
 }
 const studentBankOf = sess => sess && (sess.banks || []).map(bankById).find(b => b && b.student) || null;
