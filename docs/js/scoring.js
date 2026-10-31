@@ -27,6 +27,28 @@ const RUBRICS = {
     [5, "內容符合題目要求，能大致掌握基本語法及字彙"], [4, "內容大致符合要求，語法及字彙大致正確，但尚未能自在應用"],
     [3, "內容多不可解，語法常有錯誤，字彙有限，阻礙表達"], [2, "內容難解，語法錯誤多，語句多呈片段，字彙不足"],
     [1, "幾乎無句型語法可言，字彙嚴重不足，難以表達"], [0, "未答或等同未答"]] },
+  /* 英檢中級（gept.org.tw 中級測驗介紹「寫作／口說能力測驗分數說明」，官方文字不可改） */
+  it: { name: "中譯英評分（英檢中級官方 0～5 級分）", max: 5, pass: 4, levels: [
+    [5, "翻譯能力佳：內容能充分表達題意；文段組織、連貫性甚佳，能充分掌握句型結構；用字遣詞、文法、拼字、標點及大小寫幾乎無誤。"],
+    [4, "翻譯能力可：內容適切表達題意；文段組織、連貫性及句型結構大致良好；用字遣詞、文法、拼字、標點及大小寫偶有錯誤，但不妨礙題意之表達。"],
+    [3, "翻譯能力有限：內容未能完全表達題意；文段組織鬆散，連貫性不足，未能完全掌握句型結構；用字遣詞及文法時有錯誤，妨礙題意之表達，拼字、標點及大小寫也有錯誤。"],
+    [2, "稍具翻譯能力：僅能局部表達原文題意；文段組織不良並缺乏連貫性，句型結構掌握欠佳，大多難以理解；用字遣詞、文法、拼字、標點及大小寫錯誤嚴重。"],
+    [1, "無翻譯能力：內容無法表達題意；句型結構掌握差，無法理解；用字遣詞、文法、拼字、標點及大小寫之錯誤多且嚴重。"],
+    [0, "未答／等同未答"]] },
+  ic: { name: "英文作文評分（英檢中級官方 0～5 級分）", max: 5, pass: 4, levels: [
+    [5, "寫作能力佳：內容適切表達題目要求，清楚有條理；組織甚佳；能靈活運用字彙及句型；文法、拼字或標點符號偶有錯誤。"],
+    [4, "寫作能力可：內容符合題目要求，大致清楚；組織大致完整；能正確運用字彙及句型；文法、拼字或標點符號雖有錯誤，但不影響理解。"],
+    [3, "寫作能力有限：內容大致符合題目要求，但未完全達意；組織尚可；字彙及句型掌握不佳；文法、拼字、標點符號錯誤偏多，影響理解。"],
+    [2, "稍具寫作能力：內容局部符合題目要求，大多難以理解；組織不良；能運用的字彙及句型有限；文法、拼字、標點符號有許多錯誤。"],
+    [1, "無寫作能力：內容未能符合題目要求，無法理解；缺乏組織；能運用的字彙及句型非常有限；文法、拼字、標點符號有過多錯誤。"],
+    [0, "未答／等同未答"]] },
+  is: { name: "英檢中級口說評分（官方 0～5 級分）", max: 5, pass: 4, levels: [
+    [5, "發音清晰、正確，語調正確、自然；對應內容切題，表達流暢；語法、字彙使用自如，雖仍偶有錯誤，但無礙溝通。"],
+    [4, "發音大致清晰、正確，語調大致正確、自然；對應內容切題，語法、字彙之使用雖有錯誤，但無礙溝通。"],
+    [3, "發音、語調時有錯誤，因而影響聽者對其語意的瞭解。已能掌握基本句型結構，語法仍有錯誤；且因字彙、片語有限，阻礙表達。"],
+    [2, "發音、語調錯誤均多，朗讀時常因缺乏辨識能力而略過不讀；因語法、字彙常有錯誤，而無法進行有效的溝通。"],
+    [1, "發音、語調錯誤多且嚴重，又因語法錯誤甚多，認識之單字片語有限，無法清楚表達，幾乎無溝通能力。"],
+    [0, "未答／等同未答。"]] },
   ti: { name: "Take an Interview 評分（ETS 0～5 分）", max: 5, pass: 3, levels: [
     [5, "完全成功：完整回答、充分展開；語速自然、很容易聽懂；文法字彙多樣正確"], [4, "大致成功：有回答也有展開，可能缺少連接；偶有停頓或要稍微用力聽的字"],
     [3, "部分成功：有回答但展開有限；停頓多、斷斷續續；文法字彙明顯限制表達"], [2, "大多不成功：只沾到問題的邊、幾乎沒有展開或照念題目；常常聽不出意思"],
@@ -34,7 +56,8 @@ const RUBRICS = {
 };
 function rubricOf(q, bank) {
   if (!q) return null;
-  if (q.type === "essay") return RUBRICS[q.label ? "tw" : "ge"];
+  if (q.type === "essay") return RUBRICS[q.gi ? (q.part === "trans" ? "it" : "ic") : q.label ? "tw" : "ge"];   // gi：英檢中級
+  if (q.type === "speak" && q.gi) return RUBRICS.is;   // 英檢中級口說：整體 0～5 級分
   if (q.type === "speak" && q.gept) return RUBRICS[q.mode === "g-answer" ? "gg" : "gp"];   // 英檢初級口說（gept.org.tw 口說分數說明）
   if (q.type === "speak") return RUBRICS[q.mode === "repeat" ? "tr" : "ti"];
   if (q.type === "rewrite" || q.type === "trans") return RUBRICS.gs;
@@ -68,20 +91,23 @@ function rubricButtonsHTML(q, bank, act, cur, extra) {
 }
 /* 英檢初級初試（聽力＋閱讀）成績：官方是量尺分數、各科滿分 120，
    通過標準＝兩科總和 160 分以上，且任一科不低於 72 分（LTTC）。這裡依答對率估算：答對率 × 120。 */
-function geptLRHTML(att) {
-  const P = { l: [0, 0], r: [0, 0] };
+/* 英檢中級初試同樣是聽力、閱讀各 120 分、通過標準相同（gept.org.tw 中級測驗介紹）；完整卷是 35＋35 題 */
+function geptLRHTML(att) { return geptLRCore(att, false) + geptLRCore(att, true); }
+const isGeptI = b => !!b && /^gept-i/.test(b.id);
+function geptLRCore(att, inter) {
+  const P = { l: [0, 0], r: [0, 0] }, N = inter ? 35 : 30;
   (att.qs || []).forEach((_, i) => {
-    const X = getQ(i, att); if (!X || !X.bank || !/^gept/.test(X.bank.id)) return;
+    const X = getQ(i, att); if (!X || !X.bank || !/^gept/.test(X.bank.id) || isGeptI(X.bank) !== inter) return;
     const k = X.q.type === "listen" ? "l" : /^(g[123]|r[123])$/.test(X.q.tag || (X.group && X.group.tag) || "") ? "r" : null; if (!k) return;
     P[k][1]++; if ((att.ans || {})[i] && att.ans[i].correct) P[k][0]++;
   });
   if (!P.l[1] && !P.r[1]) return "";
   const sc = k => P[k][1] ? Math.round(P[k][0] / P[k][1] * 120) : null, L = sc("l"), R = sc("r"), both = L !== null && R !== null;
-  const pass = both && L + R >= 160 && L >= 72 && R >= 72, full = P.l[1] === 30 && P.r[1] === 30;
+  const pass = both && L + R >= 160 && L >= 72 && R >= 72, full = P.l[1] === N && P.r[1] === N;
   const cell = (name, v, p) => v === null ? "" : `<div class="stat"><div class="k">${name}</div><div class="v" style="color:${v >= 72 ? "var(--good)" : "var(--bad)"}">${v}<span class="muted" style="font-size:15px"> / 120</span></div><div class="muted" style="font-size:12.5px">答對 ${p[0]} / ${p[1]} 題${v < 72 ? "・低於 72" : ""}</div></div>`;
-  return `<div class="glass card" style="display:flex;flex-direction:column;gap:14px"><div class="section-h" style="margin:0"><h2>英檢初試成績（估算）</h2>${both ? `<span class="tag" style="background:${pass ? "var(--good)" : "var(--bad)"};color:#fff">${pass ? "達到通過標準" : "未達通過標準"}</span>` : ""}</div>
+  return `<div class="glass card" style="display:flex;flex-direction:column;gap:14px"><div class="section-h" style="margin:0"><h2>英檢${inter ? "中級" : "初級"}初試成績（估算）</h2>${both ? `<span class="tag" style="background:${pass ? "var(--good)" : "var(--bad)"};color:#fff">${pass ? "達到通過標準" : "未達通過標準"}</span>` : ""}</div>
   <div class="stats">${cell("聽力", L, P.l)}${cell("閱讀", R, P.r)}${both ? `<div class="stat"><div class="k">兩科總和</div><div class="v" style="color:${L + R >= 160 ? "var(--good)" : "var(--bad)"}">${L + R}<span class="muted" style="font-size:15px"> / 240</span></div><div class="muted" style="font-size:12.5px">${L + R >= 160 ? "已達 160" : `差 ${160 - L - R} 分到 160`}</div></div>` : ""}</div>
-  <div class="muted" style="font-size:12.5px">通過標準：聽力＋閱讀總和 160 分以上，且任一科不低於 72 分。官方成績是量尺分數，這裡用答對率 × 120 估算${full ? "" : "；這次題數不是完整的 30＋30 題，估算僅供參考"}${both ? "" : "；這次只做了一科，所以不判斷是否通過"}。</div></div>`;
+  <div class="muted" style="font-size:12.5px">通過標準：聽力＋閱讀總和 160 分以上，且任一科不低於 72 分。官方成績是量尺分數，這裡用答對率 × 120 估算${full ? "" : `；這次題數不是完整的 ${N}＋${N} 題，估算僅供參考`}${both ? "" : "；這次只做了一科，所以不判斷是否通過"}。</div></div>`;
 }
 /* 英檢初級寫作成績（官方換算） */
 function geptWritingHTML(att) {
@@ -98,6 +124,35 @@ function geptWritingHTML(att) {
   return `<div class="glass card" style="display:flex;flex-direction:column;gap:14px"><div class="section-h" style="margin:0"><h2>英檢寫作成績（官方換算）</h2>${full ? `<span class="tag" style="background:${score >= 70 ? "var(--good)" : "var(--bad)"};color:#fff">${score} / 100・${score >= 70 ? "通過" : "未通過"}</span>` : ""}</div>
   <div class="stats">${m1 ? `<div class="stat"><div class="k">單句寫作</div><div class="v">${p1}<span class="muted" style="font-size:15px"> / ${m1}</span></div></div>` : ""}${lv !== null ? `<div class="stat"><div class="k">段落寫作</div><div class="v">${Number.isInteger(lv) ? lv : lv.toFixed(1)}<span class="muted" style="font-size:15px"> / 5 級分</span></div></div>` : ""}</div>
   <div class="muted" style="font-size:12.5px">單句寫作每題 0～2 分、段落寫作 0～5 級分；寫作成績＝（單句得分 ÷ 30 ＋ 段落級分 ÷ 5）× 50，70 分通過。${full ? "" : "這次只做了部分題型，所以不換算總分。"}</div></div>`;
+}
+
+/* 英檢中級寫作（官方）：中譯英 40%＋英文作文 60%，各 0～5 級分 × 20 換成百分制，80 分通過；
+   口說：整體 0～5 級分 × 20，80 分通過（兩位評分員平均；這裡用自評／老師給的級分，多題就取平均） */
+function geptIWritingHTML(att) {
+  const L = { it: [], ic: [], is: [] };
+  (att.qs || []).forEach((_, i) => {
+    const X = getQ(i, att); if (!X || !X.q.gi) return;
+    const r = rubricOf(X.q, X.bank), k = Object.keys(L).find(k => RUBRICS[k] === r); if (!k) return;
+    if (X.group && recIdx(att, i) !== i) return;   // 朗讀 2 篇共用一個評分
+    const a = (att.ans || {})[i]; if (!a) return;
+    L[k].push(ptsOf(X.q, X.bank, a));
+  });
+  const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null, f = v => Number.isInteger(v) ? v : v.toFixed(1);
+  const t = avg(L.it), c = avg(L.ic), sp = avg(L.is); let h = "";
+  const tag = (v) => `<span class="tag" style="background:${v >= 80 ? "var(--good)" : "var(--bad)"};color:#fff">${Math.round(v)} / 100・${v >= 80 ? "通過" : "未通過"}</span>`;
+  if (t !== null || c !== null) {
+    const full = t !== null && c !== null, score = full ? t * 20 * 0.4 + c * 20 * 0.6 : null;
+    h += `<div class="glass card" style="display:flex;flex-direction:column;gap:14px"><div class="section-h" style="margin:0"><h2>英檢中級寫作成績（官方換算）</h2>${full ? tag(score) : ""}</div>
+    <div class="stats">${t !== null ? `<div class="stat"><div class="k">中譯英（40%）</div><div class="v">${f(t)}<span class="muted" style="font-size:15px"> / 5 級分</span></div></div>` : ""}${c !== null ? `<div class="stat"><div class="k">英文作文（60%）</div><div class="v">${f(c)}<span class="muted" style="font-size:15px"> / 5 級分</span></div></div>` : ""}</div>
+    <div class="muted" style="font-size:12.5px">寫作成績＝中譯英級分 × 20 × 40% ＋ 英文作文級分 × 20 × 60%，80 分通過（官方是兩位評分老師的平均）。${full ? "" : "這次只做了其中一部分，所以不換算總分。"}現在是自評；老師批改後會以老師的級分為準。</div></div>`;
+  }
+  if (sp !== null) {
+    const v = sp * 20;
+    h += `<div class="glass card" style="display:flex;flex-direction:column;gap:14px"><div class="section-h" style="margin:0"><h2>英檢中級口說成績（官方換算）</h2>${tag(v)}</div>
+    <div class="stats"><div class="stat"><div class="k">口說</div><div class="v">${f(sp)}<span class="muted" style="font-size:15px"> / 5 級分</span></div><div class="muted" style="font-size:12.5px">共 ${L.is.length} 個評分</div></div></div>
+    <div class="muted" style="font-size:12.5px">官方口說是整體評分 0～5 級分，× 20 換成百分制，80 分（4 級分）通過。這裡取各題級分的平均；現在是自評，老師批改後以老師的級分為準。</div></div>`;
+  }
+  return h;
 }
 
 /* 學生自評：簡化成三個選項（老師批改才用完整的官方量表） */

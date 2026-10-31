@@ -738,7 +738,7 @@ function listenHTML(q, i, a, review) {
   const reveal = review || (a && !once);
   let h = q.img ? `<div class="limg ${q.part === 4 ? "tri" : ""}"><img src="${esc(q.img)}" alt="聽力題圖片" onerror="this.parentNode.classList.add('noimg');this.remove()">${q.part === 4 ? "<span>A</span><span>B</span><span>C</span>" : ""}</div>` : "";
   if (!review) h += `<div class="listen-bar"><button class="btn ${used ? "" : "primary"}" data-act="listen-play" ${used ? "disabled" : ""}>${I.speaker}<span>${used ? "已播放" : w.played ? "再聽一次" : "播放題目"}</span></button>
-  <span class="muted" style="font-size:13.5px">${once ? "正式考：每題只播一遍" : { 1: "看圖，聽問題和三個選項", 2: "聽一句話，選出最適合的回應", 3: "聽一段對話和問題", 4: "聽短文和問題，選出符合的圖", cr: "Listen and choose the best response. 聽一句話，選出最適合的回應" }[q.part]}</span></div>`;
+  <span class="muted" style="font-size:13.5px">${once ? "正式考：每題只播一遍" : q.plabel || { 1: "看圖，聽問題和三個選項", 2: "聽一句話，選出最適合的回應", 3: "聽一段對話和問題", 4: "聽短文和問題，選出符合的圖", cr: "Listen and choose the best response. 聽一句話，選出最適合的回應" }[q.part]}</span></div>`;
   if (reveal && !review) h += `<details class="script"><summary>聽力原文</summary>${listenScript(q).map(l => `<div data-ctx>${wrapWords(l, S.words)}</div>`).join("")}</details>`;
   return h;
 }
@@ -778,7 +778,7 @@ function questionBody(X, i, a, review) {
     if (q.type === "listen") h += listenHTML(q, i, a, review);
     else if (q.blank) h += `<div class="stem">第 <b>${q.blank}</b> 格應填入哪一句？</div>`;
     else h += `<div class="stem" data-ctx>${[].concat(q.stem).map(l => `<span class="line" data-ctx>${lineHTML(l, m, fills)}</span>`).join("")}</div>`;
-    if (q.box) h += `<div class="boxed" data-ctx>${q.box.map(l => `<div>${lineHTML(l, m, null, [q.uline])}</div>`).join("")}</div>`;
+    if (q.box) h += `<div class="boxed${q.type === "listen" ? " ltab" : ""}" data-ctx>${q.box.map(l => `<div>${lineHTML(l, m, null, [q.uline])}</div>`).join("")}</div>`;
     if (q.post) h += `<div class="stem" style="font-size:17px" data-ctx>${wrapWords(q.post, m)}</div>`;
     const struck = st.struck || [];
     h += `<div class="opts ${locked ? "locked" : ""}">${q.opts.map((o, k) => {
@@ -831,7 +831,8 @@ function questionBody(X, i, a, review) {
     <textarea class="field essay" id="essayin" spellcheck="false" placeholder="在這裡寫你的短文…" ${sub ? "readonly" : ""}>${esc(txt)}</textarea>
     <div class="muted tnum" id="wc" style="font-size:13.5px">${wcount(txt)} 字（建議 ${q.minWords || 50} 字以上）</div>
     ${!sub ? `<div class="row"><button class="btn primary" data-act="essay-submit">寫好了，看範文和檢查表</button></div>` : `
-    <div class="model"><div class="step-label">參考範文</div><div class="ptext" style="font-size:16px">${esc(q.model)}</div></div>
+    <div class="model"><div class="step-label">${q.part === "trans" ? "參考譯文" : "參考範文"}</div><div class="ptext" style="font-size:16px">${String(q.model).split(/\n+/).map(p => `<p>${esc(p)}</p>`).join("")}</div></div>
+    ${q.exp && q.gi ? `<div class="muted" style="font-size:14px">${esc(q.exp)}</div>` : ""}
     <div class="step-label">自我檢查</div><div class="checklist">${(q.check || ESSAY_CHECK).map((c, k) => `<label class="ck"><input type="checkbox" id="ck${k}" ${locked ? "disabled" : ""}><span>${esc(c)}</span></label>`).join("")}</div>
     ${locked ? "" : selfButtonsHTML(q, X.bank, "essay-rate")}`}`;
   }
@@ -1151,6 +1152,7 @@ function resultHTML(id) {
   if (typeof teacherResultBar === "function") h += teacherResultBar(att);
   if (typeof geptLRHTML === "function") h += geptLRHTML(att);   // 英檢初試（聽力＋閱讀）估算
   if (typeof geptWritingHTML === "function") h += geptWritingHTML(att);
+  if (typeof geptIWritingHTML === "function") h += geptIWritingHTML(att);   // 英檢中級寫作、口說
   if (typeof gsaReportHTML === "function") h += gsaReportHTML(att);   // 英檢口說（AI 估算）
   if (typeof toeflBandHTML === "function") h += toeflBandHTML(att);
   // 細項分析
