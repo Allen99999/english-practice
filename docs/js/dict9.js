@@ -264,4 +264,115 @@ tw|n.|（網址）.tw
 vancouver|n.|溫哥華
 www|n.|（網址）www
 pop|adj.|流行的（pop music 流行音樂）
+accountant|n.|會計師
+alcohol|n.|酒、酒精
+annoy|v.|使惱怒、打擾
+balcony|n.|陽台、(劇院的)樓座
+beginner|n.|初學者、新手
+blame|v./n.|責備
+castle|n.|城堡、堡壘
+casual|adj.|(衣服)休閒的；不在意的、漫不經心的
+chess|n.|西洋棋
+comedy|n.|喜劇
+crab|n.|螃蟹
+decoration|n.|裝飾品
+delete|v.|刪除
+dig|v.|挖
+dismiss|v.|解散、解雇、不考慮
+employ|v.|雇用
+escalator|n.|電扶梯
+farewell|n./adj.|告別；告別的
+foam|n./v.|泡沫；起泡沫
+fold|v./n.|摺疊；褶(痕)
+goat|n.|山羊
+golden|adj.|金色的
+hate|v./n.|厭惡
+hesitate|v.|猶豫
+incredible|adj.|難以置信的、極好的
+jar|n.|(玻璃)罐子、一罐
+lantern|n.|燈籠
+leak|v./n.|滲漏、走漏；漏洞
+lid|n.|蓋子；眼瞼
+loaf|n.|一條（塊）包
+mall|n.|購物中心
+margin|n.|邊緣、差距
+messy|adj.|凌亂的
+mirror|n.|鏡子
+mission|n.|任務、使命、使團
+mystery|n.|神秘的事物、謎
+personality|n.|個性
+pillow|n.|枕頭
+poem|n.|詩
+pudding|n.|布丁
+rapid|adj.|快速的
+ribbon|n.|緞帶、絲帶
+roll|v./n.|捲；(一)捲
+selfish|adj.|自私的
+shadow|n./v.|影子；遮蔽、跟蹤
+shortage|n.|缺少、不足
+sock|n.|襪子
+steep|adj.|陡峭的
+terrify|v.|使恐懼
+thankful|adj.|感謝的
+thoughtful|adj.|體貼的、深思熟慮的
+threaten|v.|揚言要、威脅
+tolerant|adj.|寬容的、忍耐的
+traveler|n.|旅行者
+waterfall|n.|瀑布
+wise|adj.|有智慧的
+yogurt|n.|優格
+newest|adj.|最新的（new 的最高級）
+plain|adj./n.|樸素的、平淡的；平原
+flat|adj./n.|扁平的；公寓
+tear|v./n.|撕（tear down 拆除）；眼淚
+after-school|adj.|課後的
+anna|n.|人名
+david|n.|人名
+sarah|n.|人名
+papa|n.|爸爸；（店名）
+basil|n.|羅勒、九層塔
+bestseller|n.|暢銷商品
+black-faced|adj.|黑臉的
+spoonbill|n.|琵鷺（black-faced spoonbill 黑面琵鷺）
+built-in|adj.|內建的
+check-out|n.|退房
+conversational|adj.|會話的
+donation|n.|捐贈、捐款
+fifteen-minute|adj.|十五分鐘的
+one-hour|adj.|一小時的
+ten-kilometer|adj.|十公里的
+seventy-five|num.|七十五
+round-trip|adj.|來回的
+thank-you|adj.|感謝的（thank-you note 感謝卡）
+not-too-sweet|adj.|不會太甜的
+handmade|adj.|手工的
+happykids|n.|（公司名）
+heping|n.|和平（路名）
+xinyi|n.|信義（路名）
+ita|n.|Ita Thao 伊達邵
+thao|n.|Ita Thao 伊達邵
+kinmen|n.|金門
+taoyuan|n.|桃園
+tangyuan|n.|湯圓
+illegal|adj.|違法的
+kg|n.|公斤（kilogram）
+loaves|n.|（麵包）條（loaf 的複數）
+overslept|v.|睡過頭（oversleep 的過去式）
+pier|n.|碼頭
+ramen|n.|拉麵
+ramp|n.|斜坡板、坡道
+rinse|v.|沖洗
+salon|n.|（美髮）沙龍、店
+sandcastle|n.|沙堡
+saver|n.|節省…的東西
+scar|n.|疤痕
+scrambled|adj.|炒的（scrambled eggs 炒蛋）
+sugary|adj.|含糖的
+sushi|n.|壽司
+thrilled|adj.|非常興奮的
+trustworthy|adj.|值得信賴的
+ukulele|n.|烏克麗麗
+wheelchair|n.|輪椅
+wherever|conj.|無論在哪裡
+code|n.|密碼、代碼
 `;
