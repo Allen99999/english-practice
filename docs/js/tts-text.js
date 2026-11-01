@@ -57,7 +57,7 @@ function questionSpeech(q) {
   return out;
 }
 /* 英檢口說「回答問題」的參考回答（作答後可以聽） */
-function gsModelSpeech(q) { return (q.gept || q.mode === "interview") && q.model ? [{ text: ttsClean(q.model), voice: SITE_CONFIG.TTS.narrator }] : []; }
+function gsModelSpeech(q) { return (q.gept || q.gi || q.mode === "interview") && q.model ? [{ text: ttsClean(q.model), voice: SITE_CONFIG.TTS.narrator }] : []; }
 /* 檔名：FNV-1a 32 位元雜湊（UTF-8）＋位元組長度 */
 function ttsName(voice, text) {
   const bytes = new TextEncoder().encode(voice + "|" + text);

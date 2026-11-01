@@ -80,7 +80,7 @@ function tsaIvHTML(q, ai) {
 function tsaItems(att) {
   const out = [];
   (att.qs || []).forEach((_, i) => {
-    const X = getQ(i, att), a = (att.ans || {})[i]; if (!X || X.q.gept || X.q.type !== "speak") return;
+    const X = getQ(i, att), a = (att.ans || {})[i]; if (!X || X.q.gept || X.q.gi || X.q.type !== "speak") return;   // 英檢中級（gi）不算托福
     const ai = a && a.resp && a.resp.ai;
     out.push({ i, kind: tsaSub(X.q), done: !!ai, level: ai ? Number(ai.level) || 0 : 0, ai, q: X.q });
   });

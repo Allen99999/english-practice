@@ -374,7 +374,7 @@ function correctText(q) {
     case "spell": return q.ans;
     case "trans": case "rewrite": return q.ans.map(a => expand(a)[0]).filter((v, i, a) => a.indexOf(v) === i).slice(0, 2).join("／");
     case "essay": return "參考範文：" + q.model;
-    case "speak": return q.mode === "repeat" || q.mode === "g-repeat" || q.mode === "g-read" ? q.text : "參考回答：" + (q.model || "");
+    case "speak": return q.mode === "repeat" || q.mode === "g-repeat" || q.mode === "g-read" || q.mode === "i-read" ? q.text : "參考回答：" + (q.model || "");
     case "cword": return q.ans;
     case "scramble": return q.frame ? bsFill(q, q.tiles) : q.ans;
     case "match": return q.left.map((l, i) => `${l} → ${q.right[i]}`).join("；");
