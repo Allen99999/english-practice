@@ -126,6 +126,17 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
     觸發的封頂、題目要求逐張圖檢核、原文標註＋錯誤（錯誤代碼用白話名稱 GEPT_CODE）、換字 3 個、5 級分示範（收起）、參考範文、下一篇只練一件事、英檢錯誤日誌與級分趨勢。
     單句寫作（改寫、合併）系統判錯時自動送 Gemini 3.5 Flash 依 0／1／2 分再判（`sentAiRun`），額度另計：每人每小時 10 句、每 5 小時 30 句（Test、Allen 不限），全站 12 小時 1500 句；重組題不送 AI（官方：增減字就 0 分）。
     段落寫作 8 題練習已全部改成三格看圖題（官方題型）。
+- **英檢中級（2026-11-01 加入）**：規格與來源＝本機 `全民英檢中級 題型規格與出題計畫.md`（已 gitignore；官方 gept.org.tw 中級測驗介紹＋LTTC 成績統計報告＋中級學習指引）。題目全部原創，官方題只拿來對齊題型與難度。
+  - 題庫 `gept-i`（grade 10.5，首頁在英檢初級下面）：`bankgepti.js` 閱讀＋題庫設定、`bankgepti2.js` 聽力、`bankgepti3.js` 寫作、`bankgepti4.js` 口說；共 422 題。
+    閱讀 r1 詞彙 70、r2 段落填空 10 篇×5（每篇至少一題選整句）、r3 閱讀理解 22 組×3（含多文本）；聽力 l1 看圖辨義 20、l2 問答 30、l3 簡短對話 30、l4 簡短談話 30；寫作 w1 中譯英 20、w2 英文作文 12；口說 s1 朗讀短文 12 組（每組 2 篇＝2 題）、s2 回答問題 15 秒 30、s3 回答問題 30 秒 30、s4 看圖敘述 10。
+  - 官方規格：聽力 35（5／10／10／10，約 30 分鐘，**四選一**、只播一遍）、閱讀 35（10／10／15，45 分鐘）；通過＝兩科總和 160 且單科 ≥ 72（`geptLRCore(att, true)`，完整卷 35＋35）。
+    寫作 40 分鐘：中譯英 40%＋英文作文 60%（約 120 字），各 0～5 級分×20 換百分制，80 分通過；口說約 15 分鐘：朗讀短文 2 篇（看 1 分鐘、2 分鐘唸完）、回答問題 10（播兩次，1～5 題答 15 秒、6～10 題答 30 秒）、看圖敘述 1（看 30 秒、答 1 分半），整體 0～5 級分×20，80 分通過。
+    官方級分描述在 scoring.js 的 `RUBRICS.it`（中譯英）、`ic`（作文）、`is`（口說），不可改；結果頁換算是 `geptIWritingHTML`（朗讀 2 篇共用一個評分）。
+  - 出題工具：聽力 `LI(id, tag, part, script, opts, ans, hint, exp, x)`（bankgepti2.js；part 1 選項用念的、答案順序固定要自己分散 A～D；`x.pic` 圖代號，同一張圖 1～3 題共用 `img/listen/<題庫>-<代號>.png`，`x.draw` 畫圖描述；`x.box` 整合評量聽讀的表格，需要文字的圖表都用 box，不畫進圖裡；part 4＝簡短談話）。
+    寫作 `WT`（中譯英）、`WC`（作文），essay 加 `gi: true, part`；口說 `GI1`（朗讀，readaloud 題組）、`GI2`（回答問題，secs 15／30）、`GI3`（看圖敘述，`img/<題庫>-<題號>.png`）。中級題目都有 `gi: true`。
+  - 作答畫面沿用 `geptspeak.js`（mode `i-read`、`i-answer`、`i-pic`；`gsTwice` 播兩次、`gsPrep` 有準備時間）。**中級這次沒有 AI 批改**：寫作、口說都是三選項自評＋老師批改；口說錄音照樣上傳；`gsaRun` 不送 gi 題、`tsaItems` 也排除 gi（之後接 AI 時要改這兩處）。
+  - 正式模擬卷 `bankgeptimock.js`（`geptiMock`）、`bankgeptimock2.js`：gept-i-m1～m3，初試 75 分鐘正式考模式、寫作 40 分鐘、口說一路自動考完；`bank("gept-i").mockPapers`。
+  - 插圖：Higgsfield Seedream 5.0 Flash（1k、0.5 點／張）黑白線稿、圖中不能有字，壓成 48 色 PNG；目前 34 張（聽力 12＋模擬卷 9、看圖敘述 10＋模擬卷 3）。字典：中級新字收在 `dict9.js`（中文多取自 LTTC 中級參考字表），這些字也做 MP3。
 - **學生專區（2026-10-29 加入）**：`docs/js/bankstudent.js` 的 `STUDENT_ZONE`（Ayden、Yuri、Jovi、Wei，名字不分大小寫）；作答人是這些名字時首頁多一列「學生專區」，列出 Allen 為他準備的考卷。
   - 每份考卷用 `studentPaper({...})` 建（hidden＋fixed、選項照紙本順序不平衡、`minutes` 限時、`vocab` 指定單字表），整回照順序、正式考模式（做完才公布分數與對錯），再把 id 加到該學生的清單。
     `SPF` 是不給提示字母的拼字／詞形變化題（`full: true`），`TF` 是非題；克漏字空格可以用兩位數（`[[40]]`）。學生專區的題目不做語音。
@@ -208,6 +219,7 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
   新題目裡沒收錄的字要加到 `dict*.js`（格式 `word|詞性|中文`）。
 - **改完之後**：`node tools/build_tts_jobs.mjs && .venv/bin/python tools/gen_audio.py`，再 `git add -A && git commit && git push`
 - 單選題的選項順序會在載入時自動平衡，新增題目請加在每份題庫的最後面，已存在的題目不要改 id 或移動位置（舊紀錄靠 id 對應）。
+- **不要用瀏覽器即時語音念題目**（Allen 覺得聲音很怪）：tts.js 有 MP3 的句子只播 MP3（失敗重試一次就跳過），MP3 清單還沒載入時先等；只有沒有 MP3 的字（托福 dict7／dict8 單字）才用瀏覽器語音。新增題目後一定要跑 `build_tts_jobs.mjs`＋`gen_audio.py`，而且要等語音產生完再測試。
 - 語音檔名由 `tts-text.js` 的 `ttsName(voice, text)` 決定，瀏覽器和 `build_tts_jobs.mjs` 共用同一份程式，改這支要兩邊一起測。
 - repo 是公開的：不要把 Secrets.gs、代碼或學生資料提交進去。
 - 出題會優先出「這個名字還沒做過」的題（app.js 的 seenRefs：從作答紀錄＋暫存即時計算，刪紀錄就算沒做過）。
