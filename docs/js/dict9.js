@@ -375,4 +375,5 @@ ukulele|n.|烏克麗麗
 wheelchair|n.|輪椅
 wherever|conj.|無論在哪裡
 code|n.|密碼、代碼
+nursing|adj.|護理的、看護的（nursing home 老人院）
 `;

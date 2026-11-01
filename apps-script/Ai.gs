@@ -269,11 +269,12 @@ function aiGrade_(body) {
   const teacher = body.teacherCode && String(body.teacherCode) === TEACHER_CODE;
   const name = name_(body.name);
   if (!teacher) { const err = check_(name, code_(body.code)); if (err) return json_({ ok: false, error: err }); }
-  if (["email", "disc", "gept-para", "gept-sent"].indexOf(body.kind) < 0) return json_({ ok: false, error: "bad kind" });
+  if (["email", "disc", "gept-para", "gept-sent", "gept-i"].indexOf(body.kind) < 0) return json_({ ok: false, error: "bad kind" });
   const t = body.task || {}, essay = String(body.essay || "").slice(0, 5000);
   if ((essay.match(/[A-Za-z]+/g) || []).length < 3) return json_({ ok: false, error: "empty" });
   const quota = aiQuota_(name, teacher || AI_NO_LIMIT.includes(name.toLowerCase()), body.kind === "gept-sent" ? "sent" : "essay"); if (quota) return json_({ ok: false, error: quota });
   const clip = (s, n) => String(s || "").slice(0, n);
+  if (body.kind === "gept-i") return geptIGrade_(body, essay, clip);   // 英檢中級：中譯英、英文作文（AiGeptI.gs）
   if (body.kind === "gept-sent") {
     const sp = "TASK TYPE: " + clip(t.type, 30) + "\nGIVEN SENTENCE(S):\n" + [].concat(t.src || []).map(x => clip(x, 300)).join("\n") + "\nINSTRUCTION: " + clip(t.instr, 200) +
       "\nREQUIRED START: " + clip(t.start, 120) + "\nREFERENCE ANSWER(S):\n" + [].concat(t.ans || []).slice(0, 6).map(x => clip(x, 300)).join("\n") + "\n\nLEARNER'S ANSWER:\n" + clip(essay, 600);
