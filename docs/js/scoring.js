@@ -146,7 +146,7 @@ function geptIWritingHTML(att) {
     <div class="stats">${t !== null ? `<div class="stat"><div class="k">中譯英（40%）</div><div class="v">${f(t)}<span class="muted" style="font-size:15px"> / 5 級分</span></div></div>` : ""}${c !== null ? `<div class="stat"><div class="k">英文作文（60%）</div><div class="v">${f(c)}<span class="muted" style="font-size:15px"> / 5 級分</span></div></div>` : ""}</div>
     <div class="muted" style="font-size:12.5px">寫作成績＝中譯英級分 × 20 × 40% ＋ 英文作文級分 × 20 × 60%，80 分通過（官方是兩位評分老師的平均）。${full ? "" : "這次只做了其中一部分，所以不換算總分。"}現在是自評；老師批改後會以老師的級分為準。</div></div>`;
   }
-  if (sp !== null) {
+  if (sp !== null && !(typeof giaItems === "function" && giaItems(att).some(x => x.done))) {   // 有 AI 批改時改看「英檢中級口說成績（AI 估算）」
     const v = sp * 20;
     h += `<div class="glass card" style="display:flex;flex-direction:column;gap:14px"><div class="section-h" style="margin:0"><h2>英檢中級口說成績（官方換算）</h2>${tag(v)}</div>
     <div class="stats"><div class="stat"><div class="k">口說</div><div class="v">${f(sp)}<span class="muted" style="font-size:15px"> / 5 級分</span></div><div class="muted" style="font-size:12.5px">共 ${L.is.length} 個評分</div></div></div>

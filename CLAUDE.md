@@ -100,7 +100,7 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
     part 1、4 的答案順序固定（不會自動平衡），新增時自己把 A/B/C 分散。
   - part 1、4 的圖：`docs/img/listen/<題庫>-<題號>.png`，依 `pic` 欄位的英文描述用 Higgsfield 畫（Seedream 5.0 Flash，0.5 點／張，黑白線稿、圖中不能有字；
     part 4 是三格橫排，網站會自動標 A/B/C）。避免畫小孩游泳、泳衣（會被判成不當內容）。畫好後壓縮（寬 1200、48 色 PNG）。
-  - 正式考模擬卷的題目不可以抄官方或出版社的真題（網站是公開的）；官方真題請學生到 GEPT i學網。
+  - 正式考模擬卷的題目不可以抄官方或出版社的真題（網站是公開的）；官方真題請學生到 GEPT i學網。**官方學習指引、評分範例裡的例題也一樣不能照抄或只換幾個字**（2026-11 已清掉中級寫作 2 題、口說 7 題這種情況）。
   - 官方規格（LTTC）：聽力 30 題（看圖辨義 5、問答 10、簡短對話 10、短文聽解 5，約 20 分鐘）、閱讀 30 題（詞彙 10、段落填空 8、閱讀理解 12，35 分鐘），各滿分 120（量尺分數）；
     通過＝兩科總和 160 以上且任一科不低於 72。結果頁的「英檢初試成績（估算）」用答對率 × 120 估算（scoring.js 的 `geptLRHTML`）。
     看圖辨義：一張圖，題目與三個選項都用聽的；短文聽解：聽公告或短文，從三張圖選一張（官方範例偏生活應用：行程、廣播、地點）。2026-10-24 兩部分練習題各擴充到 25 題。
@@ -134,7 +134,7 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
     官方級分描述在 scoring.js 的 `RUBRICS.it`（中譯英）、`ic`（作文）、`is`（口說），不可改；結果頁換算是 `geptIWritingHTML`（朗讀 2 篇共用一個評分）。
   - 出題工具：聽力 `LI(id, tag, part, script, opts, ans, hint, exp, x)`（bankgepti2.js；part 1 選項用念的、答案順序固定要自己分散 A～D；`x.pic` 圖代號，同一張圖 1～3 題共用 `img/listen/<題庫>-<代號>.png`，`x.draw` 畫圖描述；`x.box` 整合評量聽讀的表格，需要文字的圖表都用 box，不畫進圖裡；part 4＝簡短談話）。
     寫作 `WT`（中譯英）、`WC`（作文），essay 加 `gi: true, part`；口說 `GI1`（朗讀，readaloud 題組）、`GI2`（回答問題，secs 15／30）、`GI3`（看圖敘述，`img/<題庫>-<題號>.png`）。中級題目都有 `gi: true`。
-  - 作答畫面沿用 `geptspeak.js`（mode `i-read`、`i-answer`、`i-pic`；`gsTwice` 播兩次、`gsPrep` 有準備時間）。**中級這次沒有 AI 批改**：寫作、口說都是三選項自評＋老師批改；口說錄音照樣上傳；`gsaRun` 不送 gi 題、`tsaItems` 也排除 gi（之後接 AI 時要改這兩處）。
+  - 作答畫面沿用 `geptspeak.js`（mode `i-read`、`i-answer`、`i-pic`；`gsTwice` 播兩次、`gsPrep` 有準備時間）。寫作、口說都有 AI 批改（見下方兩段）；AI 不能用時才三選項自評；口說錄音照樣上傳。
   - 正式模擬卷 `bankgeptimock.js`（`geptiMock`）、`bankgeptimock2.js`：gept-i-m1～m3，初試 75 分鐘正式考模式、寫作 40 分鐘、口說一路自動考完；`bank("gept-i").mockPapers`。
   - 插圖：Higgsfield Seedream 5.0 Flash（1k、0.5 點／張）黑白線稿、圖中不能有字，壓成 48 色 PNG；目前 34 張（聽力 12＋模擬卷 9、看圖敘述 10＋模擬卷 3）。字典：中級新字收在 `dict9.js`（中文多取自 LTTC 中級參考字表），這些字也做 MP3。
 - **學生專區（2026-10-29 加入）**：`docs/js/bankstudent.js` 的 `STUDENT_ZONE`（Ayden、Yuri、Jovi、Wei，名字不分大小寫）；作答人是這些名字時首頁多一列「學生專區」，列出 Allen 為他準備的考卷。
@@ -156,7 +156,11 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
   後端 `apps-script/AiGeptI.gs`（`aigrade` 的 kind `gept-i`，sub＝trans／comp；共用 Ai.gs 的 `gemini_`＝3.1 Pro 和 essay 額度），程式再檢查一次字數封頂（`giFinal_`）。
   前端沿用初級段落寫作的畫面（aigrade.js 的 `isGeptQ` 涵蓋 `q.gi`，`geptFeedbackHTML`）：中譯英逐意群檢核、作文逐點檢核＋約 120 字＋主題句與結論；錯誤日誌與趨勢初級、中級分開。
   和初級不同：中級作文 5 級分也允許偶有錯誤；官方 4 級分範文有好幾個拼字句型錯仍通過；中譯英漏譯一個意群最高 3；作文少於 90 字最高 3（推估，依官方 2 分範文「84／85 字未達要求」）。
-  中級口說 AI 批改還沒做（目前自評＋老師批改）。
+- **英檢中級口說 AI 批改（2026-11-03 加入）**：評分基準＝本機 `全民英檢中級口說 評分與回饋系統.md`（官方整體級分描述逐字、不可改；第九節是校準結果）。
+  後端 `apps-script/AiGeptISpeak.gs`（`aigrade` 的 kind `gepti-speak`，sub＝read／answer／pic／report；共用 AiSpeak.gs 的模型、gsGemini_、gsFinal_、speak 額度；頂層不要引用別的 .gs 檔的常數，檔案載入順序不一定）。
+  朗讀短文＝盲轉寫＋3.1-pro（數字唸法是官方點名的重點）、回答問題＝2.5-flash 一次完成（時態要對應題目，答錯時態算沒回答到）、看圖敘述＝盲轉寫＋3.1-pro（拿題目和 `draw` 圖片描述）。
+  前端沿用 `gsaRun`（GSA_SUB 的 i-read／i-answer／i-pic）；朗讀用 `gsaReadHTML`、回答用 `gsaShortHTML`、看圖用 `tsaIvHTML(q, ai, GIA_PIC)`；整份估算與總回饋在 `docs/js/gispeakai.js`
+  （官方是整份一個級分，網站依作答時間加權：朗讀 28%、回答 52%、看圖 20%，取到 0.5，×20，80 分通過）。有 AI 結果時 scoring.js 的中級口說平均卡不顯示。
 - **有正式模擬卷的題庫（英檢、托福）**：題庫設 `mockPapers`；首頁選這個題庫時，「正式模擬卷 N」＝模擬段考、「隨機組卷」＝自訂練習（不顯示「模式」切換）。
   模擬卷題庫設 `hidden`、`fixed`、`exams`（可考的部分）、`partNotes`、`timeLimits`、`blind`（不顯示對錯的部分）。
 - **托福（2026 新制）**：練習題在 `banktoefl.js`（題庫設定＋閱讀）、`banktoefl2.js`（聽力、寫作、口說），共約 236 題；正式模擬卷在 `banktoeflmock.js`、`banktoeflmock2.js`（各 128 題）。

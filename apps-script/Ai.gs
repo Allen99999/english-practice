@@ -266,6 +266,7 @@ function aiQuota_(name, exempt, bucket) {
 function aiGrade_(body) {
   if (body.kind === "gept-speak") return speakGrade_(body);   // 英檢初級口說（AiSpeak.gs）
   if (body.kind === "toefl-speak") return toeflSpeakGrade_(body);   // 托福口說（AiToeflSpeak.gs）
+  if (body.kind === "gepti-speak") return geptISpeakGrade_(body);   // 英檢中級口說（AiGeptISpeak.gs）
   const teacher = body.teacherCode && String(body.teacherCode) === TEACHER_CODE;
   const name = name_(body.name);
   if (!teacher) { const err = check_(name, code_(body.code)); if (err) return json_({ ok: false, error: err }); }

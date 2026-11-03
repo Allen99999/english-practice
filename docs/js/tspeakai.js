@@ -42,19 +42,20 @@ function tsWords(s) {
 }
 
 /* ---------- Take an Interview：詳細回饋 ---------- */
-function tsaIvHTML(q, ai) {
-  const lv = Number(ai.level) || 0, m = ai.m || {}, d = ai.dims || {};
+function tsaIvHTML(q, ai, opt) {   // opt：英檢中級看圖敘述換標題、級分說明、作答秒數、封頂說明
+  opt = opt || {};
+  const lv = Number(ai.level) || 0, m = ai.m || {}, d = ai.dims || {}, CAP = opt.caps || TSA_CAP;
   const words = String(ai.transcript || "").replace(/\(\.\.\.\)/g, " ").split(/\s+/).filter(w => /[A-Za-z]/.test(w) && !/^(um|uh|like)[,.]?$/i.test(w)).length;
-  let h = `<div class="sp-card" style="--lv:${gsaCol(lv)}"><div class="eyebrow">🤖 AI 依 ETS 官方量表・Take an Interview</div>${gsaMeter(lv, TSA_IV[lv] || "", "")}`;
-  const c = []; if (m.speech !== undefined) c.push(`🎙️ 說了 ${m.speech} 秒／45 秒`); if (words && m.span) c.push(`⏩ 每分鐘 ${Math.round(words / (m.span / 60))} 字`);
+  let h = `<div class="sp-card" style="--lv:${gsaCol(lv)}"><div class="eyebrow">🤖 ${opt.eyebrow || "AI 依 ETS 官方量表・Take an Interview"}</div>${gsaMeter(lv, (opt.judge ? opt.judge(lv) : TSA_IV[lv]) || "", opt.desc ? opt.desc(lv) : "")}`;
+  const c = []; if (m.speech !== undefined) c.push(`🎙️ 說了 ${m.speech} 秒／${opt.total || 45} 秒`); if (words && m.span) c.push(`⏩ 每分鐘 ${Math.round(words / (m.span / 60))} 字`);
   if (m.pauses !== undefined) c.push(`⏸️ 停頓 ${m.pauses} 次${m.longest >= 1.5 ? `（最長 ${m.longest} 秒）` : ""}`); if (m.onset >= 3) c.push(`⌛ ${m.onset} 秒後才開口`);
   if (c.length) h += `<div class="sp-chips">${c.map(x => `<span>${x}</span>`).join("")}</div>`;
-  (ai.caps || []).filter(x => TSA_CAP[x]).forEach(x => { h += `<div class="ts-cap">⚠️ ${esc(TSA_CAP[x])}</div>`; });
+  (ai.caps || []).filter(x => CAP[x]).forEach(x => { h += `<div class="ts-cap">⚠️ ${esc(CAP[x])}</div>`; });
   if (ai.diagnosis) h += `<div class="sp-say">🎯 ${esc(ai.diagnosis)}</div>`;
   if (lv < 5 && ai.nextLevel) h += `<div class="sp-up">⬆️ <b>要拿到 ${lv + 1} 分：</b>${esc(ai.nextLevel)}</div>`;
   if (d.respond) h += `<div class="ts-dims">${TSA_DIM.map(([k, n]) => { const v = Number((d[k] || {}).score) || 0;
     return `<div class="ai-dim"><div class="ai-dim-h"><span>${n}</span><b class="tnum" style="color:${gsaCol(v)}">${v}</b></div><div class="sk-bar"><i style="width:${v / 5 * 100}%;background:${gsaCol(v)}"></i></div><div class="muted" style="font-size:13px">${esc((d[k] || {}).note || "")}</div></div>`; }).join("")}</div>
-    <div class="muted" style="font-size:12px">四個面向是幫你找出哪裡拉低分數；ETS 只給一個整體分數。</div>`;
+    <div class="muted" style="font-size:12px">四個面向是幫你找出哪裡拉低分數；${opt.who || "ETS"} 只給一個整體分數。</div>`;
   h += `</div>`;
   // 問題檢核＋回答結構
   if ((ai.parts || []).length) h += `<div class="sp-sec"><h4>問題有沒有回答到</h4><div class="ts-parts">${ai.parts.map(p => `<div class="ts-part ${p.status}"><span>${p.status === "yes" ? "✅" : p.status === "partial" ? "⚠️" : "❌"}</span><div><b>${esc(p.part)}</b>${p.note ? `<div class="muted">${esc(p.note)}</div>` : ""}</div></div>`).join("")}</div></div>`;

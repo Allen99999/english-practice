@@ -54,8 +54,7 @@ function gsStatusHTML(q, G, done, mock) {
 }
 function gsRevealHTML(q, X, done) {
   const btn = (t, w) => gsModelBtn(t, w), i = S.idx;
-  // 英檢中級（gi）這次還沒有 AI 批改：不送 AI、直接自評
-  const aiH = !q.gi && typeof gsaQuizHTML === "function" ? gsaQuizHTML(q, i) : "", aiWait = !q.gi && typeof gsaBusy === "function" && (gsaBusy(S, i) || gsaHasAi(i) || (gsaOn() && !(S.work[ctSpan(i)[0]] || {}).gsaErr));
+  const aiH = typeof gsaQuizHTML === "function" ? gsaQuizHTML(q, i) : "", aiWait = typeof gsaBusy === "function" && (gsaBusy(S, i) || gsaHasAi(i) || (gsaOn() && !(S.work[ctSpan(i)[0]] || {}).gsaErr));
   let h = aiH;
   if (q.mode === "g-repeat") h += `<div class="model"><div class="step-label">原句</div><div class="ptext" style="font-size:16px">${esc(q.text)}</div>${btn("再聽一次")}</div>`;
   if (gsRead(q)) h += `<div class="model"><div class="step-label">示範朗讀</div>${btn("聽示範朗讀")}</div>`;
@@ -130,7 +129,7 @@ function gsRec(G, secs) {
     mr.onstop = () => {
       clearInterval(G.timer);
       G.blob = new Blob(chunks, { type: mr.mimeType || "audio/mp4" }); G.url = URL.createObjectURL(G.blob); G.phase = "done";
-      const ai = typeof gsaRun === "function" && !getQ(G.i).q.gi;   // 英檢中級：這次不送 AI 批改
+      const ai = typeof gsaRun === "function";
       if (gsMock()) { gsSave(G, null); if (ai) gsaRun(S, G.i, G.blob); if (!G.aborted) gsNext(G); else gsRender(); }   // 模擬卷：背景批改，不顯示結果
       else { gsRelease(); if (!G.aborted) { if (G.blob.size > 200) { uploadRec(G.blob, S.id, G.i, S.who); G.up = true; } gsRender(); if (ai) gsaRun(S, G.i, G.blob); } }   // 練習：錄完就上傳（老師可聽、學生可重聽）
     };
