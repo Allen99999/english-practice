@@ -123,10 +123,12 @@ const GS_G = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9", "G11", "V1",
 const GS_PROB = { type: "OBJECT", properties: { code: { type: "STRING", enum: GS_P }, word: { type: "STRING" }, tip: { type: "STRING" } }, required: ["code", "word", "tip"] };
 const GS_REPEAT_SCHEMA = { type: "OBJECT", properties: { transcript: { type: "STRING" }, level: { type: "INTEGER" }, problems: { type: "ARRAY", items: GS_PROB }, comment: { type: "STRING" }, tip: { type: "STRING" } },
   required: ["transcript", "level", "problems", "comment", "tip"], propertyOrdering: ["transcript", "level", "problems", "comment", "tip"] };
+/* 模型判斷不當內容（髒話以外的性、暴力、仇恨內容）：加在 iv／pic／answer 的輸出格式最後 */
+const GS_INAPPROPRIATE = { type: "BOOLEAN", description: "true only if the answer contains profanity, sexual content, slurs, or violent or hateful content (being off-topic alone is not inappropriate). Even when true, still give all the normal feedback, corrections and a better answer; the website handles the score." };
 const GS_ANSWER_SCHEMA = { type: "OBJECT", properties: { transcript: { type: "STRING" }, answered: { type: "BOOLEAN" }, level: { type: "INTEGER" }, pron: { type: "INTEGER" },
   errors: { type: "ARRAY", items: { type: "OBJECT", properties: { code: { type: "STRING", enum: GS_G }, original: { type: "STRING" }, corrected: { type: "STRING" }, why: { type: "STRING" } }, required: ["code", "original", "corrected", "why"] } },
-  problems: { type: "ARRAY", items: GS_PROB }, comment: { type: "STRING" }, better: { type: "STRING" }, tip: { type: "STRING" } },
-  required: ["transcript", "answered", "level", "pron", "errors", "problems", "comment", "better", "tip"], propertyOrdering: ["transcript", "answered", "level", "pron", "errors", "problems", "comment", "better", "tip"] };
+  problems: { type: "ARRAY", items: GS_PROB }, comment: { type: "STRING" }, better: { type: "STRING" }, tip: { type: "STRING" }, inappropriate: GS_INAPPROPRIATE },
+  required: ["transcript", "answered", "level", "pron", "errors", "problems", "comment", "better", "tip", "inappropriate"], propertyOrdering: ["transcript", "answered", "level", "pron", "errors", "problems", "comment", "better", "tip", "inappropriate"] };
 const GS_READ_SCHEMA = { type: "OBJECT", properties: {
   segments: { type: "ARRAY", items: { type: "OBJECT", properties: { n: { type: "INTEGER" }, status: { type: "STRING", enum: ["ok", "minor", "major", "skipped"] }, intonation: { type: "STRING", enum: ["ok", "flat", "wrong", "na"] }, note: { type: "STRING" } }, required: ["n", "status", "intonation", "note"] } },
   level: { type: "INTEGER" },
@@ -276,9 +278,46 @@ function gsGemini_(system, parts, schema, chain) {
 /* 不當用語：轉寫裡有髒話、歧視字眼 → 這題 0 分並標記 rude（畫面提醒學生，老師在解析看得到原文） */
 const GS_RUDE = /\b(fuck\w*|f\*+k\w*|shit\w*|bullshit|bitch\w*|asshole\w*|dickhead|cunt\w*|motherf\w*|bastard\w*|slut\w*|whore\w*|nigg\w*|fag|faggot\w*|retard\w*|porn\w*|wtf|stfu)\b/i;
 function gsRude_(x, said) {
-  if (!x || !GS_RUDE.test(String(x.transcript || "") + " " + String(said || ""))) return x;
-  x.rude = true; x.level = 0; if ("pron" in x) x.pron = 0; if ("content" in x) x.content = 0;
+  if (!x || !(x.inappropriate === true || GS_RUDE.test(String(x.transcript || "") + " " + String(said || "")))) return x;
+  x.rude = true; x.orig = x.level; x.level = 0; if ("pron" in x) x.pron = 0; if ("content" in x) x.content = 0;   // 其他回饋照常保留，學生一樣看得到修改建議
   return x;
+}
+
+/* ===== 發音專門檢查（2026-11-03）：另外請 3.1 Pro「只聽聲音」逐字找發音問題，和盲轉寫同時跑（fetchAll）。
+   實測（本機 acc 測試）：一般批改順便看發音只會抓 0～3 個字、而且不穩定；專門檢查對刻意加入的 th、v／w、母音、字尾錯誤能抓到大部分，標準發音和乾淨的印度口音都不會誤報。
+   結果交給批改模型當發音面向的證據，也直接顯示在畫面（pronCheck）。用在托福訪談、英檢中級看圖敘述。 ===== */
+const GS_PRON_SYSTEM = `You are a phonetics expert checking an English learner's pronunciation for a speaking practice site. Listen ONLY to the sounds, not to what the speaker probably meant.
+Step 1 "heard": write the answer word by word, spelling every word the way it actually SOUNDED. If a word was mispronounced, spell the sound you heard in plain English letters (e.g. "very" said with a w sound -> "wery", "think" with a t -> "tink", "time" said as "taim" -> "taim"). Do not fix anything.
+Step 2 "issues": list EVERY word whose pronunciation clearly differs from a standard (General American or British) pronunciation in a way a trained listener notices: wrong consonant (th->t/d, v->w/b, f->p, r/l, n/l, retroflex t/d), dropped or added final consonants or added vowels, wrong vowel, wrong word stress. Each: {word, heard, code, severity: "minor" (accent, still clear) or "major" (could be misheard as another word), tip (one short Traditional Chinese sentence for a Taiwanese student: how to fix it)}. Codes: P1 final consonants/extra vowel, P2 th, P3 v/f/w/b, P4 l/r/n, P5 vowels, P6 word stress, P7 intonation, P8 -s/-ed, P9 rhythm. Up to 20, in order of appearance. Report only what you clearly hear; an ordinary native-like word is not an issue, and "heard" must differ from the word.
+Step 3: accent {strength: "none"|"light"|"moderate"|"heavy", patterns: short Traditional Chinese descriptions of repeated patterns, e.g. "v 和 w 不分，very 唸成 wery"}, intelligibility: "clear" (every word easy to understand) | "minor" (one or two words need a moment) | "occasional" (some words need effort or could be misheard) | "frequent" (listener often has to guess) | "mostly" (largely unintelligible).`;
+const GS_PRON_SCHEMA = { type: "OBJECT", properties: { heard: { type: "STRING" },
+  issues: { type: "ARRAY", items: { type: "OBJECT", properties: { word: { type: "STRING" }, heard: { type: "STRING" }, code: { type: "STRING", enum: ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9"] }, severity: { type: "STRING", enum: ["minor", "major"] }, tip: { type: "STRING" } }, required: ["word", "heard", "code", "severity", "tip"] } },
+  accent: { type: "OBJECT", properties: { strength: { type: "STRING", enum: ["none", "light", "moderate", "heavy"] }, patterns: { type: "ARRAY", items: { type: "STRING" } } }, required: ["strength", "patterns"] },
+  intelligibility: { type: "STRING", enum: ["clear", "minor", "occasional", "frequent", "mostly"] } }, required: ["heard", "issues", "accent", "intelligibility"], propertyOrdering: ["heard", "issues", "accent", "intelligibility"] };
+const GS_PRON_MODELS = [["gemini-3.1-pro-preview", { thinkingLevel: "low" }], ["gemini-2.5-pro", { thinkingBudget: 512 }]];
+function gsPronClean_(p) {
+  if (!p) return null;
+  const issues = (p.issues || []).filter(i => i.word && i.heard && String(i.heard).toLowerCase().replace(/[^a-z]/g, "") !== String(i.word).toLowerCase().replace(/[^a-z]/g, "")).slice(0, 15);
+  return { issues, accent: p.accent || { strength: "none", patterns: [] }, intelligibility: p.intelligibility || "clear" };
+}
+function gsPronText_(p) {
+  if (!p) return "PRONUNCIATION CHECK: not available; judge pronunciation from the audio yourself.";
+  return "PRONUNCIATION CHECK (a separate phonetics pass that listened only to the sounds): accent " + p.accent.strength + "; intelligibility " + p.intelligibility +
+    "; issues (word -> heard, code, severity): " + (p.issues.length ? p.issues.map(i => i.word + " -> " + i.heard + " (" + i.code + ", " + i.severity + ")").join("; ") : "none") +
+    ".\nHow to use it: an accent by itself is not an error and does not lower the score. Use it as evidence for the pron dimension: clear or minor -> pron can still be 4-5; occasional -> pron at most 3; frequent -> pron at most 2; mostly -> pron at most 1 (and the usual rule that the level may not be more than 1 above the lowest dimension still applies). Choose pronWords (the most important 3) from these issues.";
+}
+/* 同時送幾個 AI 工作（UrlFetchApp.fetchAll）：第一個模型一起送，失敗的再用 gsGemini_ 照原本順序重試、換備用 */
+function gsGeminiAll_(jobs) {
+  const token = ScriptApp.getOAuthToken();
+  const reqs = jobs.map(j => { const [model, thinking] = j.chain[0], gc = { temperature: 0.2, responseMimeType: "application/json", responseSchema: j.schema }; if (thinking) gc.thinkingConfig = thinking;
+    return { url: "https://aiplatform.googleapis.com/v1/projects/" + VERTEX_PROJECT + "/locations/global/publishers/google/models/" + model + ":generateContent", method: "post", contentType: "application/json", muteHttpExceptions: true,
+      headers: { Authorization: "Bearer " + token, "x-goog-user-project": VERTEX_PROJECT }, payload: JSON.stringify({ systemInstruction: { parts: [{ text: j.system }] }, contents: [{ role: "user", parts: j.parts }], generationConfig: gc }) }; });
+  let res = []; try { res = UrlFetchApp.fetchAll(reqs); } catch (e) { }
+  return jobs.map((j, k) => {
+    const r = res[k];
+    if (r && r.getResponseCode() === 200) try { const d = JSON.parse(r.getContentText()); return { ok: true, model: j.chain[0][0], result: JSON.parse(d.candidates[0].content.parts.filter(p => !p.thought).map(p => p.text || "").join("")) }; } catch (e) { }
+    return gsGemini_(j.system, j.parts, j.schema, j.chain);
+  });
 }
 /* 批改失敗記在試算表的 ailog 工作表（時間、題型、名字、錯誤），方便之後查原因 */
 function aiLog_(kind, name, err) {

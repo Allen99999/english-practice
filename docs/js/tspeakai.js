@@ -46,7 +46,7 @@ function tsaIvHTML(q, ai, opt) {   // opt：英檢中級看圖敘述換標題、
   opt = opt || {};
   const lv = Number(ai.level) || 0, m = ai.m || {}, d = ai.dims || {}, CAP = opt.caps || TSA_CAP;
   const words = String(ai.transcript || "").replace(/\(\.\.\.\)/g, " ").split(/\s+/).filter(w => /[A-Za-z]/.test(w) && !/^(um|uh|like)[,.]?$/i.test(w)).length;
-  let h = `<div class="sp-card" style="--lv:${gsaCol(lv)}"><div class="eyebrow">🤖 ${opt.eyebrow || "AI 依 ETS 官方量表・Take an Interview"}</div>${gsaMeter(lv, (opt.judge ? opt.judge(lv) : TSA_IV[lv]) || "", opt.desc ? opt.desc(lv) : "")}`;
+  let h = `<div class="sp-card" style="--lv:${gsaCol(lv)}"><div class="eyebrow">🤖 ${opt.eyebrow || "AI 依 ETS 官方量表・Take an Interview"}</div>${gsaMeter(lv, ai.rude ? "內容不適當，這題以 0 分計" : (opt.judge ? opt.judge(lv) : TSA_IV[lv]) || "", ai.rude ? "" : opt.desc ? opt.desc(lv) : "")}`;
   const c = []; if (m.speech !== undefined) c.push(`🎙️ 說了 ${m.speech} 秒／${opt.total || 45} 秒`); if (words && m.span) c.push(`⏩ 每分鐘 ${Math.round(words / (m.span / 60))} 字`);
   if (m.pauses !== undefined) c.push(`⏸️ 停頓 ${m.pauses} 次${m.longest >= 1.5 ? `（最長 ${m.longest} 秒）` : ""}`); if (m.onset >= 3) c.push(`⌛ ${m.onset} 秒後才開口`);
   if (c.length) h += `<div class="sp-chips">${c.map(x => `<span>${x}</span>`).join("")}</div>`;
@@ -70,11 +70,27 @@ function tsaIvHTML(q, ai, opt) {   // opt：英檢中級看圖敘述換標題、
     if ((ai.errors || []).length) h += `<ol class="sp-wlist">${ai.errors.map(e => `<li>${gsaTag(e.code)}<div><div class="ts-diff">${tsaDiff(e.original, e.corrected)}</div><div class="muted">${esc(e.why)}</div></div></li>`).join("")}</ol>`;
     h += `</div>`;
   }
-  if ((ai.pronWords || []).length) h += `<div class="sp-sec"><h4>發音要注意</h4>${ai.pronWords.map(p => `<div class="sp-fix">${gsaTag(p.code)}<div><b>${esc(p.word)}</b>${p.heard && p.heard.toLowerCase() !== String(p.word).toLowerCase() ? `<span class="muted">　聽起來像「${esc(p.heard)}」</span>` : ""}<div class="muted">${esc(p.tip)}</div></div></div>`).join("")}</div>`;
+  if (ai.pronCheck) h += tsaPronHTML(ai.pronCheck, q);
+  else if ((ai.pronWords || []).length) h += `<div class="sp-sec"><h4>發音要注意</h4>${ai.pronWords.map(p => `<div class="sp-fix">${gsaTag(p.code)}<div><b>${esc(p.word)}</b>${p.heard && p.heard.toLowerCase() !== String(p.word).toLowerCase() ? `<span class="muted">　聽起來像「${esc(p.heard)}」</span>` : ""}<div class="muted">${esc(p.tip)}</div></div></div>`).join("")}</div>`;
   if ((ai.fixes || []).length) h += `<div class="sp-sec"><h4>先改這三件事</h4><div class="sp-fixes">${ai.fixes.slice(0, 3).map((f, k) => `<div class="sp-pri"><b><span class="tnum">${k + 1}</span>${esc(f.title)}</b><div>${esc(f.how)}</div></div>`).join("")}</div></div>`;
   if (ai.better) h += `<div class="sp-better"><div class="sp-k">💬 用你的想法，5 分可以這樣說</div><div>${esc(ai.better)}</div></div>`;
   if ((ai.upgrades || []).length) h += `<details class="pfold" data-key="tsa-up-${esc(q.id)}"><summary><span>🔁 換個更好的說法（${ai.upgrades.length}）</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary>${ai.upgrades.map(u => `<div class="sp-fix" style="margin-top:8px"><div><s>${esc(u.from)}</s> → <b>${esc(u.to)}</b><div class="muted">${esc(u.example)}</div></div></div>`).join("")}</details>`;
   return h;
+}
+
+/* 發音專門檢查（後端另外請 AI 只聽聲音）：口音程度、清晰度、反覆出現的問題、逐字清單 */
+const TSA_ACC = { none: ["幾乎沒有口音", "var(--good)"], light: ["輕微口音", "var(--sp-ok)"], moderate: ["明顯口音", "var(--gold)"], heavy: ["口音很重", "var(--bad)"] };
+const TSA_INT = { clear: "每個字都很好懂", minor: "一兩個字要想一下", occasional: "有些字要費力聽、可能聽錯", frequent: "常常要用猜的", mostly: "大部分聽不懂" };
+function tsaPronHTML(p, q) {
+  const [an, ac] = TSA_ACC[(p.accent || {}).strength] || TSA_ACC.none, list = p.issues || [];
+  let h = `<div class="sp-sec"><h4>發音檢查</h4><div class="sp-chips"><span style="color:${ac}">🗣️ ${an}</span><span>👂 ${TSA_INT[p.intelligibility] || ""}</span><span>🔎 ${list.length} 個字要注意</span></div>`;
+  if (((p.accent || {}).patterns || []).length) h += `<ul style="margin:6px 0 0;padding-left:20px">${p.accent.patterns.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  const row = i => `<div class="sp-fix">${gsaTag(i.code)}<div><b>${esc(i.word)}</b><span class="muted">　聽起來像「${esc(i.heard)}」${i.severity === "major" ? "・可能被聽成別的字" : ""}</span>${i.tip ? `<div class="muted">${esc(i.tip)}</div>` : ""}</div></div>`;
+  const major = list.filter(i => i.severity === "major"), rest = list.filter(i => i.severity !== "major"), top = (major.length ? major : rest).slice(0, 4), more = list.filter(i => !top.includes(i));
+  h += top.map(row).join("");
+  if (more.length) h += `<details class="pfold" data-key="tsa-pron-${esc(q.id)}"><summary><span>其他 ${more.length} 個字</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary>${more.map(row).join("")}</details>`;
+  if (!list.length) h += `<div class="muted" style="font-size:14px">沒有聽到明顯的發音問題。</div>`;
+  return h + `<div class="muted" style="font-size:12px">口音本身不扣分；會影響分數的是讓人聽不懂或聽錯的字。</div></div>`;
 }
 
 /* ---------- 整份口說（模擬卷）：原始分 0～55 → 1～6 級分（估算）＋總回饋 ---------- */

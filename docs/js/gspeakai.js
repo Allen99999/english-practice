@@ -142,7 +142,7 @@ function gsaQuizHTML(q, i) {
   return "";
 }
 /* 錄音裡有髒話、歧視字眼（後端判斷，rude）：這題 0 分 */
-const gsaRudeHTML = ai => ai && ai.rude ? `<div class="sp-err">⚠️ 錄音裡有不適當的用語，這題以 0 分計。請用正式考試會用的方式回答，老師也看得到這段錄音和文字。</div>` : "";
+const gsaRudeHTML = ai => ai && ai.rude ? `<div class="sp-err">⚠️ 錄音裡有不適當的內容，這題以 0 分計${ai.orig > 0 ? `（不算這點的話，AI 原本評 ${ai.orig} 分）` : ""}。下面的修改建議照常可以參考；請用正式考試會用的方式回答，老師也看得到這段錄音和文字。</div>` : "";
 const gsaHasAi = i => { const a = S.ans[gsaSpan(S, i)[0]]; return !!(a && a.resp && a.resp.ai); };
 
 /* ---------- 解析頁（每題） ---------- */

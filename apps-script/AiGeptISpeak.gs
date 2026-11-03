@@ -106,9 +106,10 @@ const GIS_PIC_SCHEMA = { type: "OBJECT", properties: {
   pronWords: { type: "ARRAY", items: { type: "OBJECT", properties: { word: { type: "STRING" }, heard: { type: "STRING" }, code: { type: "STRING", enum: GIS_P }, tip: { type: "STRING" } }, required: ["word", "heard", "code", "tip"] } },
   fixes: { type: "ARRAY", items: { type: "OBJECT", properties: { title: { type: "STRING" }, how: { type: "STRING" } }, required: ["title", "how"] } },
   better: { type: "STRING" },
-  upgrades: { type: "ARRAY", items: { type: "OBJECT", properties: { from: { type: "STRING" }, to: { type: "STRING" }, example: { type: "STRING" } }, required: ["from", "to", "example"] } }
-}, required: ["transcript", "parts", "dims", "level", "caps", "diagnosis", "nextLevel", "errors", "pronWords", "fixes", "better", "upgrades"],
-  propertyOrdering: ["transcript", "parts", "dims", "level", "caps", "diagnosis", "nextLevel", "errors", "pronWords", "fixes", "better", "upgrades"] };
+  upgrades: { type: "ARRAY", items: { type: "OBJECT", properties: { from: { type: "STRING" }, to: { type: "STRING" }, example: { type: "STRING" } }, required: ["from", "to", "example"] } },
+  inappropriate: { type: "BOOLEAN", description: "true only if the answer contains profanity, sexual content, slurs, or violent or hateful content (being off-topic alone is not inappropriate). Even when true, still give all the normal feedback, corrections and a better answer; the website handles the score." }   // 和 AiSpeak.gs 的 GS_INAPPROPRIATE 相同（頂層不能引用別的檔案的常數）
+}, required: ["transcript", "parts", "dims", "level", "caps", "diagnosis", "nextLevel", "errors", "pronWords", "fixes", "better", "upgrades", "inappropriate"],
+  propertyOrdering: ["transcript", "parts", "dims", "level", "caps", "diagnosis", "nextLevel", "errors", "pronWords", "fixes", "better", "upgrades", "inappropriate"] };
 
 function geptISpeakGrade_(body) {
   const teacher = body.teacherCode && String(body.teacherCode) === TEACHER_CODE;
@@ -136,9 +137,10 @@ function geptISpeakGrade_(body) {
     if (!r.ok) return json_({ ok: false, error: r.error });
     return json_({ ok: true, result: gsRude_(gsFinal_("answer", r.result, {}, metrics)), model: r.model });
   }
-  const tr = gsGemini_(GS_TR_SYSTEM, [aud], GS_TR_SCHEMA, GS_FAST);
+  const [tr, pr] = sub === "pic" ? gsGeminiAll_([{ system: GS_TR_SYSTEM, parts: [aud], schema: GS_TR_SCHEMA, chain: GS_FAST }, { system: GS_PRON_SYSTEM, parts: [aud, { text: "Check this recording." }], schema: GS_PRON_SCHEMA, chain: GS_PRON_MODELS }])
+    : [gsGemini_(GS_TR_SYSTEM, [aud], GS_TR_SCHEMA, GS_FAST), { ok: false }];   // 看圖敘述：盲轉寫和發音專門檢查同時跑（朗讀已經逐句對原文檢查發音）
   if (!tr.ok) return json_({ ok: false, error: tr.error });
-  const said = String(tr.result.transcript || "");
+  const said = String(tr.result.transcript || ""), pron = pr.ok ? gsPronClean_(pr.result) : null;
   if (!gsWords_(said).length) return json_({ ok: true, result: gisSilent_(sub), model: tr.model });
   if (sub === "read") {
     const task = { segs: [].concat(t.segs || []).slice(0, 2).map(x => clip(x, 900)) };
@@ -148,9 +150,9 @@ function geptISpeakGrade_(body) {
     return json_({ ok: true, result: gsRude_(gsFinal_("read", r.result, task, metrics), said), model: tr.model + " → " + r.model });
   }
   const qs = [].concat(t.questions || []).slice(0, 6).map(x => clip(x, 300));
-  const r = gsGemini_(GIS_PIC_SYSTEM, [{ text: "QUESTIONS:\n" + qs.map((s, k) => (k + 1) + ". " + s).join("\n") + "\n\nPICTURE DESCRIPTION: " + clip(t.draw, 1200) + "\n\nBLIND TRANSCRIPT: " + said + fl + "\nThe learner's recording follows." }, aud], GIS_PIC_SCHEMA, GS_PRO);
+  const r = gsGemini_(GIS_PIC_SYSTEM, [{ text: "QUESTIONS:\n" + qs.map((s, k) => (k + 1) + ". " + s).join("\n") + "\n\nPICTURE DESCRIPTION: " + clip(t.draw, 1200) + "\n\nBLIND TRANSCRIPT: " + said + fl + "\nThe learner's recording follows." }, { text: gsPronText_(pron) }, aud], GIS_PIC_SCHEMA, GS_PRO);
   if (!r.ok) return json_({ ok: false, error: r.error });
-  const x = r.result; x.level = Math.max(0, Math.min(5, Math.round(Number(x.level) || 0))); x.blind = said;
+  const x = r.result; x.level = Math.max(0, Math.min(5, Math.round(Number(x.level) || 0))); x.blind = said; if (pron) x.pronCheck = pron;
   if (/[一-鿿]/.test(said) && gsWords_(said).length < 4) { x.level = 0; x.caps = ["X0"]; }
   return json_({ ok: true, result: gsRude_(x, said), model: tr.model + " → " + r.model });
 }

@@ -65,9 +65,10 @@ const TS_IV_SCHEMA = { type: "OBJECT", properties: {
   structure: { type: "OBJECT", properties: { direct: { type: "BOOLEAN" }, reason: { type: "BOOLEAN" }, example: { type: "BOOLEAN" }, wrap: { type: "BOOLEAN" } }, required: ["direct", "reason", "example", "wrap"] },
   fixes: { type: "ARRAY", items: { type: "OBJECT", properties: { title: { type: "STRING" }, how: { type: "STRING" } }, required: ["title", "how"] } },
   better: { type: "STRING" },
-  upgrades: { type: "ARRAY", items: { type: "OBJECT", properties: { from: { type: "STRING" }, to: { type: "STRING" }, example: { type: "STRING" } }, required: ["from", "to", "example"] } }
-}, required: ["transcript", "parts", "dims", "level", "caps", "diagnosis", "nextLevel", "errors", "pronWords", "structure", "fixes", "better", "upgrades"],
-  propertyOrdering: ["transcript", "parts", "dims", "level", "caps", "diagnosis", "nextLevel", "errors", "pronWords", "structure", "fixes", "better", "upgrades"] };
+  upgrades: { type: "ARRAY", items: { type: "OBJECT", properties: { from: { type: "STRING" }, to: { type: "STRING" }, example: { type: "STRING" } }, required: ["from", "to", "example"] } },
+  inappropriate: { type: "BOOLEAN", description: "true only if the answer contains profanity, sexual content, slurs, or violent or hateful content (being off-topic alone is not inappropriate). Even when true, still give all the normal feedback, corrections and a better answer; the website handles the score." }   // 和 AiSpeak.gs 的 GS_INAPPROPRIATE 相同（頂層不能引用別的檔案的常數）
+}, required: ["transcript", "parts", "dims", "level", "caps", "diagnosis", "nextLevel", "errors", "pronWords", "structure", "fixes", "better", "upgrades", "inappropriate"],
+  propertyOrdering: ["transcript", "parts", "dims", "level", "caps", "diagnosis", "nextLevel", "errors", "pronWords", "structure", "fixes", "better", "upgrades", "inappropriate"] };
 const TS_IV_TR = `Transcribe this English learner's spoken answer EXACTLY as said: do not correct grammar or word choice, keep fillers (um, uh, like) and repetitions, write (...) where there is a pause longer than about 1.5 seconds, write [?] for words you cannot understand. Empty string if there is no English speech. If the speaker uses Chinese, write the Chinese.`;
 
 const TS_REPORT_SYSTEM = `You are a TOEFL iBT Speaking coach. You get the AI rating results of every item in one full Speaking section (Listen and Repeat ×7, Take an Interview ×4, each 0-5 by the ETS scoring guides) by a Taiwanese learner, plus the estimated band computed from them. Write a short overall report in Traditional Chinese (台灣用語, plain words, no jargon), addressing the learner as 你 (never 您).
@@ -154,18 +155,18 @@ function toeflSpeakGrade_(body) {
   }
   // iv：盲轉寫 → Pro 批改
   const question = clip(t.question, 600);
-  const tr = gsGemini_(TS_IV_TR, [aud], GS_TR_SCHEMA, GS_FAST);
+  const [tr, pr] = gsGeminiAll_([{ system: TS_IV_TR, parts: [aud], schema: GS_TR_SCHEMA, chain: GS_FAST }, { system: GS_PRON_SYSTEM, parts: [aud, { text: "Check this recording." }], schema: GS_PRON_SCHEMA, chain: GS_PRON_MODELS }]);   // 盲轉寫和發音專門檢查同時跑
   if (!tr.ok) return json_({ ok: false, error: tr.error });
-  const said = String(tr.result.transcript || "");
+  const said = String(tr.result.transcript || ""), pron = pr.ok ? gsPronClean_(pr.result) : null;
   if (!gsWords_(said).length) return json_({ ok: true, result: tsSilent_(sub, t), model: tr.model });
   const mt = "METRICS (measured by the website from the audio volume): recording " + metrics.dur + "s of 45s, actual speech " + metrics.speech + "s, first word after " + metrics.onset + "s, pauses over 0.6s: " + metrics.pauses +
     ", over 2s: " + metrics.pauses2 + ", longest pause " + metrics.longest + "s, speaking ratio (time with voice ÷ time from first to last word) " + metrics.ratio + "%. For reference, ETS 5-point sample answers have ratios around 65% with several short thinking pauses.";
-  const r = gsGemini_(TS_IV_SYSTEM, [{ text: "INTERVIEWER'S QUESTION: " + question }, { text: mt }, { text: "BLIND TRANSCRIPT (made without seeing the question): " + said }, aud], TS_IV_SCHEMA, GS_PRO);
+  const r = gsGemini_(TS_IV_SYSTEM, [{ text: "INTERVIEWER'S QUESTION: " + question }, { text: mt }, { text: "BLIND TRANSCRIPT (made without seeing the question): " + said }, { text: gsPronText_(pron) }, aud], TS_IV_SCHEMA, GS_PRO);
   if (!r.ok) return json_({ ok: false, error: r.error });
   const x = r.result; x.level = Math.max(0, Math.min(5, Math.round(Number(x.level) || 0)));
   if (/[一-鿿]/.test(said) && gsWords_(said).length < 4) { x.level = 0; x.caps = ["X0"]; }
-  x.blind = said;
-  return json_({ ok: true, result: gsRude_(x, said), model: tr.model + " → " + r.model });
+  x.blind = said; if (pron) x.pronCheck = pron;
+  return json_({ ok: true, result: gsRude_(x, said), model: tr.model + " → " + r.model + (pron ? " ＋發音 " + pr.model : "") });
 }
 function tsSilent_(sub, t) {
   const msg = "沒有聽到英文的聲音，請確認麥克風有收到聲音，再試一次。";
