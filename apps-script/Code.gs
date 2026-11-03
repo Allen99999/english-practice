@@ -63,6 +63,7 @@ function doPost(e) {
     if (CLASS_CODE && String(body.classCode || "").trim() !== CLASS_CODE) return json_({ ok: false, error: "wrong class code" });
     if (body.action === "aigrade") return aiGrade_(body);
     if (body.action === "myaudio") return myAudio_(body);   // 學生重聽自己的錄音（只讀，不佔用鎖）   // AI 批改要跑幾十秒，不佔用鎖（見 Ai.gs）
+    if (body.action === "audio") return audioUpload_(body);   // 上傳錄音不佔用鎖（檔名各不相同）：寫雲端硬碟要好幾秒，佔著鎖會讓同時送出的 AI 批改等不到而失敗
     const lock = LockService.getScriptLock(); lock.waitLock(10000);
     try {
       switch (body.action) {
@@ -70,7 +71,6 @@ function doPost(e) {
         case "claim": return claim_(body);
         case "login": if (rateLimited_("login", 200)) return json_({ ok: false, error: "busy" }); return login_(body);
         case "setcode": return setcode_(body);
-        case "audio": return audioUpload_(body);
         case "review": return review_(body);
         case "delete": return deleteAttempt_(body);
         case "delstudent": return deleteStudent_(body);

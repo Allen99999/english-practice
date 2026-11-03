@@ -248,7 +248,7 @@ const GEPT_SENT_SCHEMA = { type: "OBJECT", properties: { score: { type: "INTEGER
 function aiQuota_(name, exempt, bucket) {
   const sent = bucket === "sent", speak = bucket === "speak";
   const userLimits = sent ? SENT_USER_LIMITS : speak ? SPEAK_USER_LIMITS : AI_USER_LIMITS, total = sent ? SENT_TOTAL : speak ? SPEAK_TOTAL : AI_TOTAL, pre = sent ? "ai:s:" : speak ? "ai:k:" : "ai:";
-  const lock = LockService.getScriptLock(); if (!lock.tryLock(5000)) return "busy";
+  const lock = LockService.getScriptLock(); if (!lock.tryLock(20000)) { aiLog_(bucket, name, "quota lock timeout (allowed)"); return ""; }   // 等不到鎖（例如別人正在上傳錄音）就不計數直接放行，不讓批改失敗
   try {
     const P = PropertiesService.getScriptProperties(), now = Date.now(), H = 3600000;
     const slot = h => Math.floor(now / (h * H));

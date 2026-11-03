@@ -4,7 +4,8 @@
    朗讀句子與短文：看 1 分鐘 → 嗶 → 錄 1 分鐘（5 句＋短文照官方算 6 題，共用一段錄音）
    回答問題：題目播兩次 → 嗶 → 回答 15 秒
    正式模擬卷（S.mock）：像正式考試一樣一路考完：不能重聽、重錄，不自評，錄完自動上傳並進下一題；評分交給老師（之後接 AI 批改）
-   練習：可以重聽、重錄，錄完看原句／參考回答、聽示範，再自評 */
+   練習：錄音中可以按「重聽題目」（停掉這段錄音、再播一次題目、嗶聲後重新錄）；錄完先聽自己的錄音，按「送出批改」才上傳、送 AI（不滿意可重錄，不浪費 AI 額度），
+   送出後看原句／參考回答、聽示範；AI 不能用時自評 */
 let GSP = null;                 // 這一題的進行狀態 { key, i, phase: play|prep|rec|done, n, t0, dur, timer, mr, blob, url }
 let GSTREAM = null, GACTX = null;
 const GS_PART = {
@@ -17,12 +18,14 @@ const GS_PART = {
   "repeat": ["Listen and Repeat", "句子只播一次。聽到嗶聲後，照你聽到的原句完整說一次（只能說一次）。"],
   "interview": ["Take an Interview", "訪談者的問題只播一次。聽到嗶聲後馬上回答，作答時間 45 秒，沒有準備時間；請回答問題並說明理由或例子。"]
 };
+const gsAudioQ = q => !gsPrep(q);                               // 題目是用聽的（可以重聽）：複誦、回答問題、托福兩題
 const gsRead = q => q.mode === "g-read" || q.mode === "i-read";   // 先看再唸（英檢初級朗讀、中級朗讀短文）
 const gsPrep = q => gsRead(q) || q.mode === "i-pic";            // 有準備時間的題型（中級看圖敘述：先看 30 秒）
 const gsTwice = q => q.gept || q.gi;                            // 英檢（初級、中級）題目播兩次；托福只播一次
 const gsKey = i => S.id + ":" + ctSpan(i)[0];
 const gsCur = i => GSP && GSP.key === gsKey(i) ? GSP : null;
 const gsMock = () => !!(S && S.mock);
+const gsAI = () => typeof gsaOn === "function" && gsaOn();
 function gsAnswered(i) { const [a, b] = ctSpan(i); for (let k = a; k <= b; k++) if (!S.ans[k]) return false; return true; }
 const gsAlive = G => GSP === G && view === "quiz" && S && gsKey(S.idx) === G.key;
 function gsRender() { if (view === "quiz") rerenderKeep(); }
@@ -35,21 +38,24 @@ function geptSpeakHTML(q, i, a) {
   if (q.mode === "i-pic") h += `${q.img ? `<img class="essay-img" src="${esc(q.img)}" alt="看圖敘述的圖片" onerror="this.remove()">` : ""}<ol class="gsp-qs">${q.qlist.map(t => `<li>${esc(t)}</li>`).join("")}</ol>`;
   if (gsRead(q)) h += `<div class="gsp-read">${X.group.passage.map((t, k, arr) => `<div class="gsp-line ${k === arr.length - 1 || q.mode === "i-read" ? "psg" : ""}"><span class="tag">${s0 + k + 1}</span><span>${esc(t)}</span></div>`).join("")}</div>`;
   h += `<div class="rec-box">${gsStatusHTML(q, G, done, mock)}</div>`;
-  if (!mock && (done || (G && G.phase === "done"))) h += gsRevealHTML(q, X, done);
+  if (!mock && (G ? G.phase === "done" && G.sent : done)) h += gsRevealHTML(q, X, done);   // 重新作答中、還沒送出：先不顯示答案
   return h;
 }
 function gsStatusHTML(q, G, done, mock) {
   if (done && mock) return `<span class="gsp-st">${I.check}<span>這題已錄音${(S.ans[ctSpan(S.idx)[0]].resp || {}).rec ? "" : "（沒有錄到聲音）"}。正式考試不能重錄。</span></span>`;
-  if (done) return G && G.url ? `<audio controls src="${G.url}" style="width:100%"></audio><button class="btn" data-act="gsp-redo">重新作答</button>` : `<div class="row" style="gap:10px">${myRecBtnHTML(S.id, ctSpan(S.idx)[0])}<button class="btn" data-act="gsp-redo">重新作答</button></div>`;
+  if (done && (!G || G.sent)) return G && G.url ? `<audio controls src="${G.url}" style="width:100%"></audio><button class="btn" data-act="gsp-redo">重新作答</button>` : `<div class="row" style="gap:10px">${myRecBtnHTML(S.id, ctSpan(S.idx)[0])}<button class="btn" data-act="gsp-redo">重新作答</button></div>`;
   if (!G) {
     const label = mock ? (S.gspStarted ? "繼續口說測驗" : "開始口說測驗") : gsRead(q) ? "開始（先看 1 分鐘）" : q.mode === "i-pic" ? "開始（先看圖 30 秒）" : "播放題目";
     return `<button class="btn primary" data-act="gsp-go">${gsPrep(q) ? I.play : I.speaker}<span>${label}</span></button>
     <span class="muted" style="font-size:13px">${mock ? "開始後會一路自動進行到口說測驗結束：播題目 → 嗶聲 → 錄音 → 下一題，中間不能重聽或重錄。請先確認麥克風可以使用、周圍安靜。" : (gsPrep(q) ? "準備時間結束會嗶一聲，接著自動錄音。" : "播完題目會嗶一聲，接著自動錄音。")}${typeof SYNC_ON !== "undefined" && SYNC_ON ? "錄音會上傳給老師。" : "錄音只存在這台裝置。"}</span>`;
   }
-  if (G.phase === "play") return `<span class="gsp-st">${I.speaker}<span>${gsTwice(q) ? `播放題目中（第 ${G.n} 次，共 2 次）…` : "播放中，仔細聽…"}</span></span>`;
+  if (G.phase === "play") return `<span class="gsp-st">${I.speaker}<span>${!G.n ? "重新播放題目，聽完會嗶一聲再開始錄音…" : gsTwice(q) ? `播放題目中（第 ${G.n} 次，共 2 次）…` : "播放中，仔細聽…"}</span></span>`;
   if (G.phase === "prep") return `<span class="gsp-st">${q.mode === "i-pic" ? "看圖準備時間" : "閱讀準備時間"}，剩 <b class="tnum" id="gsp-time">${fmtTime(G.dur)}</b></span>${mock ? "" : `<button class="btn" data-act="gsp-skip">準備好了，開始${q.mode === "i-pic" ? "回答" : "朗讀"}</button>`}`;
-  if (G.phase === "rec") return `<span class="gsp-st"><span class="rec-dot"></span>錄音中 <b class="tnum" id="gsp-time">0:00 / ${fmtTime(G.dur)}</b></span>${mock ? "" : `<button class="btn danger" data-act="gsp-stop"><span class="rec-dot"></span>${gsRead(q) ? "唸完了" : "停止錄音"}</button>`}`;
+  if (G.phase === "rec") return `<span class="gsp-st"><span class="rec-dot"></span>錄音中 <b class="tnum" id="gsp-time">0:00 / ${fmtTime(G.dur)}</b></span>${mock ? "" : `<div class="row" style="gap:10px"><button class="btn danger" data-act="gsp-stop"><span class="rec-dot"></span>${gsRead(q) ? "唸完了" : "停止錄音"}</button>${gsAudioQ(q) ? `<button class="btn" data-act="gsp-replay">${I.speaker}<span>重聽題目</span></button>` : ""}</div>`}`;
   if (mock) return `<span class="gsp-st">${I.check}<span>錄音完成，準備下一題…</span></span>`;
+  if (!G.sent) return `${G.url ? `<audio controls src="${G.url}" style="width:100%"></audio>` : `<span class="muted">沒有錄到聲音，請重錄。</span>`}
+    <div class="row" style="gap:10px">${G.url ? `<button class="btn primary" data-act="gsp-send">${I.check}<span>${gsAI() ? "送出批改" : "送出"}</span></button>` : ""}<button class="btn" data-act="gsp-rerec">${I.redo}<span>重錄</span></button>${gsAudioQ(q) ? `<button class="btn" data-act="gsp-replay">${I.speaker}<span>重聽題目再錄</span></button>` : ""}</div>
+    <span class="muted" style="font-size:13px">先聽聽看自己的錄音，滿意再送出${gsAI() ? "，送出後 AI 才會批改（重錄不會用到 AI 額度）" : ""}。</span>`;
   return `${G.url ? `<audio controls src="${G.url}" style="width:100%"></audio>` : `<span class="muted">沒有錄到聲音。</span>`}<button class="btn" data-act="gsp-redo">重新作答</button>`;
 }
 function gsRevealHTML(q, X, done) {
@@ -128,18 +134,39 @@ function gsRec(G, secs) {
     mr.ondataavailable = e => chunks.push(e.data);
     mr.onstop = () => {
       clearInterval(G.timer);
-      G.blob = new Blob(chunks, { type: mr.mimeType || "audio/mp4" }); G.url = URL.createObjectURL(G.blob); G.phase = "done";
+      if (G.replay && !gsMock()) { G.replay = false; if (!G.aborted) gsReplay(G, getQ(G.i).q); return; }   // 錄音中按「重聽題目」：這段不要，重播題目後重新錄
+      G.blob = new Blob(chunks, { type: mr.mimeType || "audio/mp4" }); G.url = URL.createObjectURL(G.blob); G.phase = "done"; G.sent = false;
       const ai = typeof gsaRun === "function";
       if (gsMock()) { gsSave(G, null); if (ai) gsaRun(S, G.i, G.blob); if (!G.aborted) gsNext(G); else gsRender(); }   // 模擬卷：背景批改，不顯示結果
-      else { gsRelease(); if (!G.aborted) { if (G.blob.size > 200) { uploadRec(G.blob, S.id, G.i, S.who); G.up = true; } gsRender(); if (ai) gsaRun(S, G.i, G.blob); } }   // 練習：錄完就上傳（老師可聽、學生可重聽）
+      else { gsRelease(); if (!G.aborted) gsRender(); }   // 練習：先讓學生聽自己的錄音，按「送出批改」才上傳、送 AI（gsSend）
     };
     try { mr.start(); } catch (e) { gsRelease(); if (GSP === G) GSP = null; gsRender(); toast("麥克風沒有辦法開始錄音，請再按一次開始"); return; }
     gsCount(G, "rec", secs, () => { if (mr.state === "recording") mr.stop(); });
   }, 350);
 }
+/* 練習：重聽題目（播一次）→ 嗶 → 重新錄音（時間重新算） */
+async function gsReplay(G, q) {
+  if (!gsAlive(G)) return;
+  try { await gsStream(); } catch (e) { toast("無法使用麥克風：請在瀏覽器允許麥克風權限後再試一次"); return; }
+  gsModelStop(); G.phase = "play"; G.n = 0; gsRender();
+  gsPlayOnce(questionSpeech(q), () => { if (gsAlive(G)) gsRec(G, q.secs); });
+}
+async function gsReRec(G, q) {
+  try { await gsStream(); } catch (e) { toast("無法使用麥克風：請在瀏覽器允許麥克風權限後再試一次"); return; }
+  gsModelStop(); gsRec(G, q.secs);
+}
+/* 練習：送出這段錄音：上傳給老師（學生也能重聽）＋送 AI 批改；AI 不能用時畫面出現自評 */
+function gsSend(G) {
+  G.sent = true;
+  if (G.blob.size > 200) { uploadRec(G.blob, S.id, G.i, S.who); G.up = true; }
+  gsRender();
+  if (typeof gsaRun === "function") gsaRun(S, G.i, G.blob);
+}
 /* 離開這題（換題、離開作答、交卷）：停止播放與倒數；正式模擬卷已錄的部分照樣存下來（不能重錄） */
 function gsAbort(G) {
   if (G.aborted) return; G.aborted = true; clearInterval(G.timer);
+  if (G.phase === "play" && !gsMock()) stopReading();
+  if (G.phase === "done" && !G.sent && G.url && !gsMock()) toast("剛剛的錄音還沒送出，這題沒有作答");
   if (G.mr && G.mr.state === "recording") G.mr.stop(); else if (gsMock()) gsRelease();
   if (GSP === G) GSP = null;
 }
@@ -192,6 +219,12 @@ document.addEventListener("click", e => {
   if (a === "gsp-go" && !G) gsGo(i);
   if (a === "gsp-skip" && G && G.phase === "prep" && !gsMock()) { clearInterval(G.timer); gsRec(G, getQ(i).q.secs); }
   if (a === "gsp-stop" && G && G.mr && G.mr.state === "recording" && !gsMock()) G.mr.stop();
+  if (a === "gsp-replay" && G && !gsMock() && gsAudioQ(getQ(i).q)) {
+    if (G.phase === "rec" && G.mr && G.mr.state === "recording") { clearInterval(G.timer); G.replay = true; G.mr.stop(); }
+    else if (G.phase === "done" && !G.sent) { if (G.url) URL.revokeObjectURL(G.url); G.url = null; G.blob = null; gsReplay(G, getQ(i).q); }
+  }
+  if (a === "gsp-rerec" && G && G.phase === "done" && !G.sent && !gsMock()) { if (G.url) URL.revokeObjectURL(G.url); G.url = null; G.blob = null; gsReRec(G, getQ(i).q); }
+  if (a === "gsp-send" && G && G.phase === "done" && !G.sent && G.blob && !gsMock()) gsSend(G);
   if (a === "gsp-redo" && !gsMock() && !(typeof gsaBusy === "function" && gsaBusy(S, i))) { if (G && G.url) URL.revokeObjectURL(G.url); GSP = null; gsGo(i); }
   if (a === "gsp-rate" && G && G.phase === "done" && !gsMock()) { gsSave(G, +el.dataset.v); gsRender(); }
   const w = (el.closest(".gsm") || {}).dataset ? el.closest(".gsm").dataset.w || "" : "";

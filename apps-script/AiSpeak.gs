@@ -241,7 +241,7 @@ function speakGrade_(body) {
     if (r.ok) r.result.transcript = said;
   }
   if (!r.ok) return json_({ ok: false, error: r.error });
-  return json_({ ok: true, result: gsFinal_(sub, r.result, task, metrics), model: r.model });
+  return json_({ ok: true, result: gsRude_(gsFinal_(sub, r.result, task, metrics)), model: r.model });
 }
 function gsSilent_(sub) {
   const r = { transcript: "", level: 0, caps: ["X0"], problems: [], comment: "沒有聽到英文的聲音，請確認麥克風有收到聲音，再試一次。", tip: "" };
@@ -255,15 +255,36 @@ function gsGemini_(system, parts, schema, chain) {
   for (const [model, thinking] of chain) {
     const url = "https://aiplatform.googleapis.com/v1/projects/" + VERTEX_PROJECT + "/locations/global/publishers/google/models/" + model + ":generateContent";
     const gc = { temperature: 0.2, responseMimeType: "application/json", responseSchema: schema }; if (thinking) gc.thinkingConfig = thinking;
-    const res = UrlFetchApp.fetch(url, { method: "post", contentType: "application/json", muteHttpExceptions: true,
-      headers: { Authorization: "Bearer " + token, "x-goog-user-project": VERTEX_PROJECT },
-      payload: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts }], generationConfig: gc }) });
-    const code = res.getResponseCode();
-    if (code === 200) {
-      try { const d = JSON.parse(res.getContentText()), txt = d.candidates[0].content.parts.filter(p => !p.thought).map(p => p.text || "").join(""); return { ok: true, model: errs.length ? model + "（" + errs.join("、") + "）" : model, result: JSON.parse(txt) }; }
-      catch (e) { errs.push(model + ": bad json"); continue; }
+    for (let k = 0; k < 2; k++) {   // 同一個模型先重試一次（限流、伺服器忙、沒有回內容），還是不行才換備用模型
+      if (k) Utilities.sleep(1500);
+      const res = UrlFetchApp.fetch(url, { method: "post", contentType: "application/json", muteHttpExceptions: true,
+        headers: { Authorization: "Bearer " + token, "x-goog-user-project": VERTEX_PROJECT },
+        payload: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts }], generationConfig: gc }) });
+      const code = res.getResponseCode();
+      if (code === 200) {
+        try { const d = JSON.parse(res.getContentText()), txt = d.candidates[0].content.parts.filter(p => !p.thought).map(p => p.text || "").join(""), out = JSON.parse(txt); if (errs.length) aiLog_("gemini-retry", "", errs.join(", ")); return { ok: true, model: errs.length ? model + "（" + errs.join("、") + "）" : model, result: out }; }
+        catch (e) { errs.push(model + ": no content"); continue; }
+      }
+      errs.push(model + ": " + code + " " + res.getContentText().slice(0, 120).replace(/\s+/g, " "));
+      if (code !== 429 && code < 500) break;   // 400 這類錯誤重試也沒用
     }
-    errs.push(model + ": " + code + " " + res.getContentText().slice(0, 120).replace(/\s+/g, " "));
   }
+  aiLog_("gemini", "", errs.join(", "));
   return { ok: false, error: "ai failed (" + errs.join(", ") + ")" };
+}
+
+/* 不當用語：轉寫裡有髒話、歧視字眼 → 這題 0 分並標記 rude（畫面提醒學生，老師在解析看得到原文） */
+const GS_RUDE = /\b(fuck\w*|f\*+k\w*|shit\w*|bullshit|bitch\w*|asshole\w*|dickhead|cunt\w*|motherf\w*|bastard\w*|slut\w*|whore\w*|nigg\w*|fag|faggot\w*|retard\w*|porn\w*|wtf|stfu)\b/i;
+function gsRude_(x, said) {
+  if (!x || !GS_RUDE.test(String(x.transcript || "") + " " + String(said || ""))) return x;
+  x.rude = true; x.level = 0; if ("pron" in x) x.pron = 0; if ("content" in x) x.content = 0;
+  return x;
+}
+/* 批改失敗記在試算表的 ailog 工作表（時間、題型、名字、錯誤），方便之後查原因 */
+function aiLog_(kind, name, err) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet(); let sh = ss.getSheetByName("ailog");
+    if (!sh) { sh = ss.insertSheet("ailog"); sh.appendRow(["time", "kind", "name", "error"]); sh.setFrozenRows(1); }
+    sh.appendRow([new Date(), String(kind).slice(0, 40), String(name || "").slice(0, 30), String(err).slice(0, 500)]);
+  } catch (e) { }
 }

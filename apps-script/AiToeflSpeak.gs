@@ -150,7 +150,7 @@ function toeflSpeakGrade_(body) {
     let intel = r.result.intelligibility in TS_CAP ? r.result.intelligibility : "clear";
     if (c.level === 5 && intel === "minor" && !(r.result.problems || []).length) intel = "clear";   // R5：一字不差又沒聽到問題，快速模型習慣保留
     const level = Math.min(c.level, TS_CAP[intel]);
-    return json_({ ok: true, model: r.model, result: { transcript: r.result.transcript, intelligibility: intel, problems: r.result.problems || [], level, content: c.level, why: c.why, cOk: c.cOk, marks: c.marks, extra: c.extra } });
+    return json_({ ok: true, model: r.model, result: gsRude_({ transcript: r.result.transcript, intelligibility: intel, problems: r.result.problems || [], level, content: c.level, why: c.why, cOk: c.cOk, marks: c.marks, extra: c.extra }) });
   }
   // iv：盲轉寫 → Pro 批改
   const question = clip(t.question, 600);
@@ -165,7 +165,7 @@ function toeflSpeakGrade_(body) {
   const x = r.result; x.level = Math.max(0, Math.min(5, Math.round(Number(x.level) || 0)));
   if (/[一-鿿]/.test(said) && gsWords_(said).length < 4) { x.level = 0; x.caps = ["X0"]; }
   x.blind = said;
-  return json_({ ok: true, result: x, model: tr.model + " → " + r.model });
+  return json_({ ok: true, result: gsRude_(x, said), model: tr.model + " → " + r.model });
 }
 function tsSilent_(sub, t) {
   const msg = "沒有聽到英文的聲音，請確認麥克風有收到聲音，再試一次。";

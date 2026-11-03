@@ -48,7 +48,10 @@ function gsaRun(sess, i, blob) {
       if (metrics) payload.metrics = metrics;
       if (!payload.code && store.teacherCode) payload.teacherCode = store.teacherCode;
       if (!payload.code && !payload.teacherCode && typeof ensureCode === "function") { await ensureCode(sess.who); payload.code = store.codes[sess.who] || ""; }
-      const r = await postSync(payload, sub === "read" || sub === "iv" || sub === "pic" ? 150000 : 60000), ai = r.result;
+      const tmo = sub === "read" || sub === "iv" || sub === "pic" ? 150000 : 60000;
+      let r; try { r = await postSync(payload, tmo); }
+      catch (e) { if (/klimit|limit-|wrong code|locked|no such name|bad /.test(e.message || "") || e.message === "offline") throw e; await new Promise(ok => setTimeout(ok, 2500)); r = await postSync(payload, tmo); }   // 網路或伺服器一時失敗：自動再送一次（同一組模型，不會換成比較差的）
+      const ai = r.result;
       ai.m = metrics || {};
       const lv = Math.max(0, Math.min(5, Math.round(Number(ai.level)) || 0));
       span.forEach(k => {
@@ -134,15 +137,17 @@ function gsaReadHTML(g, ai, s0, gi) {
 function gsaQuizHTML(q, i) {
   const span = gsaSpan(S, i), a = S.ans[span[0]], w = S.work[span[0]] || {};
   if (gsaBusy(S, i)) return `<div class="ai-busy glass"><span class="ai-spin"></span><div><b>AI 正在聽你的錄音…</b><div class="muted" style="font-size:13px">${q.mode === "g-read" || q.mode === "i-read" ? "朗讀會逐句檢查，大約 15～35 秒" : q.mode === "interview" || q.mode === "i-pic" ? "依 ETS 官方量表詳細批改，大約 15～30 秒" : "大約 3～5 秒"}</div></div></div>`;
-  if (a && a.resp && a.resp.ai) return !q.gept && !q.gi ? tsaHTML(q, a.resp.ai) : q.mode === "i-pic" ? tsaIvHTML(q, a.resp.ai, GIA_PIC) : gsRead(q) ? gsaReadHTML(getQ(i).group, a.resp.ai, span[0], q.gi) : gsaShortHTML(q, a.resp.ai);
+  if (a && a.resp && a.resp.ai) return gsaRudeHTML(a.resp.ai) + (!q.gept && !q.gi ? tsaHTML(q, a.resp.ai) : q.mode === "i-pic" ? tsaIvHTML(q, a.resp.ai, GIA_PIC) : gsRead(q) ? gsaReadHTML(getQ(i).group, a.resp.ai, span[0], q.gi) : gsaShortHTML(q, a.resp.ai));
   if (w.gsaErr) return `<div class="sp-err">${esc(gsaErrText(w.gsaErr))}${w.gsaErr !== "offline" && GSP && GSP.blob ? ` <button class="btn sm" data-act="gsa-retry">再試一次</button>` : ""}</div>`;
   return "";
 }
+/* 錄音裡有髒話、歧視字眼（後端判斷，rude）：這題 0 分 */
+const gsaRudeHTML = ai => ai && ai.rude ? `<div class="sp-err">⚠️ 錄音裡有不適當的用語，這題以 0 分計。請用正式考試會用的方式回答，老師也看得到這段錄音和文字。</div>` : "";
 const gsaHasAi = i => { const a = S.ans[gsaSpan(S, i)[0]]; return !!(a && a.resp && a.resp.ai); };
 
 /* ---------- 解析頁（每題） ---------- */
-function gsaReviewHTML(q, a, att, i) {
-  if (!a || !a.resp || !a.resp.ai) return "";
+function gsaReviewHTML(q, a, att, i) { return a && a.resp && a.resp.ai ? gsaRudeHTML(a.resp.ai) + gsaReviewBody(q, a, att, i) : ""; }
+function gsaReviewBody(q, a, att, i) {
   if (!q.gept && !q.gi) return tsaHTML(q, a.resp.ai);
   if (q.mode === "i-pic") return tsaIvHTML(q, a.resp.ai, GIA_PIC);
   if (gsRead(q)) { const span = gsaSpan(att, i); return span[0] === i ? gsaReadHTML(getQ(i, att).group, a.resp.ai, i) : `<div class="muted" style="font-size:13.5px">朗讀 6 題一起批改，詳細回饋在第 ${span[0] + 1} 題。</div>`; }

@@ -134,7 +134,7 @@ function geptISpeakGrade_(body) {
     const secs = Number(t.secs) === 30 ? 30 : 15;
     const r = gsGemini_(GIS_ANSWER_SYSTEM, [{ text: "QUESTION (" + secs + "-second answer): " + clip(t.question, 300) + fl + "\nThe learner's recording follows." }, aud], GS_ANSWER_SCHEMA, GS_FAST);
     if (!r.ok) return json_({ ok: false, error: r.error });
-    return json_({ ok: true, result: gsFinal_("answer", r.result, {}, metrics), model: r.model });
+    return json_({ ok: true, result: gsRude_(gsFinal_("answer", r.result, {}, metrics)), model: r.model });
   }
   const tr = gsGemini_(GS_TR_SYSTEM, [aud], GS_TR_SCHEMA, GS_FAST);
   if (!tr.ok) return json_({ ok: false, error: tr.error });
@@ -145,14 +145,14 @@ function geptISpeakGrade_(body) {
     const r = gsGemini_(GIS_READ_SYSTEM, [{ text: "TEXT:\n" + task.segs.map((s, k) => (k + 1) + ". " + s).join("\n") + "\n\nTRANSCRIPT: " + said + fl + "\nThe learner's recording follows." }, aud], GS_READ_SCHEMA, GS_PRO);
     if (!r.ok) return json_({ ok: false, error: r.error });
     r.result.transcript = said;
-    return json_({ ok: true, result: gsFinal_("read", r.result, task, metrics), model: tr.model + " → " + r.model });
+    return json_({ ok: true, result: gsRude_(gsFinal_("read", r.result, task, metrics), said), model: tr.model + " → " + r.model });
   }
   const qs = [].concat(t.questions || []).slice(0, 6).map(x => clip(x, 300));
   const r = gsGemini_(GIS_PIC_SYSTEM, [{ text: "QUESTIONS:\n" + qs.map((s, k) => (k + 1) + ". " + s).join("\n") + "\n\nPICTURE DESCRIPTION: " + clip(t.draw, 1200) + "\n\nBLIND TRANSCRIPT: " + said + fl + "\nThe learner's recording follows." }, aud], GIS_PIC_SCHEMA, GS_PRO);
   if (!r.ok) return json_({ ok: false, error: r.error });
   const x = r.result; x.level = Math.max(0, Math.min(5, Math.round(Number(x.level) || 0))); x.blind = said;
   if (/[一-鿿]/.test(said) && gsWords_(said).length < 4) { x.level = 0; x.caps = ["X0"]; }
-  return json_({ ok: true, result: x, model: tr.model + " → " + r.model });
+  return json_({ ok: true, result: gsRude_(x, said), model: tr.model + " → " + r.model });
 }
 function gisSilent_(sub) {
   if (sub === "pic") return { transcript: "", parts: [], dims: {}, level: 0, caps: ["X0"], diagnosis: "沒有聽到英文的聲音，請確認麥克風有收到聲音，再試一次。", nextLevel: "", errors: [], pronWords: [], fixes: [], better: "", upgrades: [] };
