@@ -2,7 +2,7 @@
    STUDENT_ZONE 的名字＝作答人名字（不分大小寫）；輸入這些名字時首頁會多一列「學生專區」。
    每份考卷是一個 hidden＋fixed 的題庫（student 標記是誰的），整回照順序作答、做完才公布分數與對錯（blind）。
    選項順序照紙本考卷（fixedOrder），不自動平衡。新考卷：寫一個 studentPaper(...)，再把 id 加到該學生的清單 */
-const STUDENT_ZONE = { Ayden: [], Yuri: ["yuri-m1", "yuri-m2", "yuri-m3"], Jovi: ["jovi-a1"], Wei: [] };
+const STUDENT_ZONE = { Ayden: [], Yuri: ["yuri-m1", "yuri-m2", "yuri-m3", "yuri-m4"], Jovi: ["jovi-a1"], Wei: [] };
 const zoneName = who => Object.keys(STUDENT_ZONE).find(n => n.toLowerCase() === String(who || "").trim().toLowerCase()) || null;
 /* full：拼字題不給頭尾提示字母，要寫出完整的字 */
 const SPF = (id, tag, stem, ans, exp) => ({ id, type: "spell", full: true, label: "填寫單字", tag, stem, ans, hint: "", exp });
@@ -16,6 +16,8 @@ const wordListOf = name => (WORDLISTS[name] || "").split("|").flatMap(x => x.spl
 /* 聽力題（學生專區用，不需要圖）：script 是要念的句子，opts 是文字選項。plabel = 畫面上的作答說明 */
 const SL = (id, tag, script, plabel, opts, ans, exp) => ({ id, type: "listen", part: 2, tag, plabel, opts, ans, hint: "", exp,
   script: [].concat(script), fixedOrder: true, v2: [...id].reduce((t, c) => t + c.charCodeAt(0), 0) % 2 === 1 });
+/* 字母排序：把字卡照 ABC 順序排好（tiles 寫正確順序，畫面會自動打亂） */
+const AO = (id, tag, letters, exp) => Object.assign(R(id, tag, "把字母照 ABC 順序排好", letters, "", exp), { label: "字母排序", scrLabel: "把字卡照 ABC 順序排好" });
 function studentPaper(b) {
   b.items.forEach(it => (it.type === "group" ? it.qs : [it]).forEach(q => { q.fixedOrder = true; }));
   const bank = Object.assign({ grade: 99, fixed: true, hidden: true, blind: Object.keys(b.tags), exams: [{ name: "整回", tags: Object.keys(b.tags) }], timeLimits: [[Object.keys(b.tags), b.minutes]] }, b);
@@ -86,13 +88,13 @@ studentPaper({
   ]
 });
 
-/* ===== Yuri（國小低年級）：期中複習模擬卷 1～3，由易到難 =====
-   範圍：Unit 1（字母 Aa–Jj、數字 1–5、What's your name? / My name is… / I'm…）
-        Unit 2（字母 Kk–Oo、數字 6–10、How old are you? / I'm … years old.）
-        Review 1 All About Me（Hi!/Hello!、I'm a boy/girl.）、課堂用語（Thank you. / You're welcome. / How are you? / Listen!）
-        Story Time 萬聖節單字（bat, ghost, pumpkin, spider, witch, vampire）
-   題型照她的期中複習考：聽力辨音、看句選答、文法選擇、字母順序、字母大小寫配對。
-   卷 1、2 的聽力可以重聽（relisten），卷 3 照正式考每題只播一遍。 */
+
+/* ===== Yuri（國小低年級）：期中複習模擬卷 1～4，由易到難 =====
+   範圍：Unit 1（字母 Aa–Jj、數字 1–5、What's your name?）、Unit 2（字母 Kk–Oo、數字 6–10、How old are you?）、
+        Review 1 All About Me、課堂用語（Thank you. / You're welcome. / How are you? / Listen!）、Story Time 萬聖節單字。
+   出題原則：字母與發音一律用聽的（單字寫出來再問開頭字母＝看得到答案，不出）；
+            挑戰卷用挑錯、配對、字母排序、句子重組、短文閱讀，完整單字填空每卷最多 2 題。
+   卷 1、2 的聽力可以重聽（relisten），卷 3A、3B 照正式考每題只播一遍。 */
 
 /* ---- 卷 1：最簡單（和複習考同難度，30 題、20 分鐘） ---- */
 studentPaper({
@@ -136,94 +138,156 @@ studentPaper({
   ]
 });
 
-/* ---- 卷 2：中等（33 題、25 分鐘） ---- */
+/* ---- 卷 2：中等（32 題、25 分鐘） ---- */
 studentPaper({
   id: "yuri-m2", student: "Yuri", minutes: 25, relisten: true,
   title: "期中複習模擬卷 2・進階",
-  range: "Unit 1 ~ Review 1 ＋ 萬聖節單字・加入拼字與句子重組",
+  range: "Unit 1 ~ Review 1 ＋ 萬聖節單字・加入字母排序與句子重組",
   added: "2026-11-04",
   note: "",
-  tags: { y1: "一、聽力", y2: "二、字母與發音", y3: "三、看中文選英文", y4: "四、拼出單字", y5: "五、看句子選答案", y6: "六、文法選擇", y7: "七、句子重組" },
+  tags: { y1: "一、聽力", y2: "二、字母順序", y3: "三、單字", y4: "四、拼出單字", y5: "五、看句子選答案", y6: "六、文法選擇", y7: "七、句子重組" },
   items: [
   SL("b01","y1","jam","聽一個單字，選出它開頭的字母",["Gg","Jj","Kk"],1,"jam（果醬）開頭的發音是 /dʒ/，所以是 Jj。"),
   SL("b02","y1","neck","聽一個單字，選出它開頭的字母",["Mm","Nn","Ll"],1,"neck（脖子）開頭的發音是 /n/，所以是 Nn。"),
   SL("b03","y1","insect","聽一個單字，選出它開頭的字母",["Ii","Ee","Aa"],0,"insect（昆蟲）開頭的發音是 /ɪ/，所以是 Ii。"),
   SL("b04","y1","otter","聽一個單字，選出它開頭的字母",["Aa","Oo","Ii"],1,"otter（水獺）開頭的發音是 /ɑ/，所以是 Oo。"),
-  SL("b05","y1","goat","聽一個單字，選出它的中文意思",["山羊","女孩","手"],0,"goat 是山羊。"),
+  SL("b05","y1","goat","聽一個單字，選出它的中文意思",["山羊","女孩","手"],0,"goat 山羊、girl 女孩，開頭都是 g。"),
   SL("b06","y1","seven","聽一個數字，選出正確的阿拉伯數字",["6","7","9"],1,"seven = 7。"),
   SL("b07","y1","What's your name?","聽一個問題，選出最適合的回答",["I'm ten years old.","My name is Rocky.","You're welcome."],1,"問名字 → My name is Rocky."),
   SL("b08","y1","How old are you?","聽一個問題，選出最適合的回答",["I'm nine years old.","I'm a girl.","Good."],0,"問年紀 → I'm nine years old."),
-  M("b09","y2","哪一個單字的開頭字母是 e？",["egg","ant","duck"],0,"","egg（蛋）開頭是 e。"),
-  M("b10","y2","哪一個單字的開頭字母是 k？",["cup","kite","girl"],1,"","kite（風箏）開頭是 k。"),
-  M("b11","y2","哪一個單字的開頭字母是 n？",["milk","nose","leg"],1,"","nose（鼻子）開頭是 n。"),
-  M("b12","y2","lion 的開頭字母是哪一個？",["Ll","Ii","Nn"],0,"","lion（獅子）開頭是 l。"),
-  M("b13","y3","「大象」的英文是哪一個？",["elephant","egg","insect"],0,"","elephant 大象。"),
-  M("b14","y3","「猴子」的英文是哪一個？",["milk","monkey","money"],1,"","monkey 猴子。"),
+  AO("b09","y2",["d","e","f","g"],"照 ABC 順序是 d e f g。"),
+  AO("b10","y2",["k","l","m","n"],"照 ABC 順序是 k l m n。"),
+  M("b11","y2","照 ABC 順序，字母 h 和 j 中間是哪一個字母？",["i","g","k"],0,"","…g h i j k…，h 和 j 中間是 i。"),
+  M("b12","y2","照 ABC 順序，字母 l 的後面是哪一個字母？",["k","m","n"],1,"","…k l m n…，l 後面是 m。"),
+  M("b13","y3","「大象」的英文是哪一個？",["elephant","egg","insect"],0,"","elephant 大象、egg 蛋，開頭都是 e。"),
+  M("b14","y3","「猴子」的英文是哪一個？",["milk","monkey","nose"],1,"","monkey 猴子、milk 牛奶，開頭都是 m。"),
   M("b15","y3","「南瓜」的英文是哪一個？",["pumpkin","spider","ghost"],0,"","pumpkin 南瓜。"),
-  M("b16","y3","「女巫」的英文是哪一個？",["vampire","witch","bat"],1,"","witch 女巫。"),
-  M("b17","y3","spider 的中文是什麼？",["蝙蝠","蜘蛛","鬼"],1,"","spider 蜘蛛。"),
+  M("b16","y3","「女巫」的英文是哪一個？",["vampire","witch","bat"],1,"","witch 女巫、vampire 吸血鬼。"),
+  M("b17","y3","It's Halloween night. I can see a ___ in the sky.",["spider","bat","ox"],1,"","bat 蝙蝠會在夜空中飛；spider 蜘蛛、ox 公牛不會。"),
   SPF("b18","y4","蘋果（開頭是 a，共 5 個字母）：___","apple","apple 蘋果。"),
-  SPF("b19","y4","男孩（開頭是 b，共 3 個字母）：___","boy","boy 男孩。"),
-  SPF("b20","y4","手（開頭是 h，共 4 個字母）：___","hand","hand 手。"),
-  SPF("b21","y4","鑰匙（開頭是 k，共 3 個字母）：___","key","key 鑰匙。"),
-  SPF("b22","y4","鼻子（開頭是 n，共 4 個字母）：___","nose","nose 鼻子。"),
-  SPF("b23","y4","照字母順序，填出空格的小寫字母：i j ___ l","k","i j k l。"),
-  SPF("b24","y4","照字母順序，填出空格的小寫字母：k l m ___","n","k l m n。"),
-  M("b25","y5","A: Hi! What's your name?　B: ___",["I'm seven.","My name is Mia.","Thank you."],1,"","問名字要回答名字。"),
-  M("b26","y5","A: Thank you.　B: ___",["You're welcome.","How are you?","I'm a boy."],0,"","Thank you. → You're welcome."),
-  M("b27","y5","A: How are you?　B: ___",["Good. Thank you.","My name is Ken.","I'm ten years old."],0,"","問好 → Good. Thank you."),
-  M("b28","y6","___ your name?",["What's","How","I'm"],0,"","What's your name?（What's = What is）"),
-  M("b29","y6","___ old are you?",["What","How","My"],1,"","How old are you?"),
-  M("b30","y6","I ___ a girl.",["am","is","are"],0,"","I am a girl.（I 配 am）"),
-  M("b31","y6","I'm ten ___ old.",["year","years","old"],1,"","I'm ten years old.（兩歲以上用 years）"),
-  R("b32","y7","我的名字是 Teddy。",["My","name","is","Teddy."],"","My name is Teddy."),
-  R("b33","y7","我九歲。",["I'm","nine","years","old."],"","I'm nine years old."),
+  SPF("b19","y4","鑰匙（開頭是 k，共 3 個字母）：___","key","key 鑰匙。"),
+  SPF("b20","y4","鼻子（開頭是 n，共 4 個字母）：___","nose","nose 鼻子。"),
+  SPF("b21","y4","照字母順序，填出空格的小寫字母：i j ___ l","k","i j k l。"),
+  SPF("b22","y4","照字母順序，填出空格的小寫字母：k l m ___","n","k l m n。"),
+  M("b23","y5","A: Hi! What's your name?　B: ___",["I'm seven.","My name is Mia.","Thank you."],1,"","問名字要回答名字。"),
+  M("b24","y5","A: Thank you.　B: ___",["You're welcome.","How are you?","I'm a boy."],0,"","Thank you. → You're welcome."),
+  M("b25","y5","A: How are you?　B: ___",["Good. Thank you.","My name is Ken.","I'm ten years old."],0,"","問好 → Good. Thank you."),
+  X("b26","y5","把問句和答句配成一對。",["What's your name?","How old are you?","Thank you."],["My name is Teddy.","I'm six years old.","You're welcome."],"","問名字答名字、問年紀答歲數、說謝謝回不客氣。"),
+  M("b27","y6","___ your name?",["What's","How","I'm"],0,"","What's your name?（What's = What is）"),
+  M("b28","y6","___ old are you?",["What","How","My"],1,"","How old are you?"),
+  M("b29","y6","I ___ a girl.",["am","is","are"],0,"","I am a girl.（I 配 am）"),
+  M("b30","y6","I'm ten ___ old.",["year","years","old"],1,"","I'm ten years old.（兩歲以上用 years）"),
+  R("b31","y7","我的名字是 Teddy。",["My","name","is","Teddy."],"","My name is Teddy."),
+  R("b32","y7","我九歲。",["I'm","nine","years","old."],"","I'm nine years old."),
   ]
 });
 
-/* ---- 卷 3：最難，照正式考（35 題、30 分鐘，聽力只播一遍） ---- */
+/* ---- 卷 3A：挑戰（35 題、30 分鐘，聽力只播一遍） ---- */
 studentPaper({
   id: "yuri-m3", student: "Yuri", minutes: 30,
-  title: "期中複習模擬卷 3・挑戰",
-  range: "Unit 1 ~ Review 1 ＋ 萬聖節單字・聽力只播一遍，照正式考",
-  added: "2026-11-04",
+  title: "期中複習模擬卷 3A・挑戰",
+  range: "全範圍・聽力只播一遍，含挑錯、配對、字母排序、短文閱讀",
+  added: "2026-11-05",
   note: "",
-  tags: { y1: "一、聽力", y2: "二、字母與發音", y3: "三、單字", y4: "四、拼出單字", y5: "五、看對話選答案", y6: "六、文法選擇", y7: "七、句子重組" },
+  tags: { y1: "一、聽力", y2: "二、字母", y3: "三、單字", y4: "四、找出錯誤", y5: "五、對話", y6: "六、句子重組", y7: "七、閱讀" },
   items: [
-  SL("c01","y1","hand","聽一個單字，選出它開頭的字母",["Nn","Hh","Jj"],1,"hand（手）開頭的發音是 /h/，所以是 Hh。"),
+  SL("c01","y1","hand","聽一個單字，選出它開頭的字母",["Nn","Hh","Jj"],1,"hand（手）開頭的發音是 /h/。"),
   SL("c02","y1","girl","聽一個單字，選出它開頭的字母",["Jj","Gg","Kk"],1,"girl（女孩）開頭的發音是 /g/；jet 才是 Jj。"),
-  SL("c03","y1","lion","聽一個單字，選出它開頭的字母",["Ll","Ii","Oo"],0,"lion（獅子）開頭的發音是 /l/，所以是 Ll。"),
-  SL("c04","y1","elephant","聽一個單字，選出它開頭的字母",["Ii","Aa","Ee"],2,"elephant（大象）開頭的發音是 /ɛ/，所以是 Ee。"),
-  SL("c05","y1","jam","聽一個單字，選出它的中文意思",["果醬","噴射機","罐子"],0,"jam 是果醬；jet 才是噴射機。"),
-  SL("c06","y1","neck","聽一個單字，選出它的中文意思",["鼻子","脖子","牛奶"],1,"neck 是脖子，nose 是鼻子。"),
-  SL("c07","y1","I'm nine years old.","聽一句話，選出正確的數字",["7","9","10"],1,"nine = 9。"),
-  SL("c08","y1","My name is Edison.","聽一句話，選出說話的人是誰",["Amber","Edison","Rocky"],1,"My name is Edison."),
-  SL("c09","y1","How old are you?","聽一個問題，選出最適合的回答",["My name is Abu.","I'm a boy.","I'm eight years old."],2,"問年紀 → I'm eight years old."),
-  SL("c10","y1","Thank you.","聽一句話，選出最適合的回答",["You're welcome.","How old are you?","Good."],0,"Thank you. → You're welcome."),
-  M("c11","y2","哪一組的開頭字母和其他兩個不一樣？",["milk","monkey","nose"],2,"","milk、monkey 開頭是 m，nose 開頭是 n。"),
-  M("c12","y2","哪一個單字的開頭字母是 o？",["ox","ink","jet"],0,"","ox（公牛）開頭是 o。"),
-  M("c13","y2","insect 和哪一個單字的開頭字母一樣？",["egg","ink","ant"],1,"","insect 和 ink 開頭都是 i。"),
-  M("c14","y2","字母 j 的前面是哪一個字母？",["h","i","k"],1,"","…h i j k…，j 前面是 i。"),
-  M("c15","y2","字母 m 的後面是哪一個字母？",["l","n","o"],1,"","…l m n o…，m 後面是 n。"),
-  M("c16","y3","「水獺」的英文是哪一個？",["ox","otter","owl"],1,"","otter 水獺。"),
-  M("c17","y3","「吸血鬼」的英文是哪一個？",["vampire","witch","ghost"],0,"","vampire 吸血鬼。"),
-  M("c18","y3","bat 的中文是什麼？",["蝙蝠","蜘蛛","南瓜"],0,"","bat 蝙蝠。"),
-  M("c19","y3","Look! I'm a ___.（圖：穿南瓜裝）",["ghost","pumpkin","spider"],1,"","I'm a pumpkin.（我是南瓜）"),
-  SPF("c20","y4","昆蟲（開頭是 i，共 6 個字母）：___","insect","insect 昆蟲。"),
-  SPF("c21","y4","大象（開頭是 e，共 8 個字母）：___","elephant","elephant 大象。"),
-  SPF("c22","y4","猴子（開頭是 m，共 6 個字母）：___","monkey","monkey 猴子。"),
-  SPF("c23","y4","鬼（開頭是 g，共 5 個字母）：___","ghost","ghost 鬼。"),
-  SPF("c24","y4","照字母順序，填出空格的小寫字母：___ f g h","e","e f g h。"),
-  SPF("c25","y4","照字母順序，填出空格的小寫字母：m ___ o","n","m n o。"),
+  SL("c03","y1","lion","聽一個單字，選出它開頭的字母",["Ll","Ii","Oo"],0,"lion（獅子）開頭的發音是 /l/。"),
+  SL("c04","y1","elephant","聽一個單字，選出它開頭的字母",["Ii","Aa","Ee"],2,"elephant（大象）開頭的發音是 /ɛ/。"),
+  SL("c05","y1","jam","聽一個單字，選出它的中文意思",["果醬","噴射機","罐子"],0,"jam 果醬、jet 噴射機，開頭都是 j。"),
+  SL("c06","y1","neck","聽一個單字，選出它的中文意思",["鼻子","脖子","牛奶"],1,"neck 脖子、nose 鼻子，開頭都是 n。"),
+  SL("c07","y1","ox","聽一個單字，選出它的中文意思",["公牛","水獺","猴子"],0,"ox 公牛、otter 水獺，開頭都是 o。"),
+  SL("c08","y1","I'm nine years old.","聽一句話，選出正確的數字",["7","9","10"],1,"nine = 9。"),
+  SL("c09","y1","Hello! My name is Edison. I'm eight.","聽一段自我介紹，選出正確的一組",["Edison・8 歲","Edison・9 歲","Amber・8 歲"],0,"名字是 Edison，eight = 8 歲。"),
+  SL("c10","y1","How old are you?","聽一個問題，選出最適合的回答",["My name is Abu.","I'm a boy.","I'm eight years old."],2,"問年紀 → I'm eight years old."),
+  AO("c11","y2",["g","h","i","j"],"照 ABC 順序是 g h i j。"),
+  AO("c12","y2",["l","m","n","o"],"照 ABC 順序是 l m n o。"),
+  M("c13","y2","照 ABC 順序，字母 e 和 g 中間是哪一個字母？",["f","d","h"],0,"","…d e f g h…，e 和 g 中間是 f。"),
+  X("c14","y2","把大寫和小寫配成一對。",["J","K","L","M","N"],["j","k","l","m","n"],"","J-j、K-k、L-l、M-m、N-n。"),
+  SPF("c15","y2","照字母順序，填出空格的小寫字母：h ___ j k","i","h i j k。"),
+  M("c16","y3","ox 的中文是什麼？",["公牛","水獺","盒子"],0,"","ox 公牛、otter 水獺。"),
+  M("c17","y3","vampire 的中文是什麼？",["女巫","吸血鬼","鬼"],1,"","vampire 吸血鬼、witch 女巫、ghost 鬼。"),
+  M("c18","y3","Trick or treat! Look at my hat. I'm a ___.",["witch","pumpkin","bat"],0,"","戴尖帽子的是 witch 女巫。"),
+  M("c19","y3","It's night. The ___ is flying over the haunted house.",["ox","goat","bat"],2,"","會在夜裡飛的是 bat 蝙蝠。"),
+  SPF("c20","y3","鬼（開頭是 g，共 5 個字母）：___","ghost","ghost 鬼。"),
+  SPF("c21","y3","猴子（開頭是 m，共 6 個字母）：___","monkey","monkey 猴子。"),
+  E("c22","y4","My name are Abu.","are","is","","主詞是 My name（一個東西），要用 is。"),
+  E("c23","y4","I'm ten year old.","year","years","","兩歲以上要用複數 years：I'm ten years old."),
+  E("c24","y4","my name is Mia.","my","My","","句子開頭的第一個字母要大寫。"),
+  X("c25","y5","把問句和答句配成一對。",["What's your name?","How old are you?","Thank you.","How are you?"],["My name is Ken.","I'm ten years old.","You're welcome.","Good."],"","四組常用問答。"),
   M("c26","y5","A: Hello! My name is Mia. What's your name?　B: ___",["I'm ten years old.","Hi! My name is Ken.","You're welcome."],1,"","對方先說名字再問你，要回答自己的名字。"),
-  M("c27","y5","A: How old are you?　B: I'm seven.　A 想知道的是什麼？",["名字","年紀","心情"],1,"","How old are you? 是問年紀。"),
-  M("c28","y5","老師說 Listen! 的意思是什麼？",["請聽","請坐","謝謝"],0,"","Listen! 聽！"),
-  M("c29","y5","A: ___　B: Good. Thank you.",["What's your name?","How are you?","How old are you?"],1,"","回答 Good. 對應的問題是 How are you?"),
-  M("c30","y6","___ name is Abu.",["My","I'm","I"],0,"","My name is Abu.（I'm name is 是錯的）"),
-  M("c31","y6","A: Thank you.　B: ___ welcome.",["My","You're","Your"],1,"","You're welcome.（You're = You are）"),
-  M("c32","y6","___ nine years old.",["I","You","I'm"],2,"","I'm nine years old. 句子要有動詞 am。"),
-  M("c33","y6","I'm a ___. My name is Edison.",["boy","girl","name"],0,"","Edison 是男生 → I'm a boy."),
-  R("c34","y7","你好！我的名字是 Amber。",["Hello!","My","name","is","Amber."],"","Hello! My name is Amber."),
-  R("c35","y7","我是女生，我十歲。",["I'm","a","girl.","I'm","ten","years","old."],"","I'm a girl. I'm ten years old."),
+  M("c27","y5","上課時老師說 Listen! 的意思是什麼？",["請聽","請坐","謝謝"],0,"","Listen! 聽！"),
+  M("c28","y5","A: ___　B: Good. Thank you.",["What's your name?","How are you?","How old are you?"],1,"","回答 Good. 對應的問題是 How are you?"),
+  R("c29","y6","你好！我的名字是 Amber。",["Hello!","My","name","is","Amber."],"","Hello! My name is Amber."),
+  R("c30","y6","我是女生。",["I'm","a","girl."],"","I'm a girl."),
+  R("c31","y6","我十歲。",["I'm","ten","years","old."],"","I'm ten years old."),
+  G("c32g","y7","dialogue","At the Party",[
+    "Amber: Hi! I'm Amber. What's your name?",
+    "Teddy: Hello! My name is Teddy.",
+    "Amber: How old are you?",
+    "Teddy: I'm eight years old. How about you?",
+    "Amber: I'm ten.",
+    "Teddy: Nice to meet you, Amber!"
+  ],[["party","派對"],["How about you?","你呢？"],["Nice to meet you.","很高興認識你"]],[
+    Q("c32","Teddy 幾歲？",["8 歲","9 歲","10 歲"],0,"","Teddy 說 I'm eight years old."),
+    Q("c33","誰是十歲？",["Amber","Teddy","兩個人都是"],0,"","Amber 說 I'm ten."),
+    Q("c34","Amber 第一句話先問 Teddy 什麼？",["名字","年紀","心情"],0,"","Amber 先問 What's your name?"),
+    Q("c35","How about you? 的意思是什麼？",["你呢？","你好嗎？","謝謝你"],0,"","問完自己的事，再反問對方「你呢？」")
+  ]),
+  ]
+});
+
+/* ---- 卷 3B：挑戰（35 題、30 分鐘，聽力只播一遍） ---- */
+studentPaper({
+  id: "yuri-m4", student: "Yuri", minutes: 30,
+  title: "期中複習模擬卷 3B・挑戰",
+  range: "全範圍・聽力只播一遍，含挑錯、配對、字母排序、短文閱讀",
+  added: "2026-11-05",
+  note: "",
+  tags: { y1: "一、聽力", y2: "二、字母", y3: "三、單字", y4: "四、找出錯誤", y5: "五、對話", y6: "六、句子重組", y7: "七、閱讀" },
+  items: [
+  SL("d01","y1","duck","聽一個單字，選出它開頭的字母",["Dd","Bb","Gg"],0,"duck（鴨子）開頭的發音是 /d/。"),
+  SL("d02","y1","key","聽一個單字，選出它開頭的字母",["Cc","Kk","Gg"],1,"key 的開頭發音雖然和 cat 一樣是 /k/，但它是用字母 k 拼的。"),
+  SL("d03","y1","insect","聽一個單字，選出它開頭的字母",["Ee","Ii","Aa"],1,"insect（昆蟲）開頭的發音是 /ɪ/。"),
+  SL("d04","y1","nose","聽一個單字，選出它開頭的字母",["Mm","Nn","Ll"],1,"nose（鼻子）開頭的發音是 /n/。"),
+  SL("d05","y1","cup","聽一個單字，選出它的中文意思",["貓","杯子","鑰匙"],1,"cup 杯子、cat 貓，開頭都是 c。"),
+  SL("d06","y1","goat","聽一個單字，選出它的中文意思",["女孩","山羊","鬼"],1,"goat 山羊、girl 女孩，開頭都是 g。"),
+  SL("d07","y1","egg","聽一個單字，選出它的中文意思",["蛋","大象","手"],0,"egg 蛋、elephant 大象，開頭都是 e。"),
+  SL("d08","y1","Hi! I'm a boy. I'm seven years old.","聽一段自我介紹，選出正確的一組",["男生・7 歲","女生・7 歲","男生・8 歲"],0,"a boy 男生、seven = 7 歲。"),
+  SL("d09","y1","What's your name?","聽一個問題，選出最適合的回答",["Good, thank you.","I'm Rocky.","I'm nine."],1,"問名字 → I'm Rocky."),
+  SL("d10","y1","You're welcome.","聽一句話，想一想對方剛剛說了什麼",["Thank you.","How are you?","What's your name?"],0,"先有人說 Thank you.，才會回 You're welcome."),
+  AO("d11","y2",["i","j","k","l"],"照 ABC 順序是 i j k l。"),
+  AO("d12","y2",["c","d","e","f"],"照 ABC 順序是 c d e f。"),
+  M("d13","y2","照 ABC 順序，字母 k 的後面兩個字母是哪一組？",["l m","j k","m n"],0,"","…j k l m n…，k 後面是 l m。"),
+  X("d14","y2","把大寫和小寫配成一對。",["B","D","F","H","J"],["b","d","f","h","j"],"","B-b、D-d、F-f、H-h、J-j。"),
+  SPF("d15","y2","照字母順序，填出空格的小寫字母：c ___ e f","d","c d e f。"),
+  M("d16","y3","spider 的中文是什麼？",["蜘蛛","蝙蝠","女巫"],0,"","spider 蜘蛛、bat 蝙蝠。"),
+  M("d17","y3","「噴射機」的英文是哪一個？",["jet","jam","key"],0,"","jet 噴射機、jam 果醬，開頭都是 j。"),
+  M("d18","y3","Boo! I'm white. I can fly. I'm a ___.",["goat","ghost","girl"],1,"","白色、會飛、說 Boo! 的是 ghost 鬼。"),
+  M("d19","y3","Look! It's big and orange. It's a ___.",["pumpkin","milk","nose"],0,"","又大又橘的是 pumpkin 南瓜。"),
+  SPF("d20","y3","昆蟲（開頭是 i，共 6 個字母）：___","insect","insect 昆蟲。"),
+  SPF("d21","y3","大象（開頭是 e，共 8 個字母）：___","elephant","elephant 大象。"),
+  E("d22","y4","How old is you?","is","are","","主詞是 you，要用 are：How old are you?"),
+  E("d23","y4","I am a girl. I am seven year old.","year","years","","兩歲以上要用複數 years。"),
+  E("d24","y4","hello! My name is Ken.","hello","Hello","","句子開頭的第一個字母要大寫。"),
+  X("d25","y5","把問句和答句配成一對。",["What's your name?","How old are you?","How are you?","Thank you."],["I'm Abu.","I'm six years old.","Good, thank you.","You're welcome."],"","四組常用問答。"),
+  M("d26","y5","A: How are you?　B: ___",["I'm ten years old.","Good, thank you.","My name is Mia."],1,"","問好 → Good, thank you."),
+  M("d27","y5","A: What's your name?　B: ___",["I'm fine.","I'm Rocky.","I'm nine."],1,"","問名字要回答名字，不是年紀。"),
+  M("d28","y5","I'm a boy. 的意思是什麼？",["我是男生。","我很好。","我八歲。"],0,"","boy 男生、girl 女孩。"),
+  R("d29","y6","你好嗎？",["How","are","you?"],"","How are you?"),
+  R("d30","y6","我的名字是 Rocky。",["My","name","is","Rocky."],"","My name is Rocky."),
+  R("d31","y6","我是男生，我八歲。",["I'm","a","boy.","I'm","eight","years","old."],"","I'm a boy. I'm eight years old."),
+  G("d32g","y7","article","All About Mia",[
+    "Hello! My name is Mia.",
+    "I'm a girl. I'm ten years old.",
+    "This is my cat. Its name is Milk.",
+    "Milk is two years old. I like my cat."
+  ],[["This is…","這是…"],["Its name is…","牠的名字是…"],["like","喜歡"]],[
+    Q("d32","Mia 幾歲？",["10 歲","2 歲","8 歲"],0,"","I'm ten years old."),
+    Q("d33","Mia 是男生還是女生？",["女生","男生","文章沒有說"],0,"","I'm a girl."),
+    Q("d34","Milk 是什麼？",["一隻貓","牛奶","Mia 的朋友"],0,"","This is my cat. Its name is Milk."),
+    Q("d35","Milk 幾歲？",["2 歲","10 歲","文章沒有說"],0,"","Milk is two years old.")
+  ]),
   ]
 });

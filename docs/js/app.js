@@ -839,7 +839,7 @@ function questionBody(X, i, a, review) {
   }
   else if (q.type === "scramble") {
     const seq = locked ? a.resp : (st.seq || []), all = q.tiles.concat(q.extra || []), full = seq.length === q.tiles.length && !seq.includes(null);
-    h += `<div class="eyebrow">${q.ctx ? "Build a Sentence：用字卡完成回應的句子" + (q.extra && q.extra.length ? "（有一張字卡用不到）" : "") : "把字卡排成正確的句子"}</div>${q.zh ? `<div class="zh">${esc(q.zh)}</div>` : ""}
+    h += `<div class="eyebrow">${q.ctx ? "Build a Sentence：用字卡完成回應的句子" + (q.extra && q.extra.length ? "（有一張字卡用不到）" : "") : q.scrLabel || "把字卡排成正確的句子"}</div>${q.zh ? `<div class="zh">${esc(q.zh)}</div>` : ""}
     ${q.ctx ? `<div class="bs-ctx" data-ctx>${wrapWords(q.ctx, m)}</div>` : ""}
     ${q.frame ? `<div class="bs-line frame">${bsFrameHTML(q, seq, all, locked)}</div>` : `<div class="bs-line">${q.pre ? `<span class="bs-fix">${esc(q.pre)}</span>` : ""}<div class="slots ${seq.length ? "" : "empty"}">${seq.map((t, k) => `<button class="tile" data-act="slot" data-k="${k}" ${locked ? "disabled" : ""}>${esc(all[t])}</button>`).join("")}</div>${q.post ? `<span class="bs-fix">${esc(q.post)}</span>` : ""}</div>`}
     ${locked ? "" : `<div class="tiles">${(st.perm || all.map((_, k) => k)).map(t => `<button class="tile ${seq.includes(t) ? "used" : ""}" data-act="tile" data-k="${t}">${esc(all[t])}</button>`).join("")}</div>

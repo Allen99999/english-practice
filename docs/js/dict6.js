@@ -235,4 +235,7 @@ pumpkin|n.|南瓜
 spider|n.|蜘蛛
 witch|n.|女巫
 vampire|n.|吸血鬼
+haunted|adj.|鬧鬼的
+its|pron.|牠的；它的
+boo|int.|（嚇人時發出的聲音）哇
 `;
