@@ -2,7 +2,7 @@
    STUDENT_ZONE 的名字＝作答人名字（不分大小寫）；輸入這些名字時首頁會多一列「學生專區」。
    每份考卷是一個 hidden＋fixed 的題庫（student 標記是誰的），整回照順序作答、做完才公布分數與對錯（blind）。
    選項順序照紙本考卷（fixedOrder），不自動平衡。新考卷：寫一個 studentPaper(...)，再把 id 加到該學生的清單 */
-const STUDENT_ZONE = { Ayden: [], Yuri: ["yuri-m1", "yuri-m2", "yuri-m3", "yuri-m4"], Jovi: ["jovi-a1"], Wei: [] };
+const STUDENT_ZONE = { Ayden: [], Yuri: ["yuri-m1", "yuri-m2", "yuri-m3", "yuri-m4", "yuri-m5"], Jovi: ["jovi-a1"], Wei: [] };
 const zoneName = who => Object.keys(STUDENT_ZONE).find(n => n.toLowerCase() === String(who || "").trim().toLowerCase()) || null;
 /* full：拼字題不給頭尾提示字母，要寫出完整的字 */
 const SPF = (id, tag, stem, ans, exp) => ({ id, type: "spell", full: true, label: "填寫單字", tag, stem, ans, hint: "", exp });
@@ -18,6 +18,10 @@ const SL = (id, tag, script, plabel, opts, ans, exp) => ({ id, type: "listen", p
   script: [].concat(script), fixedOrder: true, v2: [...id].reduce((t, c) => t + c.charCodeAt(0), 0) % 2 === 1 });
 /* 字母排序：把字卡照 ABC 順序排好（tiles 寫正確順序，畫面會自動打亂） */
 const AO = (id, tag, letters, exp) => Object.assign(R(id, tag, "把字母照 ABC 順序排好", letters, "", exp), { label: "字母排序", scrLabel: "把字卡照 ABC 順序排好" });
+/* 排序題（最多 4 項，畫面不會打亂）：items 照「畫面上要顯示的順序」寫，ans 是正確順序的項目編號 */
+const ORD = (id, tag, stem, items, ans, exp) => Object.assign(O(id, stem, items, ans, "", exp), { tag, label: "排順序" });
+/* 句子重組＋干擾字卡：extra 的字卡用不到 */
+const RX = (id, tag, zh, tiles, extra, exp) => Object.assign(R(id, tag, zh, tiles, "", exp), { extra, scrLabel: `把字卡排成正確的句子（有 ${extra.length} 張字卡用不到）` });
 function studentPaper(b) {
   b.items.forEach(it => (it.type === "group" ? it.qs : [it]).forEach(q => { q.fixedOrder = true; }));
   const bank = Object.assign({ grade: 99, fixed: true, hidden: true, blind: Object.keys(b.tags), exams: [{ name: "整回", tags: Object.keys(b.tags) }], timeLimits: [[Object.keys(b.tags), b.minutes]] }, b);
@@ -288,6 +292,72 @@ studentPaper({
     Q("d33","Mia 是男生還是女生？",["女生","男生","文章沒有說"],0,"","I'm a girl."),
     Q("d34","Milk 是什麼？",["一隻貓","牛奶","Mia 的朋友"],0,"","This is my cat. Its name is Milk."),
     Q("d35","Milk 幾歲？",["2 歲","10 歲","文章沒有說"],0,"","Milk is two years old.")
+  ]),
+  ]
+});
+
+/* ---- 卷 4：挑戰 Plus（36 題、35 分鐘，聽力只播一遍；加入聽對話、對話排序、克漏字、干擾字卡） ---- */
+studentPaper({
+  id: "yuri-m5", student: "Yuri", minutes: 35,
+  title: "期中複習模擬卷 4・挑戰 Plus",
+  range: "全範圍・最難一份：聽對話、對話排序、克漏字、干擾字卡、短文比較",
+  added: "2026-11-05",
+  note: "",
+  tags: { y1: "一、聽對話與單字", y2: "二、字母", y3: "三、單字", y4: "四、找出錯誤", y5: "五、把對話排順序", y6: "六、克漏字", y7: "七、句子重組", y8: "八、閱讀" },
+  items: [
+  SL("e01","y1",["W: Hi! What's your name?","M: My name is Teddy. I'm eight."],"聽一段對話，選出正確的一組",["Teddy・8 歲","Teddy・9 歲","Amber・8 歲"],0,"男生說 My name is Teddy. I'm eight."),
+  SL("e02","y1",["M: Hello! How old are you?","W: I'm ten years old."],"聽一段對話，選出女生的年紀",["10 歲","9 歲","對話中沒有說"],0,"女生回答 I'm ten years old."),
+  SL("e03","y1",["W: Thank you!","M: You're welcome."],"聽一段對話，選出他們在做什麼",["道謝和回應","問名字","問年紀"],0,"Thank you. 是道謝，You're welcome. 是回應。"),
+  SL("e04","y1",["M: Hello! I'm Rocky. I'm a boy.","W: Hi, Rocky! I'm Mia. I'm a girl."],"聽一段對話，選出誰是女生",["Mia","Rocky","兩個都是"],0,"Mia 說 I'm a girl."),
+  SL("e05","y1","jet","聽一個單字，選出它的中文意思",["噴射機","果醬","鑰匙"],0,"jet 噴射機、jam 果醬，開頭都是 j。"),
+  SL("e06","y1","otter","聽一個單字，選出它的中文意思",["公牛","水獺","獅子"],1,"otter 水獺、ox 公牛，開頭都是 o。"),
+  SL("e07","y1","hat","聽一個單字，選出它的中文意思",["手","帽子","脖子"],1,"hat 帽子、hand 手，開頭都是 h。"),
+  SL("e08","y1","monkey","聽一個單字，選出它開頭的字母",["Nn","Mm","Ll"],1,"monkey（猴子）開頭的發音是 /m/。"),
+  SL("e09","y1","Hi! I'm Amber. I'm a girl. I'm six years old.","聽一段自我介紹，選出正確的一組",["女生・6 歲","女生・7 歲","男生・6 歲"],0,"a girl 女生、six = 6 歲。"),
+  SL("e10","y1","What's your name?","聽一個問題，選出「不」適合的回答",["My name is Ken.","I'm Ken.","I'm ten."],2,"I'm ten. 回答的是年紀，不是名字。"),
+  AO("e11","y2",["f","g","h","i","j"],"照 ABC 順序是 f g h i j。"),
+  AO("e12","y2",["j","k","l","m","n"],"照 ABC 順序是 j k l m n。"),
+  M("e13","y2","從 a 開始數，第 7 個字母是哪一個？",["g","f","h"],0,"","a b c d e f g，第 7 個是 g。"),
+  X("e14","y2","把大寫和小寫配成一對。",["I","J","L","M","N"],["i","j","l","m","n"],"","I-i、J-j、L-l、M-m、N-n，小寫很像要看清楚。"),
+  M("e15","y3","I'm black. I have eight legs. I'm a ___.",["spider","bat","ox"],0,"","有八隻腳的是 spider 蜘蛛。"),
+  M("e16","y3","I'm big and orange. You can see me at Halloween. I'm a ___.",["ghost","pumpkin","witch"],1,"","又大又橘、萬聖節會看到的是 pumpkin 南瓜。"),
+  M("e17","y3","This animal is big. It says \"Moo.\" It's an ___.",["ox","otter","ape"],0,"","會叫 Moo 的大動物是 ox 公牛；ox 是母音開頭，要用 an。"),
+  SPF("e18","y3","水獺（開頭是 o，共 5 個字母）：___","otter","otter 水獺。"),
+  SPF("e19","y3","吸血鬼（開頭是 v，共 7 個字母）：___","vampire","vampire 吸血鬼。"),
+  E("e20","y4","What's you name?","you","your","","問「你的」名字要用 your：What's your name?"),
+  E("e21","y4","Hello! my name is Abu.","my","My","","句子開頭的第一個字母要大寫。"),
+  E("e22","y4","I'm a girl. I'm six year old.","year","years","","兩歲以上要用複數 years。"),
+  E("e23","y4","Thank you. You welcome.","You","You're","","不客氣是 You're welcome.（You're = You are）"),
+  ORD("e24","y5","把下面四句排成一段通順的對話。",
+    ["I'm eight years old.","Hi! What's your name?","How old are you?","My name is Teddy."],[1,3,2,0],
+    "先問名字、再回答名字，接著問年紀、再回答年紀。"),
+  ORD("e25","y5","把下面四句排成一段通順的對話。",
+    ["You're welcome.","Hello! How are you?","Good, thank you.","Thank you!"],[1,2,3,0],
+    "先問好、回答 Good，再道謝、最後回不客氣。"),
+  G("e26g","y6","cloze","Nice to Meet You",[
+    "Amber: Hi! [[1]] your name?",
+    "Rocky: [[2]] name is Rocky.",
+    "Amber: [[3]] old are you?",
+    "Rocky: I'm seven [[4]] old."
+  ],[["Nice to meet you.","很高興認識你"]],[
+    B("e26",1,["What's","How","My"],0,"","問名字用 What's your name?"),
+    B("e27",2,["My","I'm","You"],0,"","My name is Rocky."),
+    B("e28",3,["How","What","Who"],0,"","問年紀用 How old are you?"),
+    B("e29",4,["year","years","old"],1,"","兩歲以上用 years：seven years old.")
+  ]),
+  RX("e30","y7","我是男生。",["I'm","a","boy."],["am"],"I'm a boy.（I'm 已經有 am 了，不用再放一個）"),
+  RX("e31","y7","你幾歲？",["How","old","are","you?"],["is"],"How old are you?（主詞是 you，用 are 不用 is）"),
+  R("e32","y7","你好！我的名字是 Mia，我七歲。",["Hello!","My","name","is","Mia.","I'm","seven."],"","Hello! My name is Mia. I'm seven."),
+  G("e33g","y8","article","My Friends",[
+    "Hello! My name is Amber. I'm a girl. I'm nine years old.",
+    "This is Teddy. He is a boy. He is eight.",
+    "This is Mia. She is seven. She has a cat.",
+    "We are good friends."
+  ],[["He","他"],["She","她"],["has","有"],["friend","朋友"],["We","我們"]],[
+    Q("e33","他們三個人裡面，誰最大？",["Amber","Teddy","Mia"],0,"","Amber 九歲、Teddy 八歲、Mia 七歲。"),
+    Q("e34","Teddy 幾歲？",["8 歲","7 歲","9 歲"],0,"","He is eight."),
+    Q("e35","誰有一隻貓？",["Mia","Amber","Teddy"],0,"","She has a cat. 這個 She 指的是 Mia。"),
+    Q("e36","這篇短文總共介紹了幾個人？",["3 個","2 個","4 個"],0,"","Amber、Teddy、Mia 共三個人。")
   ]),
   ]
 });

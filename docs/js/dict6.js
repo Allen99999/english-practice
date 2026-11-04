@@ -238,4 +238,10 @@ vampire|n.|吸血鬼
 haunted|adj.|鬧鬼的
 its|pron.|牠的；它的
 boo|int.|（嚇人時發出的聲音）哇
+have|v.|有
+has|v.|有（他／她／牠用）
+he|pron.|他
+she|pron.|她
+we|pron.|我們
+moo|n.|哞（牛叫聲）
 `;

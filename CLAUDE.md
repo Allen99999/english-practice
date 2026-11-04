@@ -153,7 +153,9 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
     **自然發音題不要把字母本身當 script**（TTS 會唸字母名稱 bee、dee，不是 /b/ /d/）：改成播該字母開頭的單字（課本 ABC Rocks 的字，例如 Bb → bag），選項放字母。
   - **Yuri 的期中複習模擬卷**（原稿照片在專案根目錄 `Yuri期中考/`，已 gitignore，不可進 repo）：`yuri-m1`、`m2`、`m3`（3A）、`m4`（3B），由易到難。
     範圍＝Unit 1（字母 Aa–Jj、數字 1–5、What's your name?）、Unit 2（字母 Kk–Oo、數字 6–10、How old are you?）、Review 1 All About Me、課堂用語、Story Time 萬聖節單字。
-    卷 1（30 題 20 分）、卷 2（32 題 25 分）聽力可重聽；卷 3A、3B（各 35 題 30 分）聽力只播一遍。
+    卷 1（30 題 20 分）、卷 2（32 題 25 分）聽力可重聽；卷 3A、3B（各 35 題 30 分）、卷 4 挑戰 Plus（`yuri-m5`，36 題 35 分）聽力只播一遍。
+    卷 4 是最難的一份，獨有題型：聽兩人對話（SL 的 script 可以用 `W: ` `M: ` 寫多行）、`ORD` 把四句對話排成順序（畫面不打亂，items 照顯示順序寫、ans 是正確的項目編號，最多 4 項）、
+    克漏字題組（`G` kind cloze ＋ `B`）、`RX` 句子重組加干擾字卡、「選出不適合的回答」反向題、三個人的短文比較年紀。
     **出題原則（Allen 2026-11-05 要求）**：字母與發音一律用聽的——單字已經寫出來再問它的開頭字母是「看得到答案」的廢題，不可以出（同理「哪一個單字開頭是 o？ox/ink/jet」「哪一個和其他兩個不一樣？milk/monkey/nose」也不行）。
     完整單字填空（SPF）每卷最多 2～3 題，其餘用多元題型：`AO` 字母排序（字卡照 ABC 排）、`X` 配對（大小寫、問句答句）、`E` 挑錯（含句首大寫、is/are、year/years）、`R` 句子重組、`G` 短文或對話題組＋`Q` 理解題、情境單字題（讀句子推單字）。
   - **Jovi 的單字考**（Allen 的檔案在 `~/Documents/Tutor/Jovi/`：`<範圍>範圍單字表.docx`、`<範圍>範圍單字考_<程度>.docx`，用 `textutil -convert txt -stdout` 讀）：
