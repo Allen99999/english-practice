@@ -168,7 +168,9 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
     **發音只考分辨聲音**：聽單字選 blend、聽單字選不發音的字母、聽寫單字。學校沒有要求背那些發音單字，所以「看句子把單字開頭填出來」和「那個字的中文意思」整類不要再出。
     **題目的問法用中文**（英文句子和單字保留英文），不然學生看不懂題目。「哪一個有 L blend」這種題，其他選項也要含同一個字母但不構成 blend（flag／fall／lamp）。
     **`balance: true`**：不是照紙本抄的考卷一律加這個，讓 app.js 的選項平衡把正解平均分到 A/B/C（手動排很容易全部集中在 A）。
-    `ayden-m1`～`m3`（純發音卷）方向不對，已從 STUDENT_ZONE 清單移除、程式保留。
+    三份：`c1` 基礎 36 題 30 分、`c2` 進階 39 題 35 分、`c3` 挑戰 40 題 40 分（聽力只播一遍，聽寫仍可重聽）。
+    純發音卷 `ayden-m1`～`m3` 和純文法卷 `ayden-g1`～`g3` 已從 STUDENT_ZONE 清單移除、程式保留。
+  - 挑錯題（`E`）的改正**撇號要完全一樣**：`norm` 會把撇號拿掉，所以以前打 `childrens` 會被判成 `children's` 正確；現在有撇號的答案改成完全比對。
   - **Ayden 的 Grade 3 文法卷**（原稿 PDF：`Grade 3 Midterm Study Package`、`Grammar Workbook pages 9-10`，後者是前者的第 9、10 頁）：`ayden-g1`～`g3`（32／37／38 題，25／30／35 分）。
     範圍＝Nouns（普通／專有、人地物、不規則複數、集合名詞＋動詞單複數）、Pronouns（主格／受格）、Possessives（所有格名詞 's 與 s'、所有格形容詞、所有格代名詞）。
     出題注意：**girl's 和 girls' 唸起來完全一樣**，不能出聽力辨義；選項若把專有名詞寫成大寫就等於洩漏答案，要照課本全部寫小寫再問。

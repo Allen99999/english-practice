@@ -2,8 +2,8 @@
    STUDENT_ZONE 的名字＝作答人名字（不分大小寫）；輸入這些名字時首頁會多一列「學生專區」。
    每份考卷是一個 hidden＋fixed 的題庫（student 標記是誰的），整回照順序作答、做完才公布分數與對錯（blind）。
    選項順序照紙本考卷（fixedOrder），不自動平衡。新考卷：寫一個 studentPaper(...)，再把 id 加到該學生的清單 */
-/* 綜合卷 2、3 做好後，再把文法卷 g1～g3 收起來；自然發音卷 m1～m3 的出題方向不對（Allen 2026-11-04），已從清單移除 */
-const STUDENT_ZONE = { Ayden: ["ayden-c1", "ayden-g1", "ayden-g2", "ayden-g3"], Yuri: ["yuri-m1", "yuri-m2", "yuri-m3", "yuri-m4", "yuri-m5"], Jovi: ["jovi-a1"], Wei: [] };
+/* Ayden 用綜合卷 c1～c3（文法為主、發音為輔）；純文法卷 g1～g3 和純發音卷 m1～m3 的程式保留但不列在清單上 */
+const STUDENT_ZONE = { Ayden: ["ayden-c1", "ayden-c2", "ayden-c3"], Yuri: ["yuri-m1", "yuri-m2", "yuri-m3", "yuri-m4", "yuri-m5"], Jovi: ["jovi-a1"], Wei: [] };
 const zoneName = who => Object.keys(STUDENT_ZONE).find(n => n.toLowerCase() === String(who || "").trim().toLowerCase()) || null;
 /* full：拼字題不給頭尾提示字母，要寫出完整的字 */
 const SPF = (id, tag, stem, ans, exp) => ({ id, type: "spell", full: true, label: "填寫單字", tag, stem, ans, hint: "", exp });
@@ -773,6 +773,136 @@ studentPaper({
     Q("n34","第一句的 us 是指誰？",["說話的人和他的家人","只有爺爺","只有媽媽"],0,"","Dad took us：爸爸帶「我們」去。"),
     Q("n35","第二句的 He 是指誰？",["Grandpa","Dad","Mom"],0,"","上一句剛提到 Grandpa 來拜訪。"),
     Q("n36","最後一句的 yours 是什麼？",["所有格代名詞","所有格形容詞","受格代名詞"],0,"","yours 後面沒有接名詞，是所有格代名詞。")
+  ]),
+  ]
+});
+
+/* ---- 綜合卷 2：進階（39 題、35 分鐘） ---- */
+studentPaper({
+  id: "ayden-c2", student: "Ayden", minutes: 35, relisten: true, balance: true,
+  title: "綜合複習卷 2・進階",
+  range: "文法（複數規則・集合名詞・代名詞・所有格）為主＋發音辨音為輔",
+  added: "2026-11-05",
+  note: "",
+  tags: { n1: "一、聽音辨別", n2: "二、聽寫單字", n3: "三、找出 blend", n4: "四、複數規則", n5: "五、集合名詞", n6: "六、代名詞", n7: "七、所有格", n8: "八、找出錯誤", n9: "九、句子重組", n10: "十、閱讀" },
+  items: [
+  SL("o01","n1","glacier","聽一個單字，選出它開頭的 blend",["gl","cl","bl"],0,"glacier 開頭的音是 /gl/。"),
+  SL("o02","n1","princess","聽一個單字，選出它開頭的 blend",["pr","br","tr"],0,"princess 開頭的音是 /pr/。"),
+  SL("o03","n1","sponge","聽一個單字，選出它開頭的 blend",["sp","st","sw"],0,"sponge 開頭的音是 /sp/。"),
+  SL("o04","n1","sign","聽一個單字，選出哪一個字母不發音",["g","s","n"],0,"sign 唸起來是 /saɪn/，g 不發音。"),
+  SL("o05","n1","listen","聽一個單字，選出哪一個字母不發音",["t","l","n"],0,"listen 唸起來是 /ˈlɪsən/，t 不發音。"),
+  SL("o06","n1","knee","聽一個單字，選出哪一個字母不發音",["k","n","e"],0,"knee 唸起來是 /niː/，k 不發音。"),
+  DW("o07","n2","shift","Please shift the box to the left.","shift 移動。"),
+  DW("o08","n2","brush","I brush my teeth every morning.","brush 刷牙、刷子。"),
+  DW("o09","n2","crash","The two cars had a crash.","crash 相撞。"),
+  DW("o10","n2","wish","I wish you a happy birthday.","wish 希望。"),
+  M("o11","n3","哪一個單字有 L blend（兩個子音黏在一起唸）？",["blue","bell","tall"],0,"","blue 的 bl 連在一起；bell 的 ll 在中間、tall 的 ll 在字尾，都不是 blend。"),
+  M("o12","n3","哪一個單字有 R blend？",["brush","birth","arm"],0,"","brush 的 br 連在一起；birth 的 r 前面隔著 i、arm 的 r 在字尾。"),
+  M("o13","n3","哪一個單字有 S blend？",["swim","sit","miss"],0,"","swim 的 sw 連在一起；sit 只有一個 s、miss 的 ss 在字尾。"),
+  M("o14","n4","bosses 是照哪一條規則變的？",["s、z、ch、sh、x 結尾加 es","y 改成 ies","f／fe 改成 ves"],0,"","boss 以 s 結尾，加 es。"),
+  M("o15","n4","knives 是照哪一條規則變的？",["f／fe 改成 ves","y 改成 ies","o 結尾加 s 或 es"],0,"","knife 的 fe 改成 ves。"),
+  M("o16","n4","哪一個字的複數拼對了？",["echoes","echos","echies"],0,"","echo 的複數是 echoes。"),
+  M("o17","n4","shelf 的複數要怎麼寫？",["shelves","shelfs","shelfes"],0,"","f 改成 ves。"),
+  M("o18","n5","選出正確的動詞：The class ___ excited for the field trip today.",["is","are","be"],0,"","把全班看成一個整體，動詞用單數 is。"),
+  M("o19","n5","選出正確的動詞：The public ___ for their favourite candidate.",["vote","votes","voting"],0,"","後面用 their，把大眾看成一個一個的人，動詞用複數 vote。"),
+  M("o20","n5","選出正確的動詞：The jury ___ its decision on the case.",["announces","announce","announcing"],0,"","用 its，把陪審團看成一個整體，動詞用單數。"),
+  M("o21","n5","哪一個是集合名詞（一群人或東西的名稱）？",["army","soldier","uniform"],0,"","army 軍隊是一群人；soldier 是一個軍人、uniform 是制服。"),
+  M("o22","n6","選出正確的代名詞：\"___ are going to walk me home,\" Susan said to Fareed.",["You","Your","Yours"],0,"","Susan 對 Fareed 說話，主詞是 You。"),
+  M("o23","n6","選出正確的代名詞：Jonas has been feeling unwell, so ___ should go to the doctor.",["he","him","his"],0,"","子句的主詞用主格 he。"),
+  M("o24","n6","選出正確的代名詞：Paul tossed the ball to ___ after I asked for it.",["me","I","my"],0,"","to 後面接受格 me。"),
+  M("o25","n6","選出正確的代名詞：When my mom and I go to the movies, ___ love eating popcorn.",["we","us","our"],0,"","主詞是「媽媽和我」，用主格 we。"),
+  M("o26","n6","選出正確的代名詞：When Randy started crying, Rita bought ___ some candy.",["him","he","his"],0,"","bought 後面的人用受格 him。"),
+  M("o27","n7","括號裡的字要怎麼寫？There is a ___ washroom on the second floor. (ladies)",["ladies'","ladie's","ladies"],0,"","ladies 以 s 結尾的複數，只加一撇。"),
+  M("o28","n7","括號裡的字要怎麼寫？One ___ scream could be heard above all the rest. (girl)",["girl's","girls'","girls"],0,"","One 表示只有一個女生，用單數 girl's。"),
+  M("o29","n7","改寫：Those are Jerry and Daisy's pictures. → Those are ___.",["theirs","their","them"],0,"","兩個人的東西用 theirs，後面不接名詞。"),
+  M("o30","n7","選出正確的字：The ducklings follow ___ mother to cross the yard.",["their","theirs","them"],0,"","後面有名詞 mother，要用所有格形容詞 their。"),
+  M("o31","n7","選出正確的字：I will call you tonight. Can you give me ___ telephone number?",["your","yours","you"],0,"","後面有名詞 number，用所有格形容詞 your。"),
+  E("o32","n8","My mom and me went to the park.","me","I","","當主詞要用主格 I：My mom and I went to the park."),
+  E("o33","n8","Him is my best friend.","Him","He","","句子的主詞要用主格 He。"),
+  E("o34","n8","Those shoes are her.","her","hers","","後面沒有名詞，要用所有格代名詞 hers。"),
+  E("o35","n8","We all like its teacher very much.","its","our","","說話的是 We，所以是「我們的」老師 our。"),
+  R("o36","n9","那些是傑瑞和黛西的照片。",["Those","are","Jerry","and","Daisy's","pictures."],"","Those are Jerry and Daisy's pictures."),
+  R("o37","n9","我媽媽忘記帶她的鑰匙了。",["My","mom","forgot","to","bring","her","keys."],"","My mom forgot to bring her keys."),
+  G("o38g","n10","notice","A Letter to a Pen Pal",[
+    "Dear Kelly,",
+    "How are you? My name is Benjamin. I'm eight years old.",
+    "I saw your advertisement on Yahoo and would like to be your pen pal.",
+    "I live in Canada, which is in North America. It is very cold here in winter.",
+    "I like playing basketball. I usually play with my dad and little brother.",
+    "Best wishes, Benjamin"
+  ],[["advertisement","廣告"],["pen pal","筆友"]],[
+    Q("o38","這三個都是專有名詞。哪一個是「地方」？",["Canada","Yahoo","Benjamin"],0,"","Canada 是國家；Yahoo 是網站（東西）、Benjamin 是人。"),
+    Q("o39","I saw your advertisement 裡的 your 是什麼詞？",["所有格形容詞","所有格代名詞","受格代名詞"],0,"","your 後面接名詞 advertisement，是所有格形容詞。")
+  ]),
+  ]
+});
+
+/* ---- 綜合卷 3：挑戰（40 題、40 分鐘，聽力只播一遍、聽寫仍可重聽） ---- */
+studentPaper({
+  id: "ayden-c3", student: "Ayden", minutes: 40, balance: true,
+  title: "綜合複習卷 3・挑戰",
+  range: "全範圍・最難：聽力只播一遍，含克漏字、排順序、干擾字卡",
+  added: "2026-11-05",
+  note: "",
+  tags: { n1: "一、聽音辨別", n2: "二、聽寫單字", n3: "三、blend 進階", n4: "四、名詞與複數", n5: "五、代名詞", n6: "六、所有格", n7: "七、找出錯誤", n8: "八、克漏字", n9: "九、排順序與重組", n10: "十、閱讀" },
+  items: [
+  SL("p01","n1","smitten","聽一個單字，選出它開頭的 blend",["sm","sn","st"],0,"smitten 開頭的音是 /sm/。"),
+  SL("p02","n1","grimace","聽一個單字，選出它開頭的 blend",["gr","cr","dr"],0,"grimace 開頭的音是 /gr/。"),
+  SL("p03","n1","snorkel","聽一個單字，選出它開頭的 blend",["sn","sm","sk"],0,"snorkel 開頭的音是 /sn/。"),
+  SL("p04","n1","scent","聽一個單字，選出哪一個字母不發音",["c","s","t"],0,"scent 唸起來和 sent 一樣，c 不發音。"),
+  SL("p05","n1","hymn","聽一個單字，選出哪一個字母不發音",["n","h","m"],0,"hymn 唸起來是 /hɪm/，字尾的 n 不發音。"),
+  SL("p06","n1","comb","聽一個單字，選出哪一個字母不發音",["b","c","m"],0,"comb 唸起來是 /koʊm/，字尾的 b 不發音。"),
+  DW("p07","n2","ship","The ship sails across the sea.","ship 船。"),
+  DW("p08","n2","shock","The loud noise gave me a shock.","shock 驚嚇。"),
+  DW("p09","n2","cash","I paid for the book with cash.","cash 現金。"),
+  DW("p10","n2","skate","I can skate on the ice.","skate 溜冰。"),
+  M("p11","n3","哪一個單字的 blend 不在字首？",["upstairs","stop","snack"],0,"","upstairs 的 st 在中間（up-stairs）；另外兩個都在開頭。"),
+  M("p12","n3","哪一個單字裡有兩個 S blend？",["snowstorm","swimsuit","stomach"],0,"","snowstorm 有 sn 和 st；swimsuit 只有 sw、stomach 只有 st。"),
+  M("p13","n3","哪一個單字沒有不發音的子音？",["basket","bridge","ballet"],0,"","basket 每個子音都發音；bridge 的 d、ballet 的 t 不發音。"),
+  M("p14","n4","哪一個字的複數規則和其他三個不一樣？",["cello","potato","echo","hero"],0,"","cello 的複數只加 s；另外三個都加 es。"),
+  M("p15","n4","fungus 的複數要怎麼寫？",["fungi","funguses","fungis"],0,"","fungus 的複數是 fungi。"),
+  M("p16","n4","哪一句的大寫用對了？",["Mrs. Jonas visited Muskoka.","mrs. Jonas visited muskoka.","Mrs. jonas visited Muskoka."],0,"","人名和地名的每個字都要大寫。"),
+  M("p17","n4","The crew are lining up at the gate. 為什麼用 are？",["把船員看成一個一個的人","把船員看成一個整體","crew 永遠是複數"],0,"","集合名詞當成個別的人時，動詞用複數。"),
+  M("p18","n5","選出正確的代名詞：\"Will ___ send me the photos, my grandson?\" Grandpa asked.",["you","I","he"],0,"","爺爺在問孫子，主詞是 you。"),
+  M("p19","n5","選出正確的代名詞：Mom and Dad got up early. I woke up early to help ___ too.",["them","her","him"],0,"","要幫的是爸爸和媽媽兩個人，用 them。"),
+  M("p20","n5","哪一句是對的？",["She invited him and me.","She invited he and I.","Her invited him and I."],0,"","invited 後面兩個都要用受格 him and me。"),
+  M("p21","n5","Anita teaches it to speak. 這句裡的 it 是什麼？",["受格代名詞","主格代名詞","所有格形容詞"],0,"","it 在動詞 teaches 後面，當受詞。"),
+  M("p22","n6","括號裡的字要怎麼寫？The ___ cheers were heard throughout the gym. (girls)",["girls'","girl's","girls"],0,"","很多女生一起歡呼，用複數 girls'。"),
+  M("p23","n6","括號裡的字要怎麼寫？___ team won the tournament. (James)",["James's","Jame's","James'es"],0,"","單數名字就算以 s 結尾，照課本規則一樣加 's。"),
+  M("p24","n6","改寫：This is my parents' house. → This is ___ house.",["their","theirs","them"],0,"","後面還有名詞 house，要用所有格形容詞 their。"),
+  M("p25","n6","哪一句是對的？",["This book is mine.","This book is my.","This is mine book."],0,"","mine 後面不接名詞。"),
+  E("p26","n7","Us arrived there around ten o'clock.","Us","We","","句子的主詞要用主格 We。"),
+  E("p27","n7","Her brought some fruits too.","Her","She","","句子的主詞要用主格 She。"),
+  E("p28","n7","You have a hamster. Is that you hamster?","you","your","","第二個 you 後面接名詞，要用所有格形容詞 your。"),
+  E("p29","n7","I have two brothers. His names are Rob and Ron.","His","Their","","兩個哥哥是複數，用 Their。"),
+  G("p30g","n8","cloze","A Trip to Niagara Falls",[
+    "Dad took [[1]] to Niagara Falls last Saturday.",
+    "Mom and Dad got up early because [[2]] had to prepare for the trip.",
+    "[[3]] arrived there around ten o'clock.",
+    "Grandpa was very excited. [[4]] kept asking us to take pictures of him.",
+    "Mom made sandwiches for lunch. [[5]] brought some fruits too."
+  ],[["prepare","準備"],["excited","興奮的"]],[
+    B("p30",1,["us","we","our"],0,"","took 後面接受格 us。"),
+    B("p31",2,["they","them","their"],0,"","子句的主詞用主格 they。"),
+    B("p32",3,["We","Us","Our"],0,"","句子開頭的主詞用主格 We。"),
+    B("p33",4,["He","Him","His"],0,"","主詞用主格 He。"),
+    B("p34",5,["She","Her","Hers"],0,"","主詞用主格 She。")
+  ]),
+  ORD("p35","n9","把下面四句排成一段通順的短文。",
+    ["Then they played in the children's playground.","First, the twins' mother drove them to the park.","Finally, she took them home for dinner.","Next, she bought them two ice creams."],[1,3,0,2],
+    "照 First → Next → Then → Finally 的順序。"),
+  RX("p36","n9","這些是女孩們的鞋子。",["These","are","the","girls'","shoes."],["girl's"],"These are the girls' shoes.（girl's 是單數，用不到）"),
+  G("p37g","n10","article","Benjamin's Favourite Team",[
+    "Benjamin is eight years old. He lives in Canada with his family.",
+    "His favourite team is the Raptors, and his favourite player is Kyle Lowry.",
+    "Benjamin and his brother play basketball every weekend.",
+    "Their father watches them and cheers for them.",
+    "\"The ball is yours now,\" Benjamin told his brother."
+  ],[["cheer","加油"],["weekend","週末"]],[
+    Q("p37","第一句裡有幾個專有名詞？",["2","1","3"],0,"","Benjamin 和 Canada 是專有名詞；family、years 是普通名詞。"),
+    Q("p38","Their father watches them 裡的 them 是指誰？",["Benjamin 和他弟弟","暴龍隊","Benjamin 的爸媽"],0,"","上一句的主詞是 Benjamin and his brother。"),
+    Q("p39","The ball is yours now. 裡的 yours 是什麼詞？",["所有格代名詞","所有格形容詞","受格代名詞"],0,"","yours 後面沒有接名詞。"),
+    Q("p40","Benjamin and his brother play basketball. 裡的 play 為什麼不加 s？",["主詞是兩個人，是複數","basketball 是複數","play 永遠不加 s"],0,"","主詞 Benjamin and his brother 是複數，動詞用原形。")
   ]),
   ]
 });

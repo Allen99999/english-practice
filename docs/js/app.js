@@ -363,7 +363,8 @@ function grade(q, resp) {
     case "cword": return [q.ans, ...(q.alt || [])].some(x => norm(x) === norm(resp) && caseSame(x, String(resp || "").trim()));
     case "scramble": { const all = q.tiles.concat(q.extra || []); const s = norm(resp.map(i => all[i]).join(" ")); return [q.ans, ...(q.alt || [])].some(a => norm(a) === s); }
     case "match": return resp.every((r, i) => r === i);
-    case "error": return resp.tok === q.wrong && q.fix.some(f => norm(f) === norm(resp.fix) && caseSame(f, String(resp.fix || "").trim()));
+    case "error": return resp.tok === q.wrong && q.fix.some(f => { const a = String(f).trim(), b = String(resp.fix || "").trim();
+      return a === b || (!/'/.test(a) && !/'/.test(b) && norm(a) === norm(b) && caseSame(a, b)); });   // 撇號要完全一樣（childrens ≠ children's）
   }
   return false;
 }
