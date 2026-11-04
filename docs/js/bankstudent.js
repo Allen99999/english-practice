@@ -2,7 +2,8 @@
    STUDENT_ZONE 的名字＝作答人名字（不分大小寫）；輸入這些名字時首頁會多一列「學生專區」。
    每份考卷是一個 hidden＋fixed 的題庫（student 標記是誰的），整回照順序作答、做完才公布分數與對錯（blind）。
    選項順序照紙本考卷（fixedOrder），不自動平衡。新考卷：寫一個 studentPaper(...)，再把 id 加到該學生的清單 */
-const STUDENT_ZONE = { Ayden: ["ayden-m1", "ayden-m2", "ayden-m3", "ayden-g1", "ayden-g2", "ayden-g3"], Yuri: ["yuri-m1", "yuri-m2", "yuri-m3", "yuri-m4", "yuri-m5"], Jovi: ["jovi-a1"], Wei: [] };
+/* 綜合卷 2、3 做好後，再把文法卷 g1～g3 收起來；自然發音卷 m1～m3 的出題方向不對（Allen 2026-11-04），已從清單移除 */
+const STUDENT_ZONE = { Ayden: ["ayden-c1", "ayden-g1", "ayden-g2", "ayden-g3"], Yuri: ["yuri-m1", "yuri-m2", "yuri-m3", "yuri-m4", "yuri-m5"], Jovi: ["jovi-a1"], Wei: [] };
 const zoneName = who => Object.keys(STUDENT_ZONE).find(n => n.toLowerCase() === String(who || "").trim().toLowerCase()) || null;
 /* full：拼字題不給頭尾提示字母，要寫出完整的字 */
 const SPF = (id, tag, stem, ans, exp) => ({ id, type: "spell", full: true, label: "填寫單字", tag, stem, ans, hint: "", exp });
@@ -24,8 +25,9 @@ const ORD = (id, tag, stem, items, ans, exp) => Object.assign(O(id, stem, items,
 const RX = (id, tag, zh, tiles, extra, exp) => Object.assign(R(id, tag, zh, tiles, "", exp), { extra, scrLabel: `把字卡排成正確的句子（有 ${extra.length} 張字卡用不到）` });
 /* 聽寫拼字：播「單字 → 例句 → 單字」，學生把單字拼出來（一律可以重聽） */
 const DW = (id, tag, word, sentence, exp, plabel) => ({ id, type: "spell", full: true, dictation: true, dictSent: sentence, plabel, label: "聽寫", tag, stem: "___", ans: word, hint: "", exp });
+/* balance: true ＝ 這份不是照紙本抄的，讓 app.js 的選項平衡把正解平均分到 A/B/C（不要手動排，很容易全部集中在 A） */
 function studentPaper(b) {
-  b.items.forEach(it => (it.type === "group" ? it.qs : [it]).forEach(q => { q.fixedOrder = true; }));
+  b.items.forEach(it => (it.type === "group" ? it.qs : [it]).forEach(q => { if (b.balance) delete q.fixedOrder; else q.fixedOrder = true; }));
   const bank = Object.assign({ grade: 99, fixed: true, hidden: true, blind: Object.keys(b.tags), exams: [{ name: "整回", tags: Object.keys(b.tags) }], timeLimits: [[Object.keys(b.tags), b.minutes]] }, b);
   BANKS.push(bank);
   return bank;
@@ -707,6 +709,70 @@ studentPaper({
     Q("m36","How many proper nouns are there in the FIRST sentence?",["2","1","3"],0,"","Benjamin 和 Canada 是專有名詞；family、years 是普通名詞。"),
     Q("m37","In \"Their father watches them,\" the word \"them\" refers to ___.",["Benjamin and his brother","the Raptors","Benjamin's parents"],0,"","上一句主詞是 Benjamin 和他弟弟。"),
     Q("m38","\"The ball is yours now.\" The word \"yours\" is a ___.",["possessive pronoun","possessive adjective","object pronoun"],0,"","yours 後面沒有接名詞，是所有格代名詞。")
+  ]),
+  ]
+});
+
+/* ===== Ayden：綜合卷（文法為主、發音為輔） =====
+   Allen 2026-11-04 的要求：
+   - 文法佔比高（約 70%），發音是輔助（約 30%）
+   - **發音只考「分辨聲音」**：聽單字選 blend、聽單字選不發音的字母、聽寫單字。
+     學校沒有要求背那些發音單字，所以「看句子把單字開頭填出來」整類刪掉，也不考那些字的中文意思。
+   - 題目的問法用中文（英文句子和單字保留英文），不然學生看不懂題目要幹嘛
+   - 「哪一個有 L blend」這種題，其他選項也要含同一個字母但不構成 blend（例如 flag / fall / lamp）
+   - `balance: true` 讓正解平均分到 A/B/C */
+
+/* ---- 綜合卷 1：基礎（36 題、30 分鐘） ---- */
+studentPaper({
+  id: "ayden-c1", student: "Ayden", minutes: 30, relisten: true, balance: true,
+  title: "綜合複習卷 1・基礎",
+  range: "文法（名詞・代名詞・所有格）為主＋發音辨音為輔",
+  added: "2026-11-04",
+  note: "",
+  tags: { n1: "一、聽音辨別", n2: "二、聽寫單字", n3: "三、找出 blend", n4: "四、普通名詞與專有名詞", n5: "五、不規則複數", n6: "六、主格與受格代名詞", n7: "七、所有格名詞", n8: "八、所有格形容詞與代名詞", n9: "九、閱讀" },
+  items: [
+  SL("n01","n1","blanket","聽一個單字，選出它開頭的 blend",["bl","cl","gl"],0,"blanket 開頭的音是 /bl/。"),
+  SL("n02","n1","grandma","聽一個單字，選出它開頭的 blend",["gr","dr","tr"],0,"grandma 開頭的音是 /gr/。"),
+  SL("n03","n1","snow","聽一個單字，選出它開頭的 blend",["sn","sm","sl"],0,"snow 開頭的音是 /sn/。"),
+  SL("n04","n1","knife","聽一個單字，選出哪一個字母不發音",["k","n","f"],0,"knife 唸起來是 /naɪf/，k 不發音。"),
+  SL("n05","n1","lamb","聽一個單字，選出哪一個字母不發音",["b","l","m"],0,"lamb 唸起來是 /læm/，字尾的 b 不發音。"),
+  DW("n06","n2","shop","I go to the shop with my mom.","shop 商店。sh 是一個音。"),
+  DW("n07","n2","fish","The fish swims in the lake.","fish 魚。"),
+  DW("n08","n2","flash","I saw a flash of light.","flash 閃光。"),
+  M("n09","n3","哪一個單字有 L blend（兩個子音黏在一起唸）？",["flag","fall","lamp"],0,"","flag 的 fl 兩個子音連在一起；fall 的 f 和 ll 中間隔著母音，lamp 只有一個 l。"),
+  M("n10","n3","哪一個單字有 R blend？",["grass","rain","car"],0,"","grass 的 gr 連在一起；rain 只有一個 r，car 的 r 在字尾。"),
+  M("n11","n3","哪一個單字有 S blend？",["stop","sun","bus"],0,"","stop 的 st 連在一起；sun 只有一個 s，bus 的 s 在字尾。"),
+  M("n12","n4","哪一個是專有名詞（開頭要大寫）？",["canada","winter","brother"],0,"","canada 是特定的國家 → Canada；winter、brother 是普通名詞。"),
+  M("n13","n4","哪一個是普通名詞？",["school","nova scotia","dr. smith"],0,"","school 是一般的說法；另外兩個是特定的地名和人名。"),
+  M("n14","n4","在 I live in Canada. 這句話裡，Canada 是指什麼？",["地方","人","東西"],0,"","Canada 是國家，屬於地方。"),
+  M("n15","n4","哪一句的大寫用對了？",["Mrs. Jonas visited Muskoka.","mrs. Jonas visited muskoka.","Mrs. jonas visited Muskoka."],0,"","人名和地名的每個字都要大寫。"),
+  M("n16","n5","church 的複數要怎麼寫？",["churches","churchs","churchies"],0,"","ch 結尾加 es。"),
+  M("n17","n5","baby 的複數要怎麼寫？",["babies","babys","babyes"],0,"","子音＋y 結尾，y 改成 ies。"),
+  M("n18","n5","knife 的複數要怎麼寫？",["knives","knifes","knifies"],0,"","f／fe 結尾改成 ves。"),
+  M("n19","n5","goose 的複數要怎麼寫？",["geese","gooses","geeses"],0,"","goose 的複數整個字拼法改變，是 geese。"),
+  M("n20","n5","哪一個字的單數和複數長得一樣？",["fish","shelf","echo"],0,"","fish 單複數同形；shelf→shelves、echo→echoes。"),
+  M("n21","n6","選出正確的代名詞：___ bought some new clothes.",["She","Her","Hers"],0,"","句子的主詞要用主格 She。"),
+  M("n22","n6","選出正確的代名詞：Mom made sandwiches for ___.",["us","we","our"],0,"","for 後面接受格 us。"),
+  M("n23","n6","選出正確的代名詞：Larry and Michael went to the game. ___ had a great time.",["They","Them","Their"],0,"","句子的主詞要用主格 They。"),
+  M("n24","n6","the door 可以用哪一個代名詞代替？",["it","him","them"],0,"","the door 是單數的東西，用 it。"),
+  X("n25","n6","把左邊的詞和可以代替它的代名詞配成一對。",["Mom","Joe and Calvin","the door","my brother and me"],["She","They","it","us"],"","Mom→She、Joe and Calvin→They、the door→it、my brother and me→us。"),
+  M("n26","n7","括號裡的字要怎麼寫？Here is ___ jacket. (Aaron)",["Aaron's","Aarons","Aarons'"],0,"","單數名詞加 's。"),
+  M("n27","n7","括號裡的字要怎麼寫？They played in the ___ playground. (children)",["children's","childrens","childrens'"],0,"","children 是不以 s 結尾的複數，加 's。"),
+  M("n28","n7","括號裡的字要怎麼寫？These are the ___ spaceships. (aliens)",["aliens'","alien's","aliens"],0,"","aliens 以 s 結尾，只加一撇。"),
+  M("n29","n7","括號裡的字要怎麼寫？The coach was happy with the ___ performance. (team)",["team's","teams'","teams"],0,"","team 是單數，加 's。"),
+  M("n30","n8","選出正確的字：Michael puts ___ toys in the box.",["his","him","he"],0,"","後面接名詞 toys，要用所有格形容詞 his。"),
+  M("n31","n8","選出正確的字：My cat likes licking ___ tail.",["its","it's","it"],0,"","動物的「牠的」是 its；it's 是 it is 的縮寫。"),
+  M("n32","n8","改寫：These are Mary's shoes. → These are ___.",["hers","her","her's"],0,"","hers 後面不接名詞，而且沒有撇號。"),
+  M("n33","n8","改寫：That is Uncle Tim's guitar. → That is ___.",["his","him","he's"],0,"","男生的東西用 his。"),
+  G("n34g","n9","article","A Day with Grandpa",[
+    "Dad took us to Niagara Falls last Saturday.",
+    "Grandpa came to visit us from Vancouver. He was very excited.",
+    "Mom made sandwiches for lunch. She brought some fruits too.",
+    "\"These sandwiches are yours,\" Mom said to me."
+  ],[["Niagara Falls","尼加拉瀑布"],["excited","興奮的"],["sandwich","三明治"]],[
+    Q("n34","第一句的 us 是指誰？",["說話的人和他的家人","只有爺爺","只有媽媽"],0,"","Dad took us：爸爸帶「我們」去。"),
+    Q("n35","第二句的 He 是指誰？",["Grandpa","Dad","Mom"],0,"","上一句剛提到 Grandpa 來拜訪。"),
+    Q("n36","最後一句的 yours 是什麼？",["所有格代名詞","所有格形容詞","受格代名詞"],0,"","yours 後面沒有接名詞，是所有格代名詞。")
   ]),
   ]
 });
