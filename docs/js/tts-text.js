@@ -46,6 +46,7 @@ function questionSpeech(q) {
     q.script.forEach(l => add(l, true));
     return out;
   }
+  if (q.dictation) { add(q.ans); if (q.dictSent) add(q.dictSent); add(q.ans); return out; }   // 聽寫拼字：單字→例句→單字
   if (q.blank) return out;
   if (q.type === "trans" || q.type === "essay" || q.zhPrompt) return out;
   [].concat(q.stem || []).forEach(l => add(l, true));

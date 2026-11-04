@@ -2,7 +2,7 @@
    STUDENT_ZONE 的名字＝作答人名字（不分大小寫）；輸入這些名字時首頁會多一列「學生專區」。
    每份考卷是一個 hidden＋fixed 的題庫（student 標記是誰的），整回照順序作答、做完才公布分數與對錯（blind）。
    選項順序照紙本考卷（fixedOrder），不自動平衡。新考卷：寫一個 studentPaper(...)，再把 id 加到該學生的清單 */
-const STUDENT_ZONE = { Ayden: [], Yuri: ["yuri-m1", "yuri-m2", "yuri-m3", "yuri-m4", "yuri-m5"], Jovi: ["jovi-a1"], Wei: [] };
+const STUDENT_ZONE = { Ayden: ["ayden-m1", "ayden-m2", "ayden-m3"], Yuri: ["yuri-m1", "yuri-m2", "yuri-m3", "yuri-m4", "yuri-m5"], Jovi: ["jovi-a1"], Wei: [] };
 const zoneName = who => Object.keys(STUDENT_ZONE).find(n => n.toLowerCase() === String(who || "").trim().toLowerCase()) || null;
 /* full：拼字題不給頭尾提示字母，要寫出完整的字 */
 const SPF = (id, tag, stem, ans, exp) => ({ id, type: "spell", full: true, label: "填寫單字", tag, stem, ans, hint: "", exp });
@@ -22,6 +22,8 @@ const AO = (id, tag, letters, exp) => Object.assign(R(id, tag, "把字母照 ABC
 const ORD = (id, tag, stem, items, ans, exp) => Object.assign(O(id, stem, items, ans, "", exp), { tag, label: "排順序" });
 /* 句子重組＋干擾字卡：extra 的字卡用不到 */
 const RX = (id, tag, zh, tiles, extra, exp) => Object.assign(R(id, tag, zh, tiles, "", exp), { extra, scrLabel: `把字卡排成正確的句子（有 ${extra.length} 張字卡用不到）` });
+/* 聽寫拼字：播「單字 → 例句 → 單字」，學生把單字拼出來（一律可以重聽） */
+const DW = (id, tag, word, sentence, exp, plabel) => ({ id, type: "spell", full: true, dictation: true, dictSent: sentence, plabel, label: "聽寫", tag, stem: "___", ans: word, hint: "", exp });
 function studentPaper(b) {
   b.items.forEach(it => (it.type === "group" ? it.qs : [it]).forEach(q => { q.fixedOrder = true; }));
   const bank = Object.assign({ grade: 99, fixed: true, hidden: true, blind: Object.keys(b.tags), exams: [{ name: "整回", tags: Object.keys(b.tags) }], timeLimits: [[Object.keys(b.tags), b.minutes]] }, b);
@@ -358,6 +360,176 @@ studentPaper({
     Q("e34","Teddy 幾歲？",["8 歲","7 歲","9 歲"],0,"","He is eight."),
     Q("e35","誰有一隻貓？",["Mia","Amber","Teddy"],0,"","She has a cat. 這個 She 指的是 Mia。"),
     Q("e36","這篇短文總共介紹了幾個人？",["3 個","2 個","4 個"],0,"","Amber、Teddy、Mia 共三個人。")
+  ]),
+  ]
+});
+
+/* ===== Ayden（雙語／全美班・自然發音）：期中複習模擬卷 1～3 =====
+   範圍（原稿照片在專案根目錄 `Ayden期中考/`，已 gitignore）：
+     Consonants（字首／字中／字尾子音）、Silent Consonants（不發音子音）、
+     L Blends（bl cl fl gl pl sl）、R Blends（br cr dr fr gr pr tr）、S Blends（sc sk sl sm sn sp st sw）、
+     Spelling Words（shop shift ship shock brush flash fish crash cash wish）
+   題目用英文（和他的課本一致），解析用中文。聽寫題一律可以重聽。 */
+
+/* ---- 卷 1：Basic（32 題、25 分鐘，比練習本簡單一點） ---- */
+studentPaper({
+  id: "ayden-m1", student: "Ayden", minutes: 25, relisten: true,
+  title: "Midterm Review 1・Basic",
+  range: "Consonants・Silent Consonants・L/R/S Blends・Spelling Words",
+  added: "2026-11-04",
+  note: "",
+  tags: { a1: "1. Listen and Choose", a2: "2. Spelling Dictation", a3: "3. L Blends", a4: "4. R Blends", a5: "5. S Blends", a6: "6. Silent Consonants", a7: "7. Consonant Position" },
+  items: [
+  SL("f01","a1","blanket","Listen to the word. Which blend do you hear at the beginning?",["bl","cl","gl"],0,"blanket 開頭是 bl。"),
+  SL("f02","a1","clown","Listen to the word. Which blend do you hear at the beginning?",["cl","pl","sl"],0,"clown 開頭是 cl。"),
+  SL("f03","a1","grandma","Listen to the word. Which blend do you hear at the beginning?",["dr","gr","tr"],1,"grandma 開頭是 gr。"),
+  SL("f04","a1","skate","Listen to the word. Which blend do you hear at the beginning?",["sk","sp","sw"],0,"skate 開頭是 sk。"),
+  SL("f05","a1","snow","Listen to the word. Which blend do you hear at the beginning?",["sn","sm","sl"],0,"snow 開頭是 sn。"),
+  SL("f06","a1","trumpet","Listen to the word. Which blend do you hear at the beginning?",["tr","dr","pr"],0,"trumpet 開頭是 tr。"),
+  DW("f07","a2","shop","I go to the shop with my mom.","shop 商店。sh 是一個音，不是 s＋h。"),
+  DW("f08","a2","fish","The fish swims in the lake.","fish 魚。"),
+  DW("f09","a2","wish","I wish you a happy birthday.","wish 希望、願望。"),
+  DW("f10","a2","flash","I saw a flash of light.","flash 閃光。fl 是 L blend。"),
+  M("f11","a3","Dylan hides under his ___anket when there is a thunderstorm.",["bl","cl","sl"],0,"","blanket 毯子。"),
+  M("f12","a3","___amingoes are beautiful pink birds.",["Fl","Bl","Gl"],0,"","flamingo 紅鶴。"),
+  M("f13","a3","Earth is the only ___anet in our solar system that has life.",["pl","bl","cl"],0,"","planet 行星。"),
+  M("f14","a3","Which word is an L-blend word?",["glow","grow","snow"],0,"","glow 是 gl（L blend）；grow 是 R blend、snow 是 S blend。"),
+  M("f15","a4","The ___acelet that my mother made for me broke.",["br","cr","tr"],0,"","bracelet 手鍊。"),
+  M("f16","a4","There is ___easure on the island.",["tr","dr","pr"],0,"","treasure 寶藏。"),
+  M("f17","a4","My little brother has cute ___ooked teeth.",["cr","gr","br"],0,"","crooked 彎曲的。"),
+  M("f18","a4","Which word is an R-blend word?",["dream","steam","smooth"],0,"","dream 是 dr（R blend）；steam 和 smooth 是 S blends。"),
+  M("f19","a5","The ___arecrow wore a scarlet scarf.",["sc","sk","sw"],0,"","scarecrow 稻草人。"),
+  M("f20","a5","My dad ___ored as he slept on the couch.",["sn","sm","sl"],0,"","snored 打呼。"),
+  M("f21","a5","The ___amp looks really spooky at night.",["sw","sp","st"],0,"","swamp 沼澤。"),
+  M("f22","a5","Which word has an S blend?",["smooth","blue","great"],0,"","smooth 是 sm（S blend）。"),
+  M("f23","a6","Which letter is silent in \"knife\"?",["k","n","f"],0,"","knife 的 k 不發音。"),
+  M("f24","a6","Which letter is silent in \"lamb\"?",["b","l","m"],0,"","lamb 的 b 不發音。"),
+  M("f25","a6","Which letter is silent in \"sign\"?",["g","s","n"],0,"","sign 的 g 不發音。"),
+  M("f26","a6","Which letter is silent in \"listen\"?",["t","l","n"],0,"","listen 的 t 不發音。"),
+  X("f27","a6","Match the word with its silent letter.",["knob","comb","ghost","half"],["k","b","h","l"],"","knob 不發 k、comb 不發 b、ghost 不發 h、half 不發 l。"),
+  M("f28","a7","In the word \"summer\", where is the consonant \"m\"?",["in the middle","at the beginning","at the end"],0,"","summer 的 m 在中間。"),
+  M("f29","a7","In the word \"basket\", where is the consonant \"t\"?",["at the end","at the beginning","in the middle"],0,"","basket 的 t 在字尾。"),
+  M("f30","a7","Which word begins with the consonant \"g\"?",["guest","rocket","teeth"],0,"","guest 以 g 開頭。"),
+  SPF("f31","a7","A person who helps sick people. It starts with d and has 6 letters: ___","doctor","doctor 醫生，字尾子音是 r。"),
+  SPF("f32","a7","We eat this with eggs for breakfast. It starts with b and has 5 letters: ___","bacon","bacon 培根，字首子音是 b。"),
+  ]
+});
+
+/* ---- 卷 2：Intermediate（35 題、30 分鐘） ---- */
+studentPaper({
+  id: "ayden-m2", student: "Ayden", minutes: 30, relisten: true,
+  title: "Midterm Review 2・Intermediate",
+  range: "全範圍・加入謎語、找錯字、句子重組與短文",
+  added: "2026-11-04",
+  note: "",
+  tags: { b1: "1. Listen and Choose", b2: "2. Spelling Dictation", b3: "3. Blends in Sentences", b4: "4. Sort the Blends", b5: "5. Consonant Riddles", b6: "6. Find the Mistake", b7: "7. Build a Sentence", b8: "8. Reading" },
+  items: [
+  SL("g01","b1","glacier","Listen to the word. Which blend do you hear at the beginning?",["gl","cl","bl"],0,"glacier 冰河，開頭是 gl。"),
+  SL("g02","b1","princess","Listen to the word. Which blend do you hear at the beginning?",["pr","br","tr"],0,"princess 公主，開頭是 pr。"),
+  SL("g03","b1","sponge","Listen to the word. Which blend do you hear at the beginning?",["sp","st","sw"],0,"sponge 海綿，開頭是 sp。"),
+  SL("g04","b1","upstairs","Listen to the word. Where is the S blend?",["in the middle","at the beginning","at the end"],0,"upstairs 的 st 在字中間（up-stairs）。"),
+  SL("g05","b1","knee","Listen to the word. Which letter is silent?",["k","n","e"],0,"knee 的 k 不發音。"),
+  SL("g06","b1","crash","Listen to the word. Which blend do you hear at the beginning?",["cr","gr","tr"],0,"crash 撞擊，開頭是 cr。"),
+  DW("g07","b2","shift","Please shift the box to the left.","shift 移動、換班。"),
+  DW("g08","b2","brush","I brush my teeth every morning.","brush 刷子、刷。br 是 R blend。"),
+  DW("g09","b2","shock","The loud noise gave me a shock.","shock 驚嚇。"),
+  DW("g10","b2","crash","The two cars had a crash.","crash 撞擊。cr 是 R blend。"),
+  DW("g11","b2","skate","I can skate on the ice.","skate 溜冰。sk 是 S blend。"),
+  M("g12","b3","With her new skates, Rita ___ides smoothly on the ice.",["sl","gl","bl"],0,"","slides 滑行。"),
+  M("g13","b3","My little sister likes to add ___itter to her nails.",["gl","cl","fl"],0,"","glitter 亮粉。"),
+  M("g14","b3","My ___assmates ___apped after my presentation.",["cl … cl","bl … cl","cl … pl"],0,"","classmates 同學、clapped 鼓掌，兩個都是 cl。"),
+  M("g15","b3","Luca has joined the course and will fly to ___azil this summer.",["Br","Gr","Pr"],0,"","Brazil 巴西。"),
+  M("g16","b3","The ___ainer made the lion ___owl.",["tr … gr","dr … gr","tr … cr"],0,"","trainer 訓練師、growl 低吼。"),
+  M("g17","b3","The new ___adium is swanky and ___acious.",["st … sp","sp … st","sk … sp"],0,"","stadium 體育場、spacious 寬敞的。"),
+  M("g18","b4","Which word does NOT belong with the others?",["snacks","sneakers","blanket"],2,"","snacks 和 sneakers 都是 sn（S blend）；blanket 是 bl（L blend）。"),
+  M("g19","b4","Which two words have the same blend?",["brunch / bracelet","brunch / crooked","bracelet / grimace"],0,"","brunch 和 bracelet 都是 br。"),
+  M("g20","b4","\"Groundhogs hibernate during the winter.\" Which blend is in the first word?",["gr","dr","gl"],0,"","Groundhogs 開頭是 gr。"),
+  M("g21","b4","Which word has a blend in the MIDDLE, not at the beginning?",["coleslaw","slingshot","sleepwalk"],0,"","coleslaw 的 sl 在中間（cole-slaw）。"),
+  M("g22","b5","Riddle: I'm a consonant that has a buzz when I fly. Which letter am I?",["b","z","f"],0,"","bee 蜜蜂會嗡嗡飛，字母 b 的唸法和 bee 一樣。"),
+  M("g23","b5","Riddle: I can do this with my eyes open. Which letter am I?",["c","i","o"],0,"","see 看見，字母 c 的唸法和 see 一樣。"),
+  M("g24","b5","Riddle: I drink this in the morning instead of coffee. Which letter am I?",["t","j","q"],0,"","tea 茶，字母 t 的唸法和 tea 一樣。"),
+  M("g25","b5","Riddle: I'm the plural of the verb \"is\". Which letter am I?",["r","s","v"],0,"","are 是 is 的複數，字母 r 的唸法和 are 一樣。"),
+  M("g26","b5","Riddle: Sometimes I mark the spot. Which letter am I?",["x","m","k"],0,"","X marks the spot（X 標記地點）。"),
+  E("g27","b6","My little sister likes to add gliter to her nails.","gliter","glitter","","glitter 有兩個 t。"),
+  E("g28","b6","The scarcrow wore a scarlet scarf.","scarcrow","scarecrow","","scarecrow 中間有 e。"),
+  E("g29","b6","I can skat on the ice in winter.","skat","skate","","skate 字尾有 e。"),
+  E("g30","b6","The sloth slep on the stiff tree branch.","slep","slept","","slept 是 sleep 的過去式，字尾是 pt。"),
+  R("g31","b7","我的同學在我報告後鼓掌。",["My","classmates","clapped","after","my","presentation."],"","My classmates clapped after my presentation."),
+  R("g32","b7","那隻樹懶睡在樹枝上。",["The","sloth","slept","on","the","branch."],"","The sloth slept on the branch."),
+  G("g33g","b8","article","Plonky the Platypus",[
+    "Plonky the Pleasant Platypus eats blackberries all day.",
+    "His friend Ollie the Octopus sprays black ink every which way.",
+    "One day they planned a picnic. They laughed and clapped in glee.",
+    "But they found a flaw in their plan really quickly.",
+    "\"Oh,\" said Ollie, \"I can't leave the sea!\""
+  ],[["pleasant","愉快的"],["platypus","鴨嘴獸"],["spray","噴"],["glee","歡樂"],["flaw","缺點、問題"]],[
+    Q("g33","What does Plonky eat all day?",["blackberries","black ink","a picnic"],0,"","第一句：eats blackberries all day."),
+    Q("g34","Why can't Ollie go to the picnic?",["He can't leave the sea.","He is not hungry.","He lost his ink."],0,"","最後一句 Ollie 說 I can't leave the sea!"),
+    Q("g35","\"glee\" 在文章裡是什麼意思？",["很開心","很生氣","很累"],0,"","They laughed and clapped in glee：又笑又拍手，表示很開心。")
+  ]),
+  ]
+});
+
+/* ---- 卷 3：Challenge（36 題、35 分鐘，一般聽力只播一遍、聽寫仍可重聽） ---- */
+studentPaper({
+  id: "ayden-m3", student: "Ayden", minutes: 35,
+  title: "Midterm Review 3・Challenge",
+  range: "全範圍・最難：聽力只播一遍，含克漏字、排順序、干擾字卡",
+  added: "2026-11-04",
+  note: "",
+  tags: { c1: "1. Listen and Choose", c2: "2. Spelling Dictation", c3: "3. Blends", c4: "4. Silent Consonants", c5: "5. Find the Mistake", c6: "6. Cloze", c7: "7. Put It in Order", c8: "8. Build a Sentence", c9: "9. Reading" },
+  items: [
+  SL("h01","c1","scent","Listen to the word. Which letter is silent?",["c","s","t"],0,"scent 香味，c 不發音，唸起來和 sent 一樣。"),
+  SL("h02","c1","receipt","Listen to the word. Which letter is silent?",["p","r","t"],0,"receipt 收據，p 不發音。"),
+  SL("h03","c1","hymn","Listen to the word. Which letter is silent?",["n","h","m"],0,"hymn 聖歌，字尾的 n 不發音。"),
+  SL("h04","c1","smitten","Listen to the word. Which blend do you hear?",["sm","sn","st"],0,"smitten 著迷的，開頭是 sm。"),
+  SL("h05","c1","grimace","Listen to the word. Which blend do you hear at the beginning?",["gr","cr","dr"],0,"grimace 扭曲的表情，開頭是 gr。"),
+  SL("h06","c1","increase","Listen to the word. Where is the R blend?",["in the middle","at the beginning","at the end"],0,"increase 的 cr 在中間（in-crease）。"),
+  SL("h07","c1","snorkel","Listen to the word. Which blend do you hear at the beginning?",["sn","sm","sk"],0,"snorkel 浮潛呼吸管，開頭是 sn。"),
+  DW("h08","c2","crash","The two cars had a crash on the road.","crash 撞擊。"),
+  DW("h09","c2","shock","The cold water gave me a shock.","shock 驚嚇。"),
+  DW("h10","c2","scarlet","The scarecrow wore a scarlet scarf.","scarlet 猩紅色。"),
+  DW("h11","c2","treasure","There is treasure on the island.","treasure 寶藏。"),
+  DW("h12","c2","glitter","My sister likes to add glitter to her nails.","glitter 亮粉，有兩個 t。"),
+  M("h13","c3","Which word contains TWO S blends?",["snowstorm","swimsuit","stomach"],0,"","snowstorm 有 sn 和 st 兩個 S blends。"),
+  M("h14","c3","\"The trailer spoiled the twist in the movie.\" How many R-blend words are there?",["1","2","3"],0,"","只有 trailer 一個（spoiled 和 twist 不是 R blend）。"),
+  M("h15","c3","Which word has a blend that is NOT at the beginning?",["bracelet","upstairs","crooked"],1,"","upstairs 的 st 在中間；另外兩個都在字首。"),
+  M("h16","c3","\"Patricia's cousins greeted her for her birthday.\" Which word has an R blend?",["greeted","cousins","birthday"],0,"","greeted 開頭是 gr。"),
+  M("h17","c3","Which blend do \"plumber\" and \"plural\" share?",["pl","bl","pr"],0,"","兩個字開頭都是 pl。"),
+  M("h18","c4","Which word does NOT have a silent consonant?",["bridge","ballet","basket"],2,"","bridge 的 d 不發音、ballet 的 t 不發音；basket 每個子音都發音。"),
+  M("h19","c4","In \"science\", which letter is silent?",["c","s","n"],0,"","science 的第一個 c 不發音，唸起來像 si-ence。"),
+  M("h20","c4","Which pair BOTH have a silent letter?",["knob / comb","knob / snack","comb / skate"],0,"","knob 不發 k、comb 不發 b。"),
+  X("h21","c4","Match the word with its silent letter.",["whole","reign","edge","half","listen"],["w","g","d","l","t"],"","whole 不發 w、reign 不發 g、edge 不發 d、half 不發 l、listen 不發 t。"),
+  E("h22","c5","The chef cooked steak and spareribs in the brand new skilet.","skilet","skillet","","skillet 有兩個 l。"),
+  E("h23","c5","Miranda has traveled to many countries including Grece and France.","Grece","Greece","","Greece 希臘有兩個 e。"),
+  E("h24","c5","The princess's tiara was covered in cristals.","cristals","crystals","","crystal 是 cry 開頭，用 y 不是 i。"),
+  E("h25","c5","Groundhogs hibernate during the winter monthes.","monthes","months","","month 的複數直接加 s，不加 e。"),
+  G("h26g","c6","cloze","A Day at the Lake",[
+    "Brian and Liam like to catch [[1]]ickets by the lake.",
+    "They always [[2]]ing snacks and [[3]]eaters in their backpacks.",
+    "Last week a [[4]]ocodile swam past them!",
+    "They ran home and told their [[5]]andma all about it."
+  ],[["cricket","蟋蟀"],["backpack","後背包"],["swim past","游過去"]],[
+    B("h26",1,["cr","br","tr"],0,"","crickets 蟋蟀。"),
+    B("h27",2,["br","gr","dr"],0,"","bring 帶來。"),
+    B("h28",3,["sw","sm","sn"],0,"","sweaters 毛衣。"),
+    B("h29",4,["cr","gr","pr"],0,"","crocodile 鱷魚。"),
+    B("h30",5,["gr","br","dr"],0,"","grandma 奶奶。")
+  ]),
+  ORD("h31","c7","Put the four sentences in order to make a story.",
+    ["Then the sled slid down the smooth snow.","First, it started to snow outside.","Finally, they went inside for hot soup.","Next, Sam pulled his sled up the hill."],[1,3,0,2],
+    "照 First → Next → Then → Finally 的順序。"),
+  RX("h32","c8","那個稻草人戴著一條猩紅色的圍巾。",["The","scarecrow","wore","a","scarlet","scarf."],["sweater"],"The scarecrow wore a scarlet scarf.（sweater 用不到）"),
+  RX("h33","c8","我妹妹喜歡在指甲上加亮粉。",["My","sister","likes","to","add","glitter","to","her","nails."],["glue"],"My sister likes to add glitter to her nails.（glue 用不到）"),
+  G("h34g","c9","article","Mrs. Williams, Our Neighbour",[
+    "Mrs. Williams is our neighbour. She has two pet dogs and walks them every evening.",
+    "Mrs. Williams teaches her dogs some tricks. They are really clever.",
+    "She works at a farmers' market and drives to work every day.",
+    "She sells fresh fruits and vegetables like apples, carrots, watermelons, and cucumbers."
+  ],[["neighbour","鄰居"],["trick","把戲"],["clever","聰明的"],["market","市場"],["cucumber","小黃瓜"]],[
+    Q("h34","Where does Mrs. Williams work?",["at a farmers' market","at a pet shop","at a school"],0,"","She works at a farmers' market."),
+    Q("h35","Which word from the story has an R blend?",["tricks","dogs","apples"],0,"","tricks 裡面有 tr。"),
+    Q("h36","How does Mrs. Williams get to work?",["She drives.","She walks.","She takes the bus."],0,"","She drives to work every day.")
   ]),
   ]
 });

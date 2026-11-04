@@ -159,6 +159,11 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
     **不要出「選出不適合的回答」這種反向題**（Allen 2026-11-04：解析頁只看到題目和正確答案，會以為系統判錯）。聽力題的 `plabel` 作答說明解析頁也會顯示。
     **出題原則（Allen 2026-11-05 要求）**：字母與發音一律用聽的——單字已經寫出來再問它的開頭字母是「看得到答案」的廢題，不可以出（同理「哪一個單字開頭是 o？ox/ink/jet」「哪一個和其他兩個不一樣？milk/monkey/nose」也不行）。
     完整單字填空（SPF）每卷最多 2～3 題，其餘用多元題型：`AO` 字母排序（字卡照 ABC 排）、`X` 配對（大小寫、問句答句）、`E` 挑錯（含句首大寫、is/are、year/years）、`R` 句子重組、`G` 短文或對話題組＋`Q` 理解題、情境單字題（讀句子推單字）。
+  - **聽寫拼字** `DW(id, tag, word, sentence, exp)`：播「單字 → 例句 → 單字」，學生把單字拼出來（`dictation: true`，一律可以重聽，不受 relisten 限制）。
+  - **Ayden 的期中複習模擬卷**（原稿照片在 `Ayden期中考/`，已 gitignore）：`ayden-m1`～`m3`（Basic 32 題 25 分、Intermediate 35 題 30 分、Challenge 36 題 35 分）。
+    Ayden 是雙語／全美班的自然發音課：Consonants（字首／字中／字尾）、Silent Consonants、L Blends（bl cl fl gl pl sl）、R Blends（br cr dr fr gr pr tr）、S Blends（sc sk sl sm sn sp st sw）、Spelling Words（sh 字）。
+    **題目用英文、解析用中文**（Allen 2026-11-04 指定）。卷 1、2 聽力可重聽，卷 3 一般聽力只播一遍（聽寫題仍可重聽）。
+    出題注意：**sc 和 sk 發音相同**（scab／skate），不能出「聽發音選 sc 還是 sk」；**sl 在他課本裡同時列在 L blends 和 S blends**，不能拿來當「哪個不同類」的答案；一題只能有一個正確的 blend。
   - **Jovi 的單字考**（Allen 的檔案在 `~/Documents/Tutor/Jovi/`：`<範圍>範圍單字表.docx`、`<範圍>範圍單字考_<程度>.docx`，用 `textutil -convert txt -stdout` 讀）：
     - 已上線：`jovi-a1` A 範圍（a – away，144 字）單字考・基礎，44 題、20 分鐘。考卷 id 依序 `jovi-a2`（同範圍下一份）、`jovi-b1`（B 範圍）…；title「<範圍> 範圍單字考・<程度>」。
     - 基礎卷的格式（照 A 範圍那份）：一 中翻英選擇 6、二 英翻中選擇 4、三 配對 5（網站上做成 5 題、每題同樣 A～E 五個中文選項）、四 拼字（給部分字母）5、五 字母重組 3、

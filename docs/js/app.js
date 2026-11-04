@@ -801,6 +801,9 @@ function questionBody(X, i, a, review) {
   else if (q.type === "spell") {
     const p = spellParts(q.ans, q.full); const val = locked ? a.resp : (st.val || "");
     const inp = `<span class="spellwrap"><span class="fixed">${esc(p.first)}</span><input id="spellin" style="--n:${p.mid}" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="latin" value="${esc(val)}" ${locked ? `readonly class="${a.correct ? "ok" : "no"}"` : ""} aria-label="填入單字中間的字母"><span class="fixed">${esc(p.last)}</span></span>`;
+    if (q.dictation) { const pl = (S.work[i] || {}).played;
+      h += `<div class="listen-bar"><button class="btn ${pl ? "" : "primary"}" data-act="listen-play">${I.speaker}<span>${pl ? "再聽一次" : "播放單字"}</span></button>
+      <span class="muted" style="font-size:13.5px">${esc(q.plabel || "聽單字，把它拼出來")}</span></div>`; }
     if (q.zhPrompt) h += `<div class="zh">${esc(q.zhPrompt)}</div>`;
     h += `<div class="stem" data-ctx>${q.stem.split("___").map((s, k, arr) => wrapWords(s, m) + (k < arr.length - 1 ? inp : "")).join("")}</div>
     <div class="muted" style="font-size:13.5px">${q.full ? (q.ans.length <= 2 ? "請填入正確的字母（大小寫要一樣）。" : "請寫出完整的英文單字。") : `提示字母已給：第一個字母${p.last ? "和最後一個字母" : ""}，請填入中間 ${p.mid} 個字母（也可以打完整單字）。`}</div>
@@ -1183,7 +1186,7 @@ function reviewItem(att, i) {
   if (!X) return `<details class="rv"><summary><span class="st skip">?</span><span class="sum">題目已從題庫移除</span></summary></details>`;
   const q = X.q, a = att.ans[i];
   const st = !a ? "skip" : a.correct ? "ok" : "no";
-  const sumText = q.type === "cword" ? `${X.group.title}・第 ${q.blank} 格` : q.type === "speak" ? q.text : q.type === "listen" ? `${tagName(X.bank, q.tag)}・${(q.part === 1 ? listenScript(q)[0] : listenScript(q).slice(-1)[0]) || ""}` : q.gi && q.scenario ? q.scenario : q.zh || q.zhPrompt || q.prompt || (q.src ? [].concat(q.src).join(" ") : "") || (q.blank ? `${X.group.title}・第 ${q.blank} 格` : [].concat(q.stem || q.sent || "").join(" "));
+  const sumText = q.dictation ? q.ans : q.type === "cword" ? `${X.group.title}・第 ${q.blank} 格` : q.type === "speak" ? q.text : q.type === "listen" ? `${tagName(X.bank, q.tag)}・${(q.part === 1 ? listenScript(q)[0] : listenScript(q).slice(-1)[0]) || ""}` : q.gi && q.scenario ? q.scenario : q.zh || q.zhPrompt || q.prompt || (q.src ? [].concat(q.src).join(" ") : "") || (q.blank ? `${X.group.title}・第 ${q.blank} 格` : [].concat(q.stem || q.sent || "").join(" "));
   const typeL = X.ftype === "vocab" ? "單字" : (q.gi || X.bank && X.bank.student) && q.label ? q.label : X.group && KIND_LABEL[X.group.kind] ? KIND_LABEL[X.group.kind] : TYPE_LABEL[X.ftype];
   let body = "";
   if (X.group && X.group.kind === "listening") body += `<details class="pfold"><summary><span class="muted">聽力原文：${esc(X.group.title)}</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext dialogue" style="margin-top:8px;font-size:15.5px">${listenGroupScript(X.group).map(l => `<p>${esc(l)}</p>`).join("")}</div></details>`;
@@ -1210,7 +1213,7 @@ function questionReview(q) {
   if (q.type === "listen") return `${q.img ? `<div class="limg ${q.part === 4 ? "tri" : ""}" style="max-width:420px"><img src="${esc(q.img)}" alt="" onerror="this.parentNode.remove()">${q.part === 4 ? "<span>A</span><span>B</span><span>C</span>" : ""}</div>` : ""}${q.plabel ? `<div class="muted" style="font-size:13.5px;margin-bottom:6px">${esc(q.plabel)}</div>` : ""}<div class="script">${listenScript(q).map(l => `<div>${esc(l)}</div>`).join("")}</div>${q.part === 1 ? "" : opts}`;
   if (isMC(q)) return `${q.blank ? `<b>第 ${q.blank} 格</b>` : [].concat(q.stem).map(l => `<div>${esc(l)}</div>`).join("")}${q.box ? `<div class="boxed" style="font-size:15px;margin-top:6px">${q.box.map(esc).join("<br>")}</div>` : ""}${q.post ? `<div>${esc(q.post)}</div>` : ""}${opts}`;
   if (q.type === "order") return `<div>${esc(q.stem)}</div><div style="margin-top:6px">${q.items.map((t, k) => `<div><b>${"abcd"[k]}.</b> ${esc(t)}</div>`).join("")}</div>`;
-  if (q.type === "spell") return `${q.zhPrompt ? `<div>${esc(q.zhPrompt)}</div>` : ""}<div>${esc(q.stem).replace("___", `<b>${esc(spellParts(q.ans, q.full).first)}____${esc(spellParts(q.ans, q.full).last)}</b>`)}</div>`;
+  if (q.type === "spell") return `${q.dictation ? `<div class="muted" style="font-size:13.5px">${esc(q.plabel || "聽單字，把它拼出來")}${q.dictSent ? `（例句：${esc(q.dictSent)}）` : ""}</div>` : ""}${q.zhPrompt ? `<div>${esc(q.zhPrompt)}</div>` : ""}<div>${esc(q.stem).replace("___", `<b>${esc(spellParts(q.ans, q.full).first)}____${esc(spellParts(q.ans, q.full).last)}</b>`)}</div>`;
   if (q.type === "trans") return `<div style="font-weight:650">${esc(q.zh)}</div>`;
   if (q.type === "rewrite") return `<div class="muted">${esc(q.instr)}</div>${[].concat(q.src).map(s => `<div style="font-weight:650">${esc(s)}</div>`).join("")}`;
   if (q.type === "essay") return `<div>${esc(q.prompt)}</div>${q.scenario ? `<div class="muted">${esc(q.scenario)}</div>` : ""}${(q.bullets || []).map(b => `<div class="muted">• ${esc(b)}</div>`).join("")}${(q.posts || []).map(([w, t]) => `<div class="muted"><b>${esc(w)}：</b>${esc(t)}</div>`).join("")}${(q.scenes || []).map((s, k) => `<div class="muted">${k + 1}. ${esc(s)}</div>`).join("")}<div style="margin-top:8px"><b>參考範文：</b>${esc(q.model)}</div>`;

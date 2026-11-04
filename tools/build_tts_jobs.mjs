@@ -15,7 +15,7 @@ const add = (voice, text) => { text = ctx.ttsClean(text); if (!/[A-Za-z]/.test(t
 const V = SITE_CONFIG.TTS;
 for (const b of BANKS) for (const it of b.items) {
   if (b.student) {   // 學生專區的考卷：只做聽力題的語音，題目文字不朗讀
-    if (it.type === "listen") ctx.questionSpeech(it).forEach(s => add(s.voice, s.text));
+    if (it.type === "listen" || it.dictation) ctx.questionSpeech(it).forEach(s => add(s.voice, s.text));
     continue;
   }
   // 托福：只做聽力（聽一句選回應、聽力題組的錄音）和口說的語音；閱讀、寫作、題目文字都不朗讀
