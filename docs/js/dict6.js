@@ -227,4 +227,12 @@ aloud|adv.|大聲地；出聲地
 aim|v.|瞄準；以…為目標
 alike|adj.|相像的
 accident|n.|意外；事故
+jet|n.|噴射機
+ox|n.|公牛
+otter|n.|水獺
+ghost|n.|鬼
+pumpkin|n.|南瓜
+spider|n.|蜘蛛
+witch|n.|女巫
+vampire|n.|吸血鬼
 `;

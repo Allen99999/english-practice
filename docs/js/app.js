@@ -734,7 +734,8 @@ function passageHTML(X, i) {
 function listenScript(q) { return q.script.map(l => l.replace(/^([WM]\d?): /, (m, w) => (w[0] === "W" ? "女：" : "男："))); }
 function listenHTML(q, i, a, review) {
   const w = review ? {} : (S.work[i] || {});
-  const once = !review && S.blind, used = once && w.played;
+  const bk = (getQ(i) || {}).bank;
+  const once = !review && S.blind && !(bk && bk.relisten), used = once && w.played;
   const reveal = review || (a && !once);
   let h = q.img ? `<div class="limg ${q.part === 4 ? "tri" : ""}"><img src="${esc(q.img)}" alt="聽力題圖片" onerror="this.parentNode.classList.add('noimg');this.remove()">${q.part === 4 ? "<span>A</span><span>B</span><span>C</span>" : ""}</div>` : "";
   if (!review) h += `<div class="listen-bar"><button class="btn ${used ? "" : "primary"}" data-act="listen-play" ${used ? "disabled" : ""}>${I.speaker}<span>${used ? "已播放" : w.played ? "再聽一次" : "播放題目"}</span></button>
@@ -802,7 +803,7 @@ function questionBody(X, i, a, review) {
     const inp = `<span class="spellwrap"><span class="fixed">${esc(p.first)}</span><input id="spellin" style="--n:${p.mid}" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="latin" value="${esc(val)}" ${locked ? `readonly class="${a.correct ? "ok" : "no"}"` : ""} aria-label="填入單字中間的字母"><span class="fixed">${esc(p.last)}</span></span>`;
     if (q.zhPrompt) h += `<div class="zh">${esc(q.zhPrompt)}</div>`;
     h += `<div class="stem" data-ctx>${q.stem.split("___").map((s, k, arr) => wrapWords(s, m) + (k < arr.length - 1 ? inp : "")).join("")}</div>
-    <div class="muted" style="font-size:13.5px">${q.full ? "請寫出完整的英文單字。" : `提示字母已給：第一個字母${p.last ? "和最後一個字母" : ""}，請填入中間 ${p.mid} 個字母（也可以打完整單字）。`}</div>
+    <div class="muted" style="font-size:13.5px">${q.full ? (q.ans.length <= 2 ? "請填入正確的字母（大小寫要一樣）。" : "請寫出完整的英文單字。") : `提示字母已給：第一個字母${p.last ? "和最後一個字母" : ""}，請填入中間 ${p.mid} 個字母（也可以打完整單字）。`}</div>
     ${locked ? "" : `<div class="row"><button class="btn primary" data-act="submit">確認</button></div>`}`;
   }
   else if (q.type === "trans") {
@@ -980,6 +981,7 @@ function addMissedWords(sess) {
     const a = sess.ans[i]; if (a && a.correct) return;
     const q = getQ(i, sess).q; const cands = [];
     if (q.type === "mc") cands.push(q.opts[q.ans], q.stem); else if (q.type === "spell") cands.push(q.ans); else if (q.type === "scramble") cands.push(...q.tiles);
+    else if (q.type === "listen") cands.push(q.opts[q.ans], ...q.script);   // 聽力：唸的那個字（整句會被下面的字數檢查擋掉）
     cands.forEach(c => {
       if (typeof c !== "string" || !/^[A-Za-z][A-Za-z' -]*$/.test(c.trim()) || c.trim().split(/\s+/).length > 2) return;
       const surface = c.trim(), lk = lookup(surface), k = lk && lk.key && DICT[lk.key] ? lk.key : surface.toLowerCase(), e = DICT[k];
