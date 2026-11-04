@@ -314,7 +314,7 @@ studentPaper({
   SL("e07","y1","hat","聽一個單字，選出它的中文意思",["手","帽子","脖子"],1,"hat 帽子、hand 手，開頭都是 h。"),
   SL("e08","y1","monkey","聽一個單字，選出它開頭的字母",["Nn","Mm","Ll"],1,"monkey（猴子）開頭的發音是 /m/。"),
   SL("e09","y1","Hi! I'm Amber. I'm a girl. I'm six years old.","聽一段自我介紹，選出正確的一組",["女生・6 歲","女生・7 歲","男生・6 歲"],0,"a girl 女生、six = 6 歲。"),
-  SL("e10","y1","What's your name?","聽一個問題，選出「不」適合的回答",["My name is Ken.","I'm Ken.","I'm ten."],2,"I'm ten. 回答的是年紀，不是名字。"),
+  SL("e10","y1",["M: Hi! I'm Teddy. I'm eight years old.","W: Hello! I'm Mia. I'm ten years old."],"聽一段對話，選出年紀比較大的人",["Mia","Teddy","兩個人一樣大"],0,"Teddy 八歲、Mia 十歲，所以 Mia 比較大。"),
   AO("e11","y2",["f","g","h","i","j"],"照 ABC 順序是 f g h i j。"),
   AO("e12","y2",["j","k","l","m","n"],"照 ABC 順序是 j k l m n。"),
   M("e13","y2","從 a 開始數，第 7 個字母是哪一個？",["g","f","h"],0,"","a b c d e f g，第 7 個是 g。"),

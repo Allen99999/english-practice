@@ -1184,7 +1184,7 @@ function reviewItem(att, i) {
   const q = X.q, a = att.ans[i];
   const st = !a ? "skip" : a.correct ? "ok" : "no";
   const sumText = q.type === "cword" ? `${X.group.title}・第 ${q.blank} 格` : q.type === "speak" ? q.text : q.type === "listen" ? `${tagName(X.bank, q.tag)}・${(q.part === 1 ? listenScript(q)[0] : listenScript(q).slice(-1)[0]) || ""}` : q.gi && q.scenario ? q.scenario : q.zh || q.zhPrompt || q.prompt || (q.src ? [].concat(q.src).join(" ") : "") || (q.blank ? `${X.group.title}・第 ${q.blank} 格` : [].concat(q.stem || q.sent || "").join(" "));
-  const typeL = X.ftype === "vocab" ? "單字" : q.gi && q.label ? q.label : X.group && KIND_LABEL[X.group.kind] ? KIND_LABEL[X.group.kind] : TYPE_LABEL[X.ftype];
+  const typeL = X.ftype === "vocab" ? "單字" : (q.gi || X.bank && X.bank.student) && q.label ? q.label : X.group && KIND_LABEL[X.group.kind] ? KIND_LABEL[X.group.kind] : TYPE_LABEL[X.ftype];
   let body = "";
   if (X.group && X.group.kind === "listening") body += `<details class="pfold"><summary><span class="muted">聽力原文：${esc(X.group.title)}</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext dialogue" style="margin-top:8px;font-size:15.5px">${listenGroupScript(X.group).map(l => `<p>${esc(l)}</p>`).join("")}</div></details>`;
   else if (X.group && X.group.kind === "ctest") body += `<div class="ptext" style="font-size:15.5px">${esc(X.group.passage[0].replace(/\{([^}]*)\}/g, "$1"))}</div>`;
@@ -1207,7 +1207,7 @@ function reviewItem(att, i) {
 }
 function questionReview(q) {
   const opts = q.opts ? `<ol type="A" style="margin:6px 0 0;padding-left:26px">${q.opts.map((o, k) => `<li style="${k === q.ans ? "color:var(--good);font-weight:700" : ""}">${esc(o)}</li>`).join("")}</ol>` : "";
-  if (q.type === "listen") return `${q.img ? `<div class="limg ${q.part === 4 ? "tri" : ""}" style="max-width:420px"><img src="${esc(q.img)}" alt="" onerror="this.parentNode.remove()">${q.part === 4 ? "<span>A</span><span>B</span><span>C</span>" : ""}</div>` : ""}<div class="script">${listenScript(q).map(l => `<div>${esc(l)}</div>`).join("")}</div>${q.part === 1 ? "" : opts}`;
+  if (q.type === "listen") return `${q.img ? `<div class="limg ${q.part === 4 ? "tri" : ""}" style="max-width:420px"><img src="${esc(q.img)}" alt="" onerror="this.parentNode.remove()">${q.part === 4 ? "<span>A</span><span>B</span><span>C</span>" : ""}</div>` : ""}${q.plabel ? `<div class="muted" style="font-size:13.5px;margin-bottom:6px">${esc(q.plabel)}</div>` : ""}<div class="script">${listenScript(q).map(l => `<div>${esc(l)}</div>`).join("")}</div>${q.part === 1 ? "" : opts}`;
   if (isMC(q)) return `${q.blank ? `<b>第 ${q.blank} 格</b>` : [].concat(q.stem).map(l => `<div>${esc(l)}</div>`).join("")}${q.box ? `<div class="boxed" style="font-size:15px;margin-top:6px">${q.box.map(esc).join("<br>")}</div>` : ""}${q.post ? `<div>${esc(q.post)}</div>` : ""}${opts}`;
   if (q.type === "order") return `<div>${esc(q.stem)}</div><div style="margin-top:6px">${q.items.map((t, k) => `<div><b>${"abcd"[k]}.</b> ${esc(t)}</div>`).join("")}</div>`;
   if (q.type === "spell") return `${q.zhPrompt ? `<div>${esc(q.zhPrompt)}</div>` : ""}<div>${esc(q.stem).replace("___", `<b>${esc(spellParts(q.ans, q.full).first)}____${esc(spellParts(q.ans, q.full).last)}</b>`)}</div>`;
