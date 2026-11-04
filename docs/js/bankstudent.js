@@ -2,7 +2,7 @@
    STUDENT_ZONE 的名字＝作答人名字（不分大小寫）；輸入這些名字時首頁會多一列「學生專區」。
    每份考卷是一個 hidden＋fixed 的題庫（student 標記是誰的），整回照順序作答、做完才公布分數與對錯（blind）。
    選項順序照紙本考卷（fixedOrder），不自動平衡。新考卷：寫一個 studentPaper(...)，再把 id 加到該學生的清單 */
-const STUDENT_ZONE = { Ayden: ["ayden-m1", "ayden-m2", "ayden-m3"], Yuri: ["yuri-m1", "yuri-m2", "yuri-m3", "yuri-m4", "yuri-m5"], Jovi: ["jovi-a1"], Wei: [] };
+const STUDENT_ZONE = { Ayden: ["ayden-m1", "ayden-m2", "ayden-m3", "ayden-g1", "ayden-g2", "ayden-g3"], Yuri: ["yuri-m1", "yuri-m2", "yuri-m3", "yuri-m4", "yuri-m5"], Jovi: ["jovi-a1"], Wei: [] };
 const zoneName = who => Object.keys(STUDENT_ZONE).find(n => n.toLowerCase() === String(who || "").trim().toLowerCase()) || null;
 /* full：拼字題不給頭尾提示字母，要寫出完整的字 */
 const SPF = (id, tag, stem, ans, exp) => ({ id, type: "spell", full: true, label: "填寫單字", tag, stem, ans, hint: "", exp });
@@ -530,6 +530,183 @@ studentPaper({
     Q("h34","Where does Mrs. Williams work?",["at a farmers' market","at a pet shop","at a school"],0,"","She works at a farmers' market."),
     Q("h35","Which word from the story has an R blend?",["tricks","dogs","apples"],0,"","tricks 裡面有 tr。"),
     Q("h36","How does Mrs. Williams get to work?",["She drives.","She walks.","She takes the bus."],0,"","She drives to work every day.")
+  ]),
+  ]
+});
+
+/* ===== Ayden：Grade 3 Midterm 文法卷 1～3（和上面的自然發音卷分開） =====
+   範圍（原稿 PDF：Grade 3 Midterm Study Package、Grammar Workbook pages 9-10）：
+     Nouns：普通／專有名詞、人地物、不規則複數、集合名詞＋動詞單複數
+     Pronouns：主格（I you he she it we they）／受格（me you him her it us them）
+     Possessives：所有格名詞（'s / s'）、所有格形容詞（my your his her its our their）、所有格代名詞（mine yours his hers ours theirs）
+   題目英文、解析中文。注意：girl's 和 girls' 唸起來一樣，不可以出聽力辨義。 */
+
+/* ---- 文法卷 1：Basic（32 題、25 分鐘） ---- */
+studentPaper({
+  id: "ayden-g1", student: "Ayden", minutes: 25, relisten: true,
+  title: "Grammar Review 1・Basic",
+  range: "Nouns・Pronouns・Possessives（Grade 3 Midterm Study Package）",
+  added: "2026-11-04",
+  note: "",
+  tags: { p1: "1. Listen and Choose", p2: "2. Plural Dictation", p3: "3. Common or Proper", p4: "4. Irregular Plurals", p5: "5. Subject & Object Pronouns", p6: "6. Possessive Nouns", p7: "7. Possessive Adjectives" },
+  items: [
+  SL("k01","p1","She bought some new clothes.","Listen to the sentence. Which pronoun did you hear?",["She","Her","Hers"],0,"句子是 She bought…，主詞用主格 She。"),
+  SL("k02","p1","Dad took us to Niagara Falls.","Listen to the sentence. Which pronoun did you hear?",["us","we","our"],0,"took 後面是受詞，用受格 us。"),
+  SL("k03","p1","The geese are flying south.","Listen to the sentence. Is the noun singular or plural?",["plural","singular","both"],0,"geese 是 goose 的複數，動詞用 are。"),
+  SL("k04","p1","That is the children's room.","Listen to the sentence. Whose room is it?",["the children's","the child's","the teacher's"],0,"children's room：孩子們的房間。"),
+  SL("k05","p1","They are mine now.","Listen to the sentence. Which possessive word did you hear?",["mine","my","me"],0,"mine 是所有格代名詞，後面不接名詞。"),
+  SL("k06","p1","My grandmother tells me stories.","Listen to the sentence. Which object pronoun did you hear?",["me","my","I"],0,"tells 後面接受格 me。"),
+  DW("k07","p2","geese","One goose, two geese.","goose 的複數是 geese（拼法改變）。"),
+  DW("k08","p2","knives","We need two knives to cut the cake.","knife 的複數：f/fe 改成 ves。"),
+  DW("k09","p2","shelves","There are five shelves in my room.","shelf 的複數：f 改成 ves。"),
+  DW("k10","p2","teeth","The baby has four teeth now.","tooth 的複數是 teeth（拼法改變）。"),
+  M("k11","p3","Which word should begin with a CAPITAL letter?",["jupiter","brother","hotel"],0,"","Jupiter 木星是專有名詞，要大寫。"),
+  M("k12","p3","Which one is a COMMON noun? (None of them are capitalized yet.)",["school","nova scotia","dr. smith"],0,"","school 是普通名詞；nova scotia 是地名、dr. smith 是人名，都要大寫。"),
+  M("k13","p3","Which one is a PROPER noun? (None of them are capitalized yet.)",["cn tower","manager","farm"],0,"","cn tower 是特定的建築物 → CN Tower，要大寫。"),
+  M("k14","p3","In \"I live in Canada,\" the word Canada is a noun for a ___.",["place","person","thing"],0,"","Canada 是地方。"),
+  M("k15","p3","In \"My favourite player is Kyle Lowry,\" Kyle Lowry is a noun for a ___.",["person","place","thing"],0,"","Kyle Lowry 是人。"),
+  M("k16","p4","What is the plural of \"church\"?",["churches","churchs","churchies"],0,"","ch 結尾加 es。"),
+  M("k17","p4","What is the plural of \"baby\"?",["babies","babys","babyes"],0,"","子音＋y 結尾，y 改成 ies。"),
+  M("k18","p4","What is the plural of \"bison\"?",["bison","bisons","bisones"],0,"","bison 單複數同形。"),
+  M("k19","p4","What is the plural of \"potato\"?",["potatoes","potatos","potatoies"],0,"","o 結尾的 potato 加 es。"),
+  M("k20","p4","What is the plural of \"half\"?",["halves","halfs","halfes"],0,"","f 改成 ves。"),
+  M("k21","p5","___ bought some new clothes yesterday.",["She","Her","Hers"],0,"","句子的主詞要用主格 She。"),
+  M("k22","p5","Mom made sandwiches for ___.",["us","we","our"],0,"","for 後面接受格 us。"),
+  M("k23","p5","Larry and Michael went to the game. ___ had a great time.",["They","Them","Their"],0,"","主詞用主格 They。"),
+  M("k24","p5","Which pronoun can replace \"the door\"?",["it","him","them"],0,"","the door 是一個東西，用 it。"),
+  M("k25","p5","Which pronoun can replace \"my brother and me\"?",["us","we","them"],0,"","「我和哥哥」當受詞時用 us。"),
+  M("k26","p6","Here is ___ jacket. (Aaron)",["Aaron's","Aarons","Aarons'"],0,"","單數名詞加 's。"),
+  M("k27","p6","They played in the ___ playground. (children)",["children's","childrens","childrens'"],0,"","children 是不以 s 結尾的複數，加 's。"),
+  M("k28","p6","These are the ___ spaceships. (aliens)",["aliens'","alien's","aliens"],0,"","aliens 是以 s 結尾的複數，只加一撇。"),
+  M("k29","p6","There is a ___ washroom on the second floor. (ladies)",["ladies'","ladie's","ladies"],0,"","ladies 以 s 結尾，只加一撇。"),
+  M("k30","p7","Michael puts ___ toys in the box.",["his","him","he"],0,"","Michael 是男生，用所有格形容詞 his。"),
+  M("k31","p7","My cat likes licking ___ tail.",["its","it's","it"],0,"","動物用 its；it's 是 it is 的縮寫。"),
+  M("k32","p7","The ducklings follow ___ mother to cross the yard.",["their","theirs","them"],0,"","後面有名詞 mother，要用所有格形容詞 their。"),
+  ]
+});
+
+/* ---- 文法卷 2：Intermediate（35 題、30 分鐘） ---- */
+studentPaper({
+  id: "ayden-g2", student: "Ayden", minutes: 30, relisten: true,
+  title: "Grammar Review 2・Intermediate",
+  range: "全範圍・加入集合名詞、找錯字、改寫與短文",
+  added: "2026-11-04",
+  note: "",
+  tags: { q1: "1. Listen and Choose", q2: "2. Plural Dictation", q3: "3. Plural Rules", q4: "4. Collective Nouns", q5: "5. Pronouns", q6: "6. Possessives", q7: "7. Find the Mistake", q8: "8. Build a Sentence", q9: "9. Reading" },
+  items: [
+  SL("l01","q1","Georgina has invited him to her birthday party.","Listen. Which two words did you hear in the sentence?",["him and her","he and she","them and their"],0,"invited him 是受格，her birthday 是所有格形容詞。"),
+  SL("l02","q1","The other team threw the ball to us.","Listen. Which object pronoun did you hear?",["us","them","him"],0,"to us：丟給我們。"),
+  SL("l03","q1","The jury announces its decision today.","Listen. Is the collective noun seen as singular or plural?",["singular","plural","neither"],0,"動詞是 announces、用 its，所以當單數看。"),
+  SL("l04","q1","The crew are lining up at the gate.","Listen. Is the collective noun seen as singular or plural?",["plural","singular","neither"],0,"動詞是 are，把船員看成一個一個的人。"),
+  SL("l05","q1","Those are theirs.","Listen. Which possessive pronoun did you hear?",["theirs","their","them"],0,"theirs 後面不接名詞。"),
+  SL("l06","q1","The fungi grow in the dark forest.","Listen. What is the singular form of the noun you heard?",["fungus","fungi","funguses"],0,"fungi 的單數是 fungus。"),
+  DW("l07","q2","churches","There are three churches in my town.","church 的複數：ch 結尾加 es。"),
+  DW("l08","q2","potatoes","Mom bought five potatoes.","potato 的複數：o 結尾加 es。"),
+  DW("l09","q2","halves","Cut the apple into two halves.","half 的複數：f 改成 ves。"),
+  DW("l10","q2","elves","The elves helped the shoemaker.","elf 的複數：f 改成 ves。"),
+  DW("l11","q2","babies","The babies are sleeping.","baby 的複數：子音＋y，y 改成 ies。"),
+  M("l12","q3","Which rule does \"bosses\" follow?",["s, z, ch, sh, x → add es","y → ies","f/fe → ves"],0,"","boss 以 s 結尾，加 es。"),
+  M("l13","q3","Which rule does \"knives\" follow?",["f/fe → ves","y → ies","o → add s/es"],0,"","knife 的 fe 改成 ves。"),
+  M("l14","q3","Which word does NOT change in the plural?",["fish","echo","shelf"],0,"","fish 單複數同形；echo→echoes、shelf→shelves。"),
+  M("l15","q3","Which plural is spelled correctly?",["echoes","echos","echies"],0,"","echo 的複數是 echoes。"),
+  M("l16","q4","The class ___ excited for the field trip today.",["is","are","be"],0,"","把全班看成一個整體，用 is。"),
+  M("l17","q4","The public ___ for their favourite candidate.",["vote","votes","voting"],0,"","後面用 their，把大眾看成一個個的人，動詞用 vote。"),
+  M("l18","q4","The ship's crew ___ how to calm passengers during an emergency.",["know","knows","knowing"],0,"","船員一個一個都知道，動詞用 know。"),
+  M("l19","q4","Which one is a collective noun?",["army","soldier","uniform"],0,"","army 軍隊是一群人的名稱。"),
+  M("l20","q5","\"___ are going to walk me home,\" Susan said to Fareed.",["You","Your","Yours"],0,"","Susan 對 Fareed 說話，主詞是 You。"),
+  M("l21","q5","Jonas has been feeling unwell, so ___ should go to the doctor soon.",["he","him","his"],0,"","主詞用主格 he。"),
+  M("l22","q5","Paul tossed the ball to ___ after I asked for it.",["me","I","my"],0,"","to 後面接受格 me。"),
+  M("l23","q5","When Randy started crying, Rita bought ___ some candy.",["him","he","his"],0,"","bought 後面的人用受格 him。"),
+  M("l24","q5","When my mom and I go to the movies, ___ love eating popcorn.",["we","us","our"],0,"","主詞是「媽媽和我」，用主格 we。"),
+  M("l25","q6","That is Uncle Tim's guitar. → That is ___.",["his","him","he's"],0,"","所有格代名詞 his，後面不接名詞。"),
+  M("l26","q6","These are Mary's shoes. → These are ___.",["hers","her","her's"],0,"","hers 沒有撇號。"),
+  M("l27","q6","Those are Jerry and Daisy's pictures. → Those are ___.",["theirs","their","them"],0,"","兩個人的東西用 theirs。"),
+  M("l28","q6","The coach was happy with the ___ performance. (team)",["team's","teams'","teams"],0,"","team 是單數，加 's。"),
+  E("l29","q7","Us went for a hike in the forest.","Us","We","","句子的主詞要用主格 We。"),
+  E("l30","q7","Her is going to watch a movie.","Her","She","","主詞要用主格 She。"),
+  E("l31","q7","We all like its teacher very much.","its","our","","說話的是 We，所以是「我們的」老師 our。"),
+  E("l32","q7","I have two brothers. His names are Rob and Ron.","His","Their","","兩個哥哥是複數，用 Their。"),
+  R("l33","q8","那些是傑瑞和黛西的照片。",["Those","are","Jerry","and","Daisy's","pictures."],"","Those are Jerry and Daisy's pictures."),
+  R("l34","q8","我媽媽忘記帶她的鑰匙了。",["My","mom","forgot","to","bring","her","keys."],"","My mom forgot to bring her keys."),
+  G("l35g","q9","notice","A Letter to a Pen Pal",[
+    "Dear Kelly,",
+    "How are you? My name is Benjamin. I'm eight years old.",
+    "I saw your advertisement on Yahoo and would like to be your pen pal.",
+    "I live in Canada, which is in North America. It is very cold here in winter.",
+    "I like playing basketball. I usually play with my dad and little brother.",
+    "Best wishes, Benjamin"
+  ],[["advertisement","廣告"],["pen pal","筆友"]],[
+    Q("l35","Three of these are proper nouns. Which one names a PLACE?",["Canada","Yahoo","Benjamin"],0,"","Canada 是地方；Yahoo 是東西（網站）、Benjamin 是人。"),
+    Q("l36","\"brother\" is a common noun for a ___.",["person","place","thing"],0,"","brother 是人。"),
+    Q("l37","In \"I saw your advertisement,\" the word \"your\" is a ___.",["possessive adjective","possessive pronoun","object pronoun"],0,"","your 後面接名詞 advertisement，是所有格形容詞。")
+  ]),
+  ]
+});
+
+/* ---- 文法卷 3：Challenge（36 題、35 分鐘，聽力只播一遍、聽寫仍可重聽） ---- */
+studentPaper({
+  id: "ayden-g3", student: "Ayden", minutes: 35,
+  title: "Grammar Review 3・Challenge",
+  range: "全範圍・最難：聽力只播一遍，含克漏字、排順序、干擾字卡",
+  added: "2026-11-04",
+  note: "",
+  tags: { r1: "1. Listen and Choose", r2: "2. Plural Dictation", r3: "3. Nouns", r4: "4. Pronouns", r5: "5. Possessives", r6: "6. Find the Mistake", r7: "7. Cloze", r8: "8. Put It in Order", r9: "9. Build a Sentence", r10: "10. Reading" },
+  items: [
+  SL("m01","r1","Grandpa kept asking us to take pictures of him.","Listen. Which TWO object pronouns did you hear?",["us and him","we and he","them and his"],0,"asking us、pictures of him，兩個都是受格。"),
+  SL("m02","r1","The family want to do every excursion on the trip.","Listen. Is the collective noun seen as singular or plural?",["plural","singular","neither"],0,"動詞是 want，把家人看成一個一個的人。"),
+  SL("m03","r1","The bison graze on the open plain.","Listen. Is the noun singular or plural?",["plural","singular","you cannot tell"],0,"動詞是 graze，所以 bison 在這裡是複數（單複數同形）。"),
+  SL("m04","r1","This is ours, not yours.","Listen. Which TWO possessive pronouns did you hear?",["ours and yours","our and your","us and you"],0,"ours 和 yours 後面都沒有接名詞。"),
+  SL("m05","r1","Her brother gave her a book.","Listen. The first \"her\" is a ___.",["possessive adjective","object pronoun","subject pronoun"],0,"第一個 her 後面接 brother，是所有格形容詞；第二個 her 才是受格。"),
+  SL("m06","r1","I cannot lend my book to you because I lost it.","Listen. Which object pronouns did you hear?",["you and it","my and I","me and its"],0,"to you、lost it 都是受格。"),
+  DW("m07","r2","fungi","The fungi grow under the old tree.","fungus 的複數是 fungi。"),
+  DW("m08","r2","echoes","We heard the echoes in the cave.","echo 的複數：加 es。"),
+  DW("m09","r2","bosses","The two bosses had a meeting.","boss 的複數：s 結尾加 es。"),
+  DW("m10","r2","cellos","The orchestra has four cellos.","cello 的複數只加 s，不是 es。"),
+  M("m11","r3","Which noun follows a DIFFERENT plural rule from the others?",["cello","potato","echo","hero"],0,"","cello 的複數只加 s；potato、echo、hero 都加 es。"),
+  M("m12","r3","\"Mt. Albert\" and \"Algonquin Provincial Park\" are both ___.",["proper nouns for places","common nouns for places","proper nouns for things"],0,"","兩個都是特定的地名。"),
+  M("m13","r3","Which sentence uses capital letters CORRECTLY?",["Mrs. Jonas visited Muskoka.","mrs. Jonas visited muskoka.","Mrs. jonas visited Muskoka."],0,"","人名和地名的每個字都要大寫。"),
+  M("m14","r3","\"The crew are lining up at the gate.\" Why is \"are\" used?",["The crew are seen as individuals.","The crew is one unit.","\"Crew\" is always plural."],0,"","集合名詞當成一個一個的人時，動詞用複數。"),
+  M("m15","r4","\"Will ___ send me the photos, my grandson?\" Grandpa asked.",["you","I","he"],0,"","爺爺在問孫子，主詞是 you。"),
+  M("m16","r4","\"Of course,\" ___ said.",["I","me","my"],0,"","說話的人當主詞，用 I。"),
+  M("m17","r4","Mom and Dad got up early. I woke up early to help ___ too.",["them","her","him"],0,"","要幫的是爸爸和媽媽兩個人，用 them。"),
+  M("m18","r4","Which sentence is CORRECT?",["She invited him and me.","She invited he and I.","Her invited him and I."],0,"","invited 後面兩個都要用受格 him and me。"),
+  M("m19","r4","In \"Anita teaches it to speak,\" the word \"it\" is a ___.",["object pronoun","subject pronoun","possessive adjective"],0,"","it 在 teaches 後面，是受詞。"),
+  M("m20","r5","One ___ scream could be heard above all the rest. (girl)",["girl's","girls'","girls"],0,"","One 表示只有一個女孩，用單數 girl's。"),
+  M("m21","r5","The ___ cheers were heard throughout the gym. (girls)",["girls'","girl's","girls"],0,"","很多女孩一起歡呼，用複數 girls'。"),
+  M("m22","r5","___ team won the tournament. (James)",["James's","Jame's","James'es"],0,"","單數名字就算以 s 結尾，照課本規則一樣加 's。"),
+  M("m23","r5","This is my parents' house. → This is ___ house.",["their","theirs","them"],0,"","後面還有名詞 house，要用所有格形容詞 their。"),
+  M("m24","r5","Which sentence is CORRECT?",["This book is mine.","This book is my.","This is mine book."],0,"","mine 後面不接名詞。"),
+  E("m25","r6","Him kept asking us to take pictures.","Him","He","","主詞要用主格 He。"),
+  E("m26","r6","Her brought some fruits too.","Her","She","","主詞要用主格 She。"),
+  E("m27","r6","The two childrens bikes are in the garage.","childrens","children's","","children 是不以 s 結尾的複數，所有格加 's。"),
+  E("m28","r6","I have a hamster. Is that you hamster?","you","your","","後面接名詞，要用所有格形容詞 your。"),
+  G("m29g","r7","cloze","A Trip to Niagara Falls",[
+    "Dad took [[1]] to Niagara Falls last Saturday.",
+    "Mom and Dad got up early because [[2]] had to prepare for the trip.",
+    "[[3]] arrived there around ten o'clock.",
+    "Grandpa was very excited. [[4]] kept asking us to take pictures of him.",
+    "Mom made sandwiches for lunch. [[5]] brought some fruits too."
+  ],[["prepare","準備"],["excited","興奮的"]],[
+    B("m29",1,["us","we","our"],0,"","took 後面接受格 us。"),
+    B("m30",2,["they","them","their"],0,"","子句的主詞，用主格 they。"),
+    B("m31",3,["We","Us","Our"],0,"","句子開頭的主詞，用主格 We。"),
+    B("m32",4,["He","Him","His"],0,"","主詞用主格 He。"),
+    B("m33",5,["She","Her","Hers"],0,"","主詞用主格 She。")
+  ]),
+  ORD("m34","r8","Put the four sentences in order to make a short paragraph.",
+    ["Then they played in the children's playground.","First, the twins' mother drove them to the park.","Finally, she took them home for dinner.","Next, she bought them two ice creams."],[1,3,0,2],
+    "照 First → Next → Then → Finally 的順序。"),
+  RX("m35","r9","這些是女孩們的鞋子。",["These","are","the","girls'","shoes."],["girl's"],"These are the girls' shoes.（girl's 是單數，用不到）"),
+  G("m36g","r10","article","Benjamin's Favourite Team",[
+    "Benjamin is eight years old. He lives in Canada with his family.",
+    "His favourite team is the Raptors, and his favourite player is Kyle Lowry.",
+    "Benjamin and his brother play basketball every weekend.",
+    "Their father watches them and cheers for them.",
+    "\"The ball is yours now,\" Benjamin told his brother."
+  ],[["cheer","加油"],["weekend","週末"]],[
+    Q("m36","How many proper nouns are there in the FIRST sentence?",["2","1","3"],0,"","Benjamin 和 Canada 是專有名詞；family、years 是普通名詞。"),
+    Q("m37","In \"Their father watches them,\" the word \"them\" refers to ___.",["Benjamin and his brother","the Raptors","Benjamin's parents"],0,"","上一句主詞是 Benjamin 和他弟弟。"),
+    Q("m38","\"The ball is yours now.\" The word \"yours\" is a ___.",["possessive pronoun","possessive adjective","object pronoun"],0,"","yours 後面沒有接名詞，是所有格代名詞。")
   ]),
   ]
 });

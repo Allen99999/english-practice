@@ -739,7 +739,7 @@ function listenHTML(q, i, a, review) {
   const reveal = review || (a && !once);
   let h = q.img ? `<div class="limg ${q.part === 4 ? "tri" : ""}"><img src="${esc(q.img)}" alt="聽力題圖片" onerror="this.parentNode.classList.add('noimg');this.remove()">${q.part === 4 ? "<span>A</span><span>B</span><span>C</span>" : ""}</div>` : "";
   if (!review) h += `<div class="listen-bar"><button class="btn ${used ? "" : "primary"}" data-act="listen-play" ${used ? "disabled" : ""}>${I.speaker}<span>${used ? "已播放" : w.played ? "再聽一次" : "播放題目"}</span></button>
-  <span class="muted" style="font-size:13.5px">${once ? "正式考：每題只播一遍" : q.plabel || { 1: "看圖，聽問題和三個選項", 2: "聽一句話，選出最適合的回應", 3: "聽一段對話和問題", 4: "聽短文和問題，選出符合的圖", cr: "Listen and choose the best response. 聽一句話，選出最適合的回應" }[q.part]}</span></div>`;
+  <span class="muted" style="font-size:13.5px">${esc(q.plabel || { 1: "看圖，聽問題和三個選項", 2: "聽一句話，選出最適合的回應", 3: "聽一段對話和問題", 4: "聽短文和問題，選出符合的圖", cr: "Listen and choose the best response. 聽一句話，選出最適合的回應" }[q.part] || "")}${once ? "（正式考：每題只播一遍）" : ""}</span></div>`;
   if (reveal && !review) h += `<details class="script"><summary>聽力原文</summary>${listenScript(q).map(l => `<div data-ctx>${wrapWords(l, S.words)}</div>`).join("")}</details>`;
   return h;
 }

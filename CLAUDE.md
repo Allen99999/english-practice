@@ -164,6 +164,10 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
     Ayden 是雙語／全美班的自然發音課：Consonants（字首／字中／字尾）、Silent Consonants、L Blends（bl cl fl gl pl sl）、R Blends（br cr dr fr gr pr tr）、S Blends（sc sk sl sm sn sp st sw）、Spelling Words（sh 字）。
     **題目用英文、解析用中文**（Allen 2026-11-04 指定）。卷 1、2 聽力可重聽，卷 3 一般聽力只播一遍（聽寫題仍可重聽）。
     出題注意：**sc 和 sk 發音相同**（scab／skate），不能出「聽發音選 sc 還是 sk」；**sl 在他課本裡同時列在 L blends 和 S blends**，不能拿來當「哪個不同類」的答案；一題只能有一個正確的 blend。
+  - **Ayden 的 Grade 3 文法卷**（原稿 PDF：`Grade 3 Midterm Study Package`、`Grammar Workbook pages 9-10`，後者是前者的第 9、10 頁）：`ayden-g1`～`g3`（32／37／38 題，25／30／35 分）。
+    範圍＝Nouns（普通／專有、人地物、不規則複數、集合名詞＋動詞單複數）、Pronouns（主格／受格）、Possessives（所有格名詞 's 與 s'、所有格形容詞、所有格代名詞）。
+    出題注意：**girl's 和 girls' 唸起來完全一樣**，不能出聽力辨義；選項若把專有名詞寫成大寫就等於洩漏答案，要照課本全部寫小寫再問。
+  - **聽力題的作答說明一定要顯示**：`listenHTML` 以前在「只播一遍」時會用「正式考：每題只播一遍」蓋掉 `plabel`，學生就看不到題目要幹嘛；現在兩個都顯示。
   - **Jovi 的單字考**（Allen 的檔案在 `~/Documents/Tutor/Jovi/`：`<範圍>範圍單字表.docx`、`<範圍>範圍單字考_<程度>.docx`，用 `textutil -convert txt -stdout` 讀）：
     - 已上線：`jovi-a1` A 範圍（a – away，144 字）單字考・基礎，44 題、20 分鐘。考卷 id 依序 `jovi-a2`（同範圍下一份）、`jovi-b1`（B 範圍）…；title「<範圍> 範圍單字考・<程度>」。
     - 基礎卷的格式（照 A 範圍那份）：一 中翻英選擇 6、二 英翻中選擇 4、三 配對 5（網站上做成 5 題、每題同樣 A～E 五個中文選項）、四 拼字（給部分字母）5、五 字母重組 3、
