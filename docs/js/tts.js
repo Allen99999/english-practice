@@ -71,7 +71,7 @@ function readQuestion() {
 function playListen() {
   const X = S && getQ(S.idx); if (!X || X.q.type !== "listen") return;
   const w = work(S.idx);
-  if (S.blind && w.played) return;
+  if (S.blind && w.played && !(X.bank && X.bank.relisten)) return;   // relisten 的考卷：正式考模式也能重聽
   const items = questionSpeech(X.q).map((it, k, arr) => Object.assign({ gap: k === arr.length - 1 ? 0 : (X.q.part === 1 && k > 0 ? 900 : 600) }, it));
   w.played = (w.played || 0) + 1; save(true);
   const b = document.querySelector('[data-act="listen-play"]');

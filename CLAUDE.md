@@ -149,7 +149,8 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
     單字練習的干擾選項也從單字表挑，同開頭字母、同詞性優先。
   - 交卷時答錯題目的正確答案單字自動加入生字表（`addMissedWords`）；正式考模式按「確認」後顯示「已作答」、確認鍵變「重新確認」（`blindSavedHTML`）。
   - **聽力題** `SL(id, tag, script, plabel, opts, ans, exp)`（bankstudent.js）：不用圖，`script` 是要念的句子或單字、`plabel` 是畫面上的作答說明、選項是文字。
-    這類題會產生語音（build_tts_jobs.mjs 只替學生專區的 listen 題做 MP3）。考卷設 `relisten: true` 就算在正式考模式也能重聽，不設＝照正式考每題只播一遍。
+    這類題會產生語音（build_tts_jobs.mjs 只替學生專區的 listen 題做 MP3）。考卷設 `relisten: true` 就算在正式考模式也能重聽（listenHTML 和 tts.js 的 playListen 兩邊都要放行），不設＝照正式考每題只播一遍。
+    **自然發音題不要把字母本身當 script**（TTS 會唸字母名稱 bee、dee，不是 /b/ /d/）：改成播該字母開頭的單字（課本 ABC Rocks 的字，例如 Bb → bag），選項放字母。
   - **Yuri 的期中複習模擬卷**（原稿照片在專案根目錄 `Yuri期中考/`，已 gitignore，不可進 repo）：`yuri-m1`～`m3`，由易到難，2026-11-04 上線。
     範圍＝康軒 Starter Unit 1（字母 Aa–Jj、數字 1–5、What's your name?）、Unit 2（字母 Kk–Oo、數字 6–10、How old are you?）、Review 1 All About Me、課堂用語、Story Time 萬聖節單字。
     卷 1（30 題 20 分，聽力可重聽）、卷 2（33 題 25 分，加拼字與句子重組、可重聽）、卷 3（35 題 30 分，聽力只播一遍照正式考）。
