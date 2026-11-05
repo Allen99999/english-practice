@@ -141,48 +141,45 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
   - 作答畫面沿用 `geptspeak.js`（mode `i-read`、`i-answer`、`i-pic`；`gsTwice` 播兩次、`gsPrep` 有準備時間）。寫作、口說都有 AI 批改（見下方兩段）；AI 不能用時才三選項自評；口說錄音照樣上傳。
   - 正式模擬卷 `bankgeptimock.js`（`geptiMock`）、`bankgeptimock2.js`：gept-i-m1～m3，初試 75 分鐘正式考模式、寫作 40 分鐘、口說一路自動考完；`bank("gept-i").mockPapers`。
   - 插圖：Higgsfield Seedream 5.0 Flash（1k、0.5 點／張）黑白線稿、圖中不能有字，壓成 48 色 PNG；目前 34 張（聽力 12＋模擬卷 9、看圖敘述 10＋模擬卷 3）。字典：中級新字收在 `dict9.js`（中文多取自 LTTC 中級參考字表），這些字也做 MP3。
-- **學生專區（2026-10-29 加入）**：`docs/js/bankstudent.js` 的 `STUDENT_ZONE`（Ayden、Yuri、Jovi、Wei，名字不分大小寫）；作答人是這些名字時首頁多一列「學生專區」，列出 Allen 為他準備的考卷。
-  - 每份考卷用 `studentPaper({...})` 建（hidden＋fixed、選項照紙本順序不平衡、`minutes` 限時、`vocab` 指定單字表），整回照順序、正式考模式（做完才公布分數與對錯），再把 id 加到該學生的清單。
-    `SPF` 是不給提示字母的拼字／詞形變化題（`full: true`），`TF` 是非題；克漏字空格可以用兩位數（`[[40]]`）。學生專區的題目不做語音。
-  - **單字表** `WORDLISTS`（bankstudent.js）：Allen 給的生字表，只收生字本身（不含例句），`|` 分隔、同一字的其他寫法用 ` = `。考卷設 `vocab: "A"`：
-    考試中點到**單字表裡的字**只顯示「考試範圍的字：交卷後才看得到中文」（一樣加入生字表、變黃、可發音）；**其他字照常顯示中文**（`paperWords`）。
-    單字練習的干擾選項也從單字表挑，同開頭字母、同詞性優先。
-  - 交卷時答錯題目的正確答案單字自動加入生字表（`addMissedWords`）；正式考模式按「確認」後顯示「已作答」、確認鍵變「重新確認」（`blindSavedHTML`）。
-  - **聽力題** `SL(id, tag, script, plabel, opts, ans, exp)`（bankstudent.js）：不用圖，`script` 是要念的句子或單字、`plabel` 是畫面上的作答說明、選項是文字。
-    這類題會產生語音（build_tts_jobs.mjs 只替學生專區的 listen 題做 MP3）。考卷設 `relisten: true` 就算在正式考模式也能重聽（listenHTML 和 tts.js 的 playListen 兩邊都要放行），不設＝照正式考每題只播一遍。
-    **自然發音題不要把字母本身當 script**（TTS 會唸字母名稱 bee、dee，不是 /b/ /d/）：改成播該字母開頭的單字（課本 ABC Rocks 的字，例如 Bb → bag），選項放字母。
-  - **Yuri 的期中複習模擬卷**（原稿照片在專案根目錄 `Yuri期中考/`，已 gitignore，不可進 repo）：`yuri-m1`、`m2`、`m3`（3A）、`m4`（3B），由易到難。
-    範圍＝Unit 1（字母 Aa–Jj、數字 1–5、What's your name?）、Unit 2（字母 Kk–Oo、數字 6–10、How old are you?）、Review 1 All About Me、課堂用語、Story Time 萬聖節單字。
-    卷 1（30 題 20 分）、卷 2（32 題 25 分）聽力可重聽；卷 3A、3B（各 35 題 30 分）、卷 4 挑戰 Plus（`yuri-m5`，36 題 35 分）聽力只播一遍。
-    卷 4 是最難的一份，獨有題型：聽兩人對話（SL 的 script 可以用 `W: ` `M: ` 寫多行）、`ORD` 把四句對話排成順序（畫面不打亂，items 照顯示順序寫、ans 是正確的項目編號，最多 4 項）、
-    克漏字題組（`G` kind cloze ＋ `B`）、`RX` 句子重組加干擾字卡、聽對話比較兩人年紀、三個人的短文比較。
-    **不要出「選出不適合的回答」這種反向題**（Allen 2026-11-04：解析頁只看到題目和正確答案，會以為系統判錯）。聽力題的 `plabel` 作答說明解析頁也會顯示。
-    **出題原則（Allen 2026-11-05 要求）**：字母與發音一律用聽的——單字已經寫出來再問它的開頭字母是「看得到答案」的廢題，不可以出（同理「哪一個單字開頭是 o？ox/ink/jet」「哪一個和其他兩個不一樣？milk/monkey/nose」也不行）。
-    完整單字填空（SPF）每卷最多 2～3 題，其餘用多元題型：`AO` 字母排序（字卡照 ABC 排）、`X` 配對（大小寫、問句答句）、`E` 挑錯（含句首大寫、is/are、year/years）、`R` 句子重組、`G` 短文或對話題組＋`Q` 理解題、情境單字題（讀句子推單字）。
-  - **聽寫拼字** `DW(id, tag, word, sentence, exp)`：播「單字 → 例句 → 單字」，學生把單字拼出來（`dictation: true`，一律可以重聽，不受 relisten 限制）。
-  - **Ayden 的期中複習模擬卷**（原稿照片在 `Ayden期中考/`，已 gitignore）：`ayden-m1`～`m3`（Basic 32 題 25 分、Intermediate 35 題 30 分、Challenge 36 題 35 分）。
-    Ayden 是雙語／全美班的自然發音課：Consonants（字首／字中／字尾）、Silent Consonants、L Blends（bl cl fl gl pl sl）、R Blends（br cr dr fr gr pr tr）、S Blends（sc sk sl sm sn sp st sw）、Spelling Words（sh 字）。
-    **題目用英文、解析用中文**（Allen 2026-11-04 指定）。卷 1、2 聽力可重聽，卷 3 一般聽力只播一遍（聽寫題仍可重聽）。
-    出題注意：**sc 和 sk 發音相同**（scab／skate），不能出「聽發音選 sc 還是 sk」；**sl 在他課本裡同時列在 L blends 和 S blends**，不能拿來當「哪個不同類」的答案；一題只能有一個正確的 blend。
-  - **Ayden 的綜合卷**（`ayden-c1`～`c3`，Allen 2026-11-04 要求整合）：文法約 70%、發音約 30%。
-    **發音只考分辨聲音**：聽單字選 blend、聽單字選不發音的字母、聽寫單字。學校沒有要求背那些發音單字，所以「看句子把單字開頭填出來」和「那個字的中文意思」整類不要再出。
-    **題目的問法用中文**（英文句子和單字保留英文），不然學生看不懂題目。「哪一個有 L blend」這種題，其他選項也要含同一個字母但不構成 blend（flag／fall／lamp）。
-    **`balance: true`**：不是照紙本抄的考卷一律加這個，讓 app.js 的選項平衡把正解平均分到 A/B/C（手動排很容易全部集中在 A）。
-    三份：`c1` 基礎 36 題 30 分、`c2` 進階 39 題 35 分、`c3` 挑戰 40 題 40 分（聽力只播一遍，聽寫仍可重聽）。
-    純發音卷 `ayden-m1`～`m3` 和純文法卷 `ayden-g1`～`g3` 已從 STUDENT_ZONE 清單移除、程式保留。
-  - 挑錯題（`E`）的改正**撇號要完全一樣**：`norm` 會把撇號拿掉，所以以前打 `childrens` 會被判成 `children's` 正確；現在有撇號的答案改成完全比對。
-  - **Ayden 的 Grade 3 文法卷**（原稿 PDF：`Grade 3 Midterm Study Package`、`Grammar Workbook pages 9-10`，後者是前者的第 9、10 頁）：`ayden-g1`～`g3`（32／37／38 題，25／30／35 分）。
-    範圍＝Nouns（普通／專有、人地物、不規則複數、集合名詞＋動詞單複數）、Pronouns（主格／受格）、Possessives（所有格名詞 's 與 s'、所有格形容詞、所有格代名詞）。
-    出題注意：**girl's 和 girls' 唸起來完全一樣**，不能出聽力辨義；選項若把專有名詞寫成大寫就等於洩漏答案，要照課本全部寫小寫再問。
-  - **聽力題的作答說明一定要顯示**：`listenHTML` 以前在「只播一遍」時會用「正式考：每題只播一遍」蓋掉 `plabel`，學生就看不到題目要幹嘛；現在兩個都顯示。
-  - **Jovi 的單字考**（Allen 的檔案在 `~/Documents/Tutor/Jovi/`：`<範圍>範圍單字表.docx`、`<範圍>範圍單字考_<程度>.docx`，用 `textutil -convert txt -stdout` 讀）：
-    - 已上線：`jovi-a1` A 範圍（a – away，144 字）單字考・基礎，44 題、20 分鐘。考卷 id 依序 `jovi-a2`（同範圍下一份）、`jovi-b1`（B 範圍）…；title「<範圍> 範圍單字考・<程度>」。
-    - 基礎卷的格式（照 A 範圍那份）：一 中翻英選擇 6、二 英翻中選擇 4、三 配對 5（網站上做成 5 題、每題同樣 A～E 五個中文選項）、四 拼字（給部分字母）5、五 字母重組 3、
-      六 情境選擇 6、七 詞形變化 4、八 是非題 4、九 句子填空（字庫字卡，`scramble`＋`frame`）2、十 短文克漏字 5，共 44 題、每題 1 分、限時 20 分鐘。答案照原稿最後的解答，每題補一句中文解析。
-    - 收到**單字表**：把生字轉成一行加進 `WORDLISTS`（key＝範圍字母），字典沒收的字補進 `dict*.js`（`word|詞性|中文`）並產生語音。
-      只有單字表、沒有考卷時：照上面的基礎卷格式、只用這份單字表的字出一份新考卷（干擾選項也用同範圍的字，避免一看開頭字母就知道答案），先把題目列給 Allen 確認再上線。
-    - 收到**考卷**：照原稿逐題做（題型、順序、選項順序都不改），`vocab` 指定對應的單字表。原稿的答案有疑問（例如可接受的其他答案）先問 Allen。
-    - 上線前在本機完整做一遍（擋掉 script.google.com，測完清掉 localStorage，不要寫進真的試算表），確認分數、對錯、生字表都正確。
+- **學生專區**：`docs/js/bankstudent.js` 的 `STUDENT_ZONE`（Ayden、Yuri、Jovi、Wei，名字不分大小寫）。作答人是這些名字時，首頁多一列「學生專區」列出 Allen 為他準備的考卷。
+  **學生專區的工作集中在一個 session 做**（全部考卷同一個檔案，多個 session 同時改會衝突）；原稿都已 gitignore，絕對不可進 repo。
+
+  - **出題鐵則（踩過的雷，違反就是廢題）**
+    1. **答案看得到就不要出**：單字已經印在題目上，再問它的開頭字母／哪個不同類，等於送分（`lion 的開頭字母是？`、`哪個單字開頭是 o？ox/ink/jet`）。字母與發音一律用**聽的**。
+    2. **正解要平均分佈**：不是照紙本抄的考卷一律加 `balance: true`，讓 app.js 的選項平衡把正解分到 A/B/C；手動排一定會集中在 A。做完用程式數一次分佈。
+    3. **一題只能有一個正確答案**：例如「哪個是 R blend」不能同時放 dream 和 cream；`sl` 在 Ayden 課本同時屬於 L 和 S blends，不能當「哪個不同類」的答案。
+    4. **干擾選項不能一眼看穿**：問 L blend 時其他選項也要含 l 但不構成 blend（flag／fall／lamp）；問專有名詞時選項全部寫小寫（寫成 Nova Scotia 就是給答案）。
+    5. **聽力只考聽得出差別的**：`sc` 和 `sk` 同音、`girl's` 和 `girls'` 同音，不能出聽力辨義；TTS 唸字母會唸名稱（bee、dee）不是發音，要改播該字母開頭的單字。
+    6. **不要出反向題**（「選出不適合的回答」）：解析頁只看到題目和正確答案，會以為系統判錯。
+    7. **提示和答案要一致**：`doc___` 卻要求打完整 doctor 會混淆，改成「開頭是 d，共 6 個字母：___」。
+    8. **問法用學生看得懂的語言**（低年級、非全美班用中文問；英文句子和單字保留英文）。完整單字填空每卷最多 2～3 題，其餘用多元題型。
+
+  - **出題工具**（`helpers.js` 的 M／SP／T／R／E／X／G／Q／B／O 之外，`bankstudent.js` 另有）
+    | 工具 | 用途 |
+    |---|---|
+    | `studentPaper({...})` | 建一份考卷：`minutes` 限時、`relisten` 聽力可重聽、`balance` 選項平衡、`vocab` 指定單字表。整回照順序、做完才公布分數與對錯 |
+    | `SL(id, tag, script, plabel, opts, ans, exp)` | 聽力（不用圖）。`script` 可用 `W: ` `M: ` 寫多行對話；`plabel` 是作答說明，**作答和解析兩邊都會顯示** |
+    | `DW(id, tag, word, sentence, exp)` | 聽寫拼字：播「單字 → 例句 → 單字」，一律可重聽 |
+    | `SPF` / `TF` / `AO` / `ORD` / `RX` | 不給提示字母的拼字／是非題／字母照 ABC 排序／四句排順序（最多 4 項、畫面不打亂）／句子重組加干擾字卡 |
+    | `WORDLISTS` ＋ `vocab: "A"` | 老師給的生字表。考試中點到表上的字不顯示中文（其他字照常），單字練習的干擾選項也從這裡挑 |
+
+  - **固定流程**（每份考卷上線前都要跑完）
+    1. 本機完整做一遍（擋掉 script.google.com），確認**每題標準答案都判對**
+    2. 用程式數正解 A/B/C 分佈、各題型題數、各單元佔比
+    3. 新字補進 `dict*.js`，跑 `build_tts_jobs.mjs` ＋ `gen_audio.py`（學生專區只替 listen 和 dictation 題做語音）
+    4. `index.html` 的 `?v=N` 加一 → 清掉 localStorage → commit、push、等 GitHub Pages 上線
+    - 交卷時答錯題目的正確答案單字會自動進生字表（`addMissedWords`）；正式考模式按「確認」後顯示「已作答」、確認鍵變「重新確認」。
+
+  - **每個學生**
+    - **Ayden**（Grade 3 雙語／全美班）：原稿在 `Ayden期中考/`（照片＋2 份 PDF）。範圍＝文法（普通／專有名詞、不規則複數、集合名詞、主格受格代名詞、所有格名詞／形容詞／代名詞）＋自然發音（Consonants、Silent Consonants、L/R/S Blends、Spelling Words）。
+      上線中：**綜合卷 `ayden-c1`～`c3`**（基礎 36／進階 39／挑戰 40 題），文法約 70%、發音約 30%。發音**只考分辨聲音**（聽 blend、聽不發音字母、聽寫），學校沒要求背那些單字，所以不考它們的中文意思、也不出「看句子填單字開頭」。問法用中文。
+      備用（程式保留、未列在清單）：純發音卷 `ayden-m1`～`m3`、純文法卷 `ayden-g1`～`g3`。
+    - **Yuri**（國小低年級）：原稿在 `Yuri期中考/`。範圍＝字母 Aa–Oo、數字 1–10、What's your name? / How old are you?、All About Me、課堂用語、萬聖節單字。
+      上線中：`yuri-m1`～`m5`（基礎 30／進階 32／挑戰 3A 35／3B 35／挑戰 Plus 36 題）。卷 1、2 聽力可重聽，卷 3 以後只播一遍。全中文。
+    - **Jovi**（國中單字考）：原稿在 `~/Documents/Tutor/Jovi/`（`<範圍>範圍單字表.docx`、`<範圍>範圍單字考_<程度>.docx`，用 `textutil -convert txt -stdout` 讀）。
+      上線中：`jovi-a1` A 範圍（a – away，144 字）基礎卷 44 題 20 分。**照原稿逐題做**（題型、順序、選項順序都不改，所以不加 `balance`），答案照原稿解答，每題補一句中文解析，`vocab` 指定對應單字表。
+      基礎卷格式：中翻英 6、英翻中 4、配對 5、拼字 5、字母重組 3、情境選擇 6、詞形變化 4、是非 4、句子填空 2、短文克漏字 5。只給單字表沒給考卷時，照這個格式自己出一份，先列給 Allen 確認再上線。
+    - **Wei**：還沒有考卷。
 - **英檢中級寫作 AI 批改（2026-11-01 加入）**：評分基準＝本機 `全民英檢中級寫作 評分與回饋系統.md`（官方級分描述逐字、不可改；第五節是官方各級分範文給的校準錨點，第十一節是校準結果，改提示詞後要用官方範文重跑）。
   後端 `apps-script/AiGeptI.gs`（`aigrade` 的 kind `gept-i`，sub＝trans／comp；共用 Ai.gs 的 `gemini_`＝3.1 Pro 和 essay 額度），程式再檢查一次字數封頂（`giFinal_`）。
   前端沿用初級段落寫作的畫面（aigrade.js 的 `isGeptQ` 涵蓋 `q.gi`，`geptFeedbackHTML`）：中譯英逐意群檢核、作文逐點檢核＋約 120 字＋主題句與結論；錯誤日誌與趨勢初級、中級分開。
