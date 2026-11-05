@@ -3,7 +3,7 @@
    每份考卷是一個 hidden＋fixed 的題庫（student 標記是誰的），整回照順序作答、做完才公布分數與對錯（blind）。
    選項順序照紙本考卷（fixedOrder），不自動平衡。新考卷：寫一個 studentPaper(...)，再把 id 加到該學生的清單 */
 /* Ayden 用綜合卷 c1～c3（文法為主、發音為輔）；純文法卷 g1～g3 和純發音卷 m1～m3 的程式保留但不列在清單上 */
-const STUDENT_ZONE = { Ayden: ["ayden-c1", "ayden-c2", "ayden-c3"], Yuri: ["yuri-m1", "yuri-m2", "yuri-m3", "yuri-m4", "yuri-m5"], Jovi: ["jovi-a1"], Wei: [] };
+const STUDENT_ZONE = { Ayden: ["ayden-c1", "ayden-c2", "ayden-c3"], Yuri: ["yuri-m1", "yuri-m2", "yuri-m3", "yuri-m4", "yuri-m5"], Jovi: ["jovi-m2", "jovi-a1"], Wei: [] };
 const zoneName = who => Object.keys(STUDENT_ZONE).find(n => n.toLowerCase() === String(who || "").trim().toLowerCase()) || null;
 /* full：拼字題不給頭尾提示字母，要寫出完整的字 */
 const SPF = (id, tag, stem, ans, exp) => ({ id, type: "spell", full: true, label: "填寫單字", tag, stem, ans, hint: "", exp });
@@ -93,6 +93,133 @@ studentPaper({
     B("q43",43,["address","advice","accident","advise"],1,"","some good advice 一些好建議：advice 是名詞（不可數）；advise 是動詞「建議」。"),
     B("q44",44,["apologize","appear","apply","appreciate"],3,"","appreciate her help 感激她的幫忙。")
   ])
+  ]
+});
+
+
+/* ===== Jovi：國一上 第一次段考 檢討複習卷（Book 1 Lesson 1 ~ Review 1） =====
+   原卷：恆毅中學 115 學年度第一學期 國一英文 第一次段考（照片在 Allen 那邊，不進 repo）。題目全部重寫，只對齊題型與難度。
+   原卷錯的重點加重：All my、Their / they're、too / also、Is…? she's、書寫格式（大寫、標點）、These 改寫、Who / Whose 問句、
+   文意字彙（animal、same、different、lifespans、sheep、rabbits、rooster、elephant、beautiful）。
+   難度：jovi-m1 基礎（之後做）、jovi-m2 中等（＝原卷難度）、jovi-m3 挑戰（之後做）。 */
+studentPaper({
+  id: "jovi-m2", student: "Jovi", minutes: 45, balance: true,
+  title: "第一次段考 檢討複習卷・中等",
+  range: "Book 1 Lesson 1 ~ Review 1・中等 ★★（和段考同難度）",
+  added: "2026-11-05",
+  note: "",
+  tags: {
+    j1: "一、語法選擇", j2: "二、挑錯改正", j3: "三、克漏字", j4: "四、閱讀測驗",
+    j5: "五、文意字彙", j6: "六、翻譯填空", j7: "七、依提示作答"
+  },
+  items: [
+  /* ---------- 一、語法選擇 ---------- */
+  M("q1","j1","A: Is the ___ a Chinese zodiac sign?\nB: Yes, it is.",["tiger","lion","zebra","elephant"],0,"","十二生肖：鼠牛虎兔龍蛇馬羊猴雞狗豬。tiger（虎）是生肖；lion 獅子、zebra 斑馬、elephant 大象都不是。"),
+  M("q2","j1","Look at the boy. He is ___ son. They are his parents.",["Ken and Lisa's","Ken's and Lisa's","Ken and Lisa","Ken's and Lisa"],0,"","兩個人「共同」的兒子：只在最後一個名字加 's → Ken and Lisa's son。各自擁有才是 Ken's and Lisa's。"),
+  M("q3","j1","___ friends ___ very nice to me.",["All my; are","My all; are","All my; is","My all; is"],0,"","all 要放在所有格前面：all my friends（不能說 my all）；friends 是複數，be 動詞用 are。"),
+  M("q4","j1","A: Who is the boy in the photo?\nB: Oh, that's ___. I was only five then.",["me","I","my","mine"],0,"","That's me.（那是我。）be 動詞後面習慣用受格 me；my 後面要接名詞、mine＝我的東西。"),
+  M("q5","j1","Mom: What ___ in your bag?\nKevin: A book and two pens.",["is","are","am","be"],0,"","問「什麼東西在…」還不知道有幾個，What 後面用單數 is：What is in your bag?"),
+  M("q6","j1","I have two cats. ___ names are Coco and Momo, and ___ very cute.",["Their; they're","They're; their","Its; it's","Their; their"],0,"","第一格後面接名詞 names → 所有格 Their（他們的）；第二格要「主詞＋be 動詞」→ they're（＝they are）。兩隻貓是複數，不能用 its / it's。"),
+  M("q7","j1","My mother's sister is my ___, and her son is my ___.",["aunt; cousin","uncle; cousin","aunt; brother","sister; cousin"],0,"","媽媽的姊妹＝阿姨 aunt；阿姨的兒子＝表哥／表弟 cousin。"),
+  M("q8","j1","A: ___ that girl?\nB: She's my sister. ___ name is Emma.",["Who's; Her","Whose; Her","Who's; She's","Whose; She's"],0,"","問「那個女生是誰」→ Who's（＝Who is）；第二格後面接名詞 name → 所有格 Her。Whose＝誰的。"),
+  M("q9","j1","Mr. Lin is ___ English teacher, and his wife is ___ cook.",["an; a","a; an","an; an","a; a"],0,"","看「後面那個字的第一個音」：English 是母音開頭 → an；cook 是子音開頭 → a。"),
+  M("q10","j1","Ben is a student. Amy is ___ a student. They are good friends, ___.",["also; too","too; also","also; also","too; too"],0,"","also 放在 be 動詞後面、句子中間；too 放在句尾，前面通常加逗號。"),
+  M("q11","j1","My uncle's daughter is my ___.",["cousin","aunt","sister","daughter"],0,"","叔叔／舅舅的女兒＝堂／表姊妹 cousin。"),
+  M("q12","j1","Teacher: What is ___ and ___?\nStudent: It is fifty.",["thirty; twenty","twenty; thirteen","thirteen; twelve","fifteen; thirty"],0,"","30＋20＝50。注意 thirteen（13）和 thirty（30）、fifteen（15）和 fifty（50）不一樣。"),
+  M("q13","j1","Ms. Lee: Are you Tina's brothers?\nTom and Ben: Yes, we are. ___ sister is very nice.",["Our","Their","Your","His"],0,"","Tom 和 Ben 在說「我們的」妹妹 → Our。"),
+  M("q14","j1","A: ___ your brothers tall?\nB: No, ___ short.",["Are; they're","Is; he's","Are; he's","Is; they're"],0,"","brothers 是複數 → Are your brothers…? 回答也用複數 they're（＝they are）。"),
+  M("q15","j1","My dog is small, ___ it is very strong.",["but","and","or","X"],0,"","「小」和「很強壯」意思相反 → 用 but（但是）。"),
+  M("q16","j1","A: I'm from Taiwan. ___ you?\nB: I'm from Japan.",["What about","How","Who","Where"],0,"","What about you?（那你呢？）把同樣的問題丟回給對方。"),
+  M("q17","j1","My sister is ___, and she is a very smart ___.",["six years old; six-year-old girl","six-year-old; six years old girl","six years old; six-years-old girl","six-year-old girl; six-year-old girl"],0,"","單獨說年齡：six years old（years 用複數）；放在名詞前面當形容詞要用連字號、year 不加 s：a six-year-old girl。"),
+  M("q18","j1","A: ___ cellphone is this?\nB: It's Kevin's.",["Whose","Who's","Who","What"],0,"","回答是 Kevin's（Kevin 的）→ 問「誰的」手機 → Whose cellphone。Who's＝Who is。"),
+  M("q19","j1","請選出書寫格式正確的句子。",["Nice to meet you, Mr. Wang.","how are you, Tina?","My uncle is from japan.","Is she your cousin."],0,"","how 在句首要大寫 How；Japan 是國名要大寫；Is she…? 是問句，要用問號。"),
+
+  /* ---------- 二、挑錯改正 ---------- */
+  E("q20","j2","Her father name is Sean.","father","father's","","「她爸爸的名字」要用所有格：father's name。"),
+  E("q21","j2","My cousin is from japan.","japan","Japan","","國名、地名是專有名詞，第一個字母要大寫：Japan。"),
+  E("q22","j2","Kevin and Amy is good friends.","is","are","","Kevin and Amy 是兩個人（複數），be 動詞用 are。"),
+  E("q23","j2","He is a eleven-year-old boy.","a","an","","eleven 是母音開頭（/ɪ/），前面用 an：an eleven-year-old boy。"),
+  E("q24","j2","This is Amy's dog. It's name is Max.","It's","Its","","後面接名詞 name 要用所有格 Its（它的）；It's＝It is。"),
+
+  /* ---------- 三、克漏字 ---------- */
+  G("q25g","j3","cloze","Who Is That Boy?",[
+    "Jay: Good afternoon, Mia.",
+    "Mia: [[25]], Jay. Hey, who is that boy?",
+    "Jay: [[26]] my cousin, Leo. He is from Japan.",
+    "Mia: Cool! [[27]] he a student?",
+    "Jay: Yes, he is. He is a junior high school student, [[28]].",
+    "Mia: Is Leo's sister a junior high school student, too?",
+    "Jay: [[29]] She is only six."
+  ],null,[
+    B("q25",25,["Good afternoon","Good night","Good morning","Good news"],0,"","Jay 說 Good afternoon（午安），Mia 也回 Good afternoon。"),
+    B("q26",26,["He's","She's","I'm","They're"],0,"","that boy 是一個男生 → He's（＝He is）my cousin。"),
+    B("q27",27,["Is","Are","Am","Be"],0,"","主詞 he → Is he a student?"),
+    B("q28",28,["too","also","and","really"],0,"","放在句尾、前面有逗號 → too（也）。also 要放句子中間。"),
+    B("q29",29,["No, she isn't.","Yes, she is.","No, he isn't.","Yes, he is."],0,"","她才 6 歲，不是國中生 → No, she isn't.（問的是 Leo's sister，用 she）"),
+  ]),
+  G("q30g","j3","cloze","Tom and Jerry",[
+    "Tom and Jerry are twins, but they are very different. Tom is tall, but Jerry is [[30]]. Tom is thin, but Jerry is [[31]]. Tom's eyes are big, but Jerry's eyes are [[32]]. Tom is quiet, but Jerry [[33]]. He is very active."
+  ],null,[
+    B("q30",30,["short","tall","old","kind"],0,"","but 前後意思相反：tall（高）↔ short（矮）。"),
+    B("q31",31,["heavy","thin","young","cute"],0,"","thin（瘦）↔ heavy（重、胖）。"),
+    B("q32",32,["small","big","cute","nice"],0,"","big（大）↔ small（小）。"),
+    B("q33",33,["isn't","is","aren't","be"],0,"","Jerry isn't（quiet）：他不安靜，他很活潑。主詞 Jerry 是單數，用 isn't。"),
+  ]),
+
+  /* ---------- 四、閱讀測驗 ---------- */
+  G("q34g","j4","article","Andy's Family Photo",[
+    "Hi, I'm Andy. I'm thirteen. This is a photo of my family.",
+    "The old man is my grandpa, Paul. He is seventy. The woman next to him is my grandma, Rose. She is sixty-eight. They have three children: my father, David; my uncle, Frank; and my aunt, Judy.",
+    "My mother is Linda. She is a nurse. Uncle Frank is a cook, and his wife, Kate, is a singer. Aunt Judy is a PE teacher. I have a little sister, Amy. She is eight. We are a warm family."
+  ],null,[
+    Q("q34","How many people are there in the photo?",["Nine.","Eight.","Seven.","Ten."],0,"","Paul、Rose、David、Frank、Judy、Linda、Kate、Amy，再加上 Andy 自己，共 9 個人。別忘了 Kate（Frank 的太太）和 Andy 自己。"),
+    Q("q35","Who is Kate?",["She is Andy's aunt.","She is Andy's mother.","She is Andy's sister.","She is Andy's grandma."],0,"","Kate 是 Uncle Frank 的太太；叔叔／舅舅的太太也叫 aunt。"),
+    Q("q36","Which is TRUE?",["Judy is David's sister.","Frank is Linda's husband.","Amy is Andy's big sister.","Rose is a nurse."],0,"","Judy 和 David 都是 Paul 和 Rose 的孩子 → Judy 是 David 的姊妹。Linda 的先生是 David；Amy 是妹妹（little sister）；護理師是 Linda。"),
+  ]),
+  G("q37g","j4","dialogue","The New Student",[
+    "Amy: Who is the new student in our class?",
+    "Ben: His name is Hiro. He is from Japan.",
+    "Amy: How is his English?",
+    "Ben: It's very good. His mother is an English teacher.",
+    "Amy: What about his father?",
+    "Ben: His father is a cook. He is very kind.",
+    "Amy: Is Hiro thirteen?",
+    "Ben: No, he is twelve. Hiro and his sister, Yumi, are twins. Yumi is in our school, too.",
+    "Amy: Is Yumi tall like Hiro?",
+    "Ben: No, she isn't. She is short, but she is very strong. She is good at sports."
+  ],null,[
+    Q("q37","Who is Yumi?",["She is Hiro's twin sister.","She is Hiro's mother.","She is Ben's sister.","She is Hiro's teacher."],0,"","Hiro and his sister, Yumi, are twins → Yumi 是 Hiro 的雙胞胎妹妹（姊姊）。"),
+    Q("q38","Who is an English teacher?",["Hiro's mother.","Hiro's father.","Yumi.","Ben."],0,"","His mother is an English teacher.（Hiro 的爸爸是廚師。）"),
+    Q("q39","How old is Yumi?",["She is twelve.","She is thirteen.","She is eleven.","She is two."],0,"","Hiro 12 歲，Yumi 和他是雙胞胎，所以也是 12 歲。"),
+    Q("q40","Which is NOT true?",["Yumi is tall.","Hiro's English is very good.","Hiro's father is kind.","Yumi is good at sports."],0,"","這題要選「錯的」：Yumi 不高（She is short），所以「Yumi is tall」不是真的。其他三句文章裡都有。"),
+  ]),
+
+  /* ---------- 五、文意字彙（看頭尾字母，填出完整的字） ---------- */
+  SP("q41","j5","A dog is an ___.","animal","","animal 動物。注意 an 後面接母音開頭的字。"),
+  SP("q42","j5","Amy and May are twins. They have the ___ birthday.","same","","the same 相同的：雙胞胎生日一樣。"),
+  SP("q43","j5","My cat and my dog are ___. The cat is small, and the dog is big.","different","","different 不同的（形容詞）：一隻小、一隻大。"),
+  SP("q44","j5","Some turtles have very long ___. They can live for 100 years.","lifespans","","lifespan 壽命；主詞 Some turtles 是複數，所以用 lifespans。"),
+  SP("q45","j5","The ___ is in the tree. It is eating a banana.","monkey","","monkey 猴子，愛吃香蕉、住在樹上。"),
+  SP("q46","j5","Look at the ___ on the farm. They are white, and they are eating grass.","sheep","","sheep 綿羊：單複數同形（one sheep, two sheep），所以 They are 也是 sheep。"),
+  SP("q47","j5","Every morning, the ___ on my grandpa's farm makes a loud sound.","rooster","","rooster 公雞，早上會大聲啼叫。"),
+  SP("q48","j5","My sister has two pet ___. They have long ears and they love carrots.","rabbits","","rabbit 兔子：two 後面用複數 rabbits。"),
+  SP("q49","j5","The ___ is the biggest animal in the zoo. It has a long nose.","elephant","","elephant 大象：最大、鼻子很長。前面 the 後面不用 an。"),
+  SP("q50","j5","The ___ is black and white. It looks like a horse.","zebra","","zebra 斑馬：黑白條紋、長得像馬。"),
+
+  /* ---------- 六、翻譯填空（寫出完整的字） ---------- */
+  SPF("q51","j6","我是一個國中生。　I am a ___ high school student.","junior","junior high school 國中（senior high school 高中）。"),
+  SPF("q52","j6","我們是一個溫暖的家庭。　We are a ___ family.","warm","warm 溫暖的：a warm family。"),
+  SPF("q53","j6","我的爺爺是一名農夫。　My grandpa is a ___.","farmer","farmer 農夫（farm 農場＋-er）。"),
+  SPF("q54","j6","我的爸爸是一位英俊的廚師。　My father is a ___ cook.","handsome","handsome 英俊的；cook 當名詞是「廚師」。"),
+  SPF("q55","j6","我的阿姨是一位美麗的護理師。　My aunt is a ___ nurse.","beautiful","beautiful 美麗的：b-e-a-u-t-i-f-u-l，中間是 eau。"),
+  SPF("q56","j6","我們的寵物狗很有活力。　Our pet dog is very ___.","active","active 有活力的、活潑的。"),
+
+  /* ---------- 七、依提示作答 ---------- */
+  RW("q57","j7","Yes, these young men are my uncles.","針對「Yes」造原本的問句（改成問句，my 要換成 your）","",["Are these young men your uncles?"],"","回答 Yes → 原本是 Yes/No 問句：把 are 移到句首，my 換成 your：Are these young men your uncles?"),
+  RW("q58","j7","This is my brother's robot.","用 These 開頭改寫句子（robot 改成複數）","These",["These are my brother's robots."],"","This → These，is → are，robot → robots：These are my brother's robots."),
+  RW("q59","j7","Mr. Chen is the boy's father.","針對「Mr. Chen」造原本的問句","",["Who is the boy's father?"],"","Mr. Chen 是「人」→ 用 Who 問：Who is the boy's father?（boy's 的 's 不能漏）"),
+  RW("q60","j7","That is Kevin's cellphone.","針對「Kevin's」造原本的問句","",["Whose cellphone is that?"],"","Kevin's 是「誰的」→ 用 Whose＋名詞：Whose cellphone is that?"),
+  RW("q61","j7","He is my cousin.","改成否定句","",["He {is not|isn't} my cousin."],"","be 動詞後面加 not：He is not（isn't）my cousin."),
   ]
 });
 
