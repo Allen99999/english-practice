@@ -30,14 +30,16 @@ function students_() {
 }
 function json_(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
 function name_(s) { return String(s || "").trim().replace(/\s+/g, " "); }
+/* 名字比對一律不分大小寫：Ayden / ayden / AYDEN 是同一個人。顯示時用最早登記的那個寫法 */
+function key_(s) { return name_(s).toLowerCase(); }
 function code_(s) { return String(s || "").trim().toLowerCase(); }
 
-/* 找名字在 students 的哪一列（回傳 {row, code} 或 null） */
+/* 找名字在 students 的哪一列（不分大小寫；回傳 {row, code, name＝登記時的寫法} 或 null） */
 function findStudent_(name) {
-  const sh = students_();
+  const k = key_(name), sh = students_();
   if (sh.getLastRow() < 2) return null;
   const rows = sh.getRange(2, 1, sh.getLastRow() - 1, 2).getValues();
-  for (let i = 0; i < rows.length; i++) if (name_(rows[i][0]) === name) return { row: i + 2, code: code_(rows[i][1]) };
+  for (let i = 0; i < rows.length; i++) if (key_(rows[i][0]) === k) return { row: i + 2, code: code_(rows[i][1]), name: name_(rows[i][0]) };
   return null;
 }
 function register_(name, code) {
@@ -45,9 +47,9 @@ function register_(name, code) {
   students_().appendRow([name, code, now, now]);
 }
 /* 輸錯次數（CacheService，10 分鐘後自動歸零） */
-function locked_(name) { return Number(CacheService.getScriptCache().get("fail:" + name) || 0) >= MAX_FAILS; }
-function fail_(name) { const c = CacheService.getScriptCache(), k = "fail:" + name; c.put(k, String(Number(c.get(k) || 0) + 1), 600); }
-function okCode_(name) { CacheService.getScriptCache().remove("fail:" + name); }
+function locked_(name) { return Number(CacheService.getScriptCache().get("fail:" + key_(name)) || 0) >= MAX_FAILS; }
+function fail_(name) { const c = CacheService.getScriptCache(), k = "fail:" + key_(name); c.put(k, String(Number(c.get(k) || 0) + 1), 600); }
+function okCode_(name) { CacheService.getScriptCache().remove("fail:" + key_(name)); }
 /* 檢查名字＋代碼；回傳錯誤字串或 "" */
 function check_(name, code) {
   const st = findStudent_(name);
@@ -62,6 +64,7 @@ function doPost(e) {
     const body = JSON.parse(e.postData.contents);
     if (CLASS_CODE && String(body.classCode || "").trim() !== CLASS_CODE) return json_({ ok: false, error: "wrong class code" });
     if (body.action === "aigrade") return aiGrade_(body);
+    if (body.action === "whois") return whois_(body);   // 只讀：查名字有沒有人用、拿他的名片（新裝置的歡迎畫面）
     if (body.action === "myaudio") return myAudio_(body);   // 學生重聽自己的錄音（只讀，不佔用鎖）   // AI 批改要跑幾十秒，不佔用鎖（見 Ai.gs）
     if (body.action === "audio") return audioUpload_(body);   // 上傳錄音不佔用鎖（檔名各不相同）：寫雲端硬碟要好幾秒，佔著鎖會讓同時送出的 AI 批改等不到而失敗
     const lock = LockService.getScriptLock(); lock.waitLock(10000);
@@ -92,7 +95,7 @@ function submit_(body) {
   const name = name_(a.who), code = code_(body.code);
   if (name && name !== "未署名") {
     const st = findStudent_(name);
-    if (st) { if (st.code !== code) return json_({ ok: false, error: "wrong code" }); }
+    if (st) { if (st.code !== code) return json_({ ok: false, error: "wrong code" }); a.who = st.name; }   // 統一存成登記時的寫法
     else if (CODE_RE.test(code)) register_(name, code);
   }
   const sh = sheet_();
@@ -109,18 +112,36 @@ function claim_(body) {
   if (!name) return json_({ ok: false, error: "missing name" });
   if (!CODE_RE.test(code)) return json_({ ok: false, error: "bad code" });
   const st = findStudent_(name);
-  if (st) return json_({ ok: false, error: "taken" }); // 不透露代碼對不對，避免被拿來猜代碼
+  if (st) return json_({ ok: false, error: "taken", name: st.name }); // 不透露代碼對不對，避免被拿來猜代碼
   register_(name, code);
   return json_({ ok: true, created: true });
 }
 function login_(body) {
   const name = name_(body.name), err = check_(name, code_(body.code));
   if (err) return json_({ ok: false, error: err });
+  const st = findStudent_(name), k = key_(name);
   const sh = sheet_();
-  if (sh.getLastRow() < 2) return json_({ ok: true, attempts: [] });
+  if (sh.getLastRow() < 2) return json_({ ok: true, attempts: [], name: st.name });
   const rows = sh.getRange(2, 1, sh.getLastRow() - 1, HEADERS.length).getValues();
-  const attempts = rows.filter(r => name_(r[2]) === name).map(r => { try { return JSON.parse(r[9]); } catch (x) { return null; } }).filter(Boolean);
-  return json_({ ok: true, attempts: attempts });
+  const attempts = rows.filter(r => key_(r[2]) === k).map(r => { try { return JSON.parse(r[9]); } catch (x) { return null; } }).filter(Boolean);
+  return json_({ ok: true, attempts: attempts, name: st.name });
+}
+/* 新裝置輸入名字時：這個名字有沒有人用？有的話回他的名片、練習次數和上次練習時間（不回代碼） */
+function whois_(body) {
+  try {
+    if (rateLimited_("whois", 300)) return json_({ ok: false, error: "busy" });
+    const name = name_(body.name);
+    if (!name || name.length > 30) return json_({ ok: false, error: "missing name" });
+    const st = findStudent_(name);
+    if (!st) return json_({ ok: true, exists: false });
+    const sh = sheet_(); let card = null, count = 0, last = 0, lastRow = 0;
+    if (sh.getLastRow() > 1) {
+      const whos = sh.getRange(2, 3, sh.getLastRow() - 1, 1).getValues(), k = key_(st.name);
+      for (let i = 0; i < whos.length; i++) if (key_(whos[i][0]) === k) { count++; lastRow = i + 2; }
+      if (lastRow) { try { const a = JSON.parse(sh.getRange(lastRow, 10).getValue()); card = a.card || null; last = a.date || 0; } catch (x) { } }
+    }
+    return json_({ ok: true, exists: true, name: st.name, card: card, count: count, last: last });
+  } catch (err) { return json_({ ok: false, error: String(err) }); }
 }
 function setcode_(body) {
   const name = name_(body.name), newCode = code_(body.newCode);

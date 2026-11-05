@@ -230,7 +230,13 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .feedback{border-radius:var(--r-lg);padding:14px 16px;display:flex;gap:12px;align-items:flex-start;animation:viewIn .35s}
 .feedback.ok{background:var(--good-soft)}
 .feedback.no{background:var(--bad-soft)}
-.feedback.saved{background:var(--accent-soft)} .feedback.saved .fb-ic{background:var(--accent);color:var(--accent-ink,#fff)}
+.feedback.saved{background:var(--accent-soft)}
+/* 新裝置輸入已存在的名字：Welcome 畫面 */
+.wl-head{margin-bottom:4px}
+.wl-card{margin:14px auto 0;max-width:380px}
+.wl-card .pcard{width:100%}
+.wl-steps{margin:10px 0 0;padding-left:22px;display:flex;flex-direction:column;gap:9px;font-size:15px;line-height:1.55}
+.wl-steps b{color:var(--ink)} .feedback.saved .fb-ic{background:var(--accent);color:var(--accent-ink,#fff)}
 .feedback .fb-ic{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff}
 .feedback.ok .fb-ic{background:var(--good)} .feedback.no .fb-ic{background:var(--bad)}
 .feedback .fb-ic svg{width:18px;height:18px}

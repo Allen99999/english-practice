@@ -11,10 +11,21 @@ async function postSync(payload, timeout) {
   const ctl = timeout ? new AbortController() : null; const tm = ctl && setTimeout(() => ctl.abort(), timeout);
   try {
     const r = await fetch(SITE_CONFIG.SYNC_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload), signal: ctl && ctl.signal });
-    const j = await r.json(); if (!j.ok) { const e = new Error(j.error || "sync failed"); e.server = true; throw e; } return j;
+    const j = await r.json(); if (!j.ok) { const e = new Error(j.error || "sync failed"); e.server = true; e.data = j; throw e; } return j;
   } finally { clearTimeout(tm); }
 }
 const CODE_ERR = { "wrong code": "代碼不對", "locked": "輸錯太多次，請 10 分鐘後再試", "no such name": "找不到這個名字，請確認和之前輸入的一模一樣", "bad code": "代碼要 4～12 個英文字母或數字" };
+
+/* 名字不分大小寫（Ayden / ayden / AYDEN 是同一個人）：回傳這台裝置上已經有的那個寫法 */
+const nameKey = s => String(s || "").trim().replace(/\s+/g, " ").toLowerCase();
+function canonName(name) {
+  const k = nameKey(name); if (!k) return String(name || "").trim();
+  const pools = [Object.keys(store.codes || {}), store.names || [], Object.keys(store.cards || {}), (store.attempts || []).map(a => a.who)];
+  for (const p of pools) { const hit = p.find(n => nameKey(n) === k); if (hit) return hit; }
+  return String(name || "").trim().replace(/\s+/g, " ");
+}
+/* 這台裝置上認得這個名字嗎（有代碼或有紀錄）＝不用再問後端 */
+function knownHere(name) { const k = nameKey(name); return Object.keys(store.codes || {}).some(n => nameKey(n) === k) || (store.attempts || []).some(a => nameKey(a.who) === k); }
 
 /* 開始作答前：這個名字在這台裝置還沒有代碼 → 向後端登記一個新的；名字已被登記 → 請他輸入代碼 */
 async function ensureCode(name) {
@@ -22,7 +33,7 @@ async function ensureCode(name) {
   const code = newCode();
   try { await postSync({ action: "claim", name, code }, 6000); }
   catch (e) {
-    if (e.server && e.message === "taken") { loginSheet(name, "「" + name + "」這個名字已經有人登記了。如果是你，請輸入你的個人代碼；不是你的話，請換個名字（例如加上座號）。"); return false; }
+    if (e.server && e.message === "taken") { welcomeSheet({ name: e.data && e.data.name || name }); return false; }
     // 離線或逾時：先用新代碼，交卷同步時會再登記
   }
   store.codes[name] = code; save(true);
@@ -81,11 +92,44 @@ async function doLogin(btn) {
   btn.disabled = true; btn.textContent = "查詢中…";
   try {
     const j = await postSync({ action: "login", name, code }, 15000);
-    store.codes[name] = code; store.who = name; store.names = [name, ...store.names.filter(n => n !== name)].slice(0, 8);
-    const n = mergeAttempts(j.attempts || []); save(true); closeSheet(); render();
+    const who = j.name || name;   // 以後端登記的寫法為準
+    store.codes[who] = code; store.who = who; store.names = [who, ...store.names.filter(n => nameKey(n) !== nameKey(who))].slice(0, 8);
+    const n = mergeAttempts(j.attempts || []);
+    restoreCard(who); save(true); closeSheet(); render();
     toast(n ? `找回 ${n} 筆紀錄` : "代碼正確，雲端沒有其他新紀錄");
     flushOutbox();
   } catch (e) { toast(e.server ? (CODE_ERR[e.message] || "找回失敗") : "連不上網路，請稍後再試"); btn.disabled = false; btn.textContent = "找回紀錄"; }
+}
+/* 找回紀錄後：用最新一筆紀錄裡的名片設定還原這台裝置的名片 */
+function restoreCard(who) {
+  if (typeof cardOf !== "function" || cardOf(who)) return;
+  const mine = store.attempts.filter(a => nameKey(a.who) === nameKey(who) && a.card && a.card.char).sort((a, b) => (b.date || 0) - (a.date || 0));
+  if (mine.length) { store.cards = store.cards || {}; store.cards[who] = { char: mine[0].card.char, outfit: mine[0].card.outfit, scene: mine[0].card.scene }; }
+}
+
+/* 新裝置輸入了已經有人用的名字：Welcome 畫面（名片＋輸入代碼＋教學） */
+let whoisBusy = false;
+function welcomeSheet(info) {
+  const who = info.name, cfg = info.card && info.card.char ? info.card : null;
+  const card = typeof playerCardHTML === "function"
+    ? `<div class="wl-card">${playerCardHTML(who, cfg, { preview: { count: info.count, last: info.last } })}</div>` : "";
+  sheet(`<div class="wl-head"><h3 style="margin:0">Welcome back, ${esc(who)}！</h3>
+  <p class="muted" style="margin:6px 0 0">這個名字已經有人在用了。如果就是你，輸入你的個人代碼，就能把之前的紀錄、單字本和名片帶到這台裝置。</p></div>
+  ${card}
+  <input id="lg-code" class="field" placeholder="個人代碼（4～12 個英文字母或數字）" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="12" style="margin-top:12px">
+  <input id="lg-name" type="hidden" value="${esc(who)}">
+  <div class="row" style="margin-top:12px"><button class="btn primary" data-act="do-login" style="flex:1">我是 ${esc(who)}，找回紀錄</button></div>
+  <div class="row" style="margin-top:8px"><button class="btn ghost sm" data-act="code-help">${I.bulb}怎麼找我的代碼？</button><button class="btn ghost sm" data-act="not-me">不是我，換個名字</button></div>`);
+  setTimeout(() => { const f = $("#lg-code"); if (f) f.focus(); }, 50);
+}
+function codeHelpSheet() {
+  sheet(`<h3>怎麼找我的個人代碼？</h3>
+  <ol class="wl-steps"><li>拿出你<b>之前練習用的那台裝置</b>（手機、平板或電腦），打開 Apex English。</li>
+  <li>點畫面最下面的<b>「紀錄」</b>。</li>
+  <li>最上面那張卡片<b>「我的個人代碼」</b>，裡面 6 個英文字母和數字就是你的代碼。</li>
+  <li>在那裡也可以按<b>「修改」</b>把代碼換成你記得住的。</li></ol>
+  <p class="muted" style="font-size:13.5px;margin:12px 0 0">找不到舊裝置？直接問老師，老師那邊查得到你的代碼。</p>
+  <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn primary" data-act="back-welcome">知道了</button></div>`);
 }
 function codeEditSheet(name) {
   sheet(`<h3>修改個人代碼</h3><p class="muted" style="margin:0 0 12px">「${esc(name)}」的新代碼：4～12 個英文字母或數字（不分大小寫）。改好之後，換裝置時要用新代碼找回紀錄。</p>
@@ -157,6 +201,32 @@ document.addEventListener("click", e => {
   if (a === "do-login") doLogin(act);
   if (a === "code-edit") codeEditSheet(act.dataset.n);
   if (a === "do-setcode") doSetCode(act, act.dataset.n);
+});
+let lastWelcome = null;
+async function checkName(raw) {
+  const typed = String(raw || "").trim().replace(/\s+/g, " ");
+  if (!typed) return;
+  const fix = canonName(typed);
+  if (fix !== typed) { const f = $("#who"); if (f) f.value = fix; store.who = fix; save(); if (view === "home") rerenderKeep(); }
+  if (!SYNC_ON || knownHere(fix) || whoisBusy) return;
+  whoisBusy = true;
+  try {
+    const j = await postSync({ action: "whois", name: fix }, 8000);
+    if (j.exists && !knownHere(j.name || fix) && view === "home" && !document.querySelector(".scrim,.cm-scrim")) {
+      const who = j.name || fix; const f = $("#who"); if (f) f.value = who;
+      store.who = who; store.names = [who, ...store.names.filter(n => nameKey(n) !== nameKey(who))].slice(0, 8); save(); rerenderKeep();
+      lastWelcome = { name: who, card: j.card, count: j.count, last: j.last };
+      welcomeSheet(lastWelcome);
+    }
+  } catch (e) { }   // 離線或逾時：當作新名字，照舊流程走
+  whoisBusy = false;
+}
+document.addEventListener("change", e => { if (e.target && e.target.id === "who") checkName(e.target.value); });
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  if (b.dataset.act === "code-help") codeHelpSheet();
+  if (b.dataset.act === "back-welcome") { if (lastWelcome) welcomeSheet(lastWelcome); else closeSheet(); }
+  if (b.dataset.act === "not-me") { closeSheet(); const f = $("#who"); if (f) { f.value = ""; f.focus(); } store.who = ""; save(); if (view === "home") rerenderKeep(); }
 });
 document.addEventListener("keydown", e => {
   if (e.key !== "Enter") return;

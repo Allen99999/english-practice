@@ -125,9 +125,10 @@ function playerCardHTML(who, cfg, opt = {}) {
       <div class="pc-hi">Welcome,</div>
       <div class="pc-name">${esc(who)}</div>
       <div class="pc-title"><b>Lv ${lv.L}</b><span>${esc(title[1])}</span><small>${esc(title[2])}</small></div>
-      <div class="pc-xp"><i style="width:${Math.round(lv.cur / lv.need * 100)}%"></i></div>
+      ${opt.preview ? `<div class="pc-stats"><div><b>${opt.preview.count || 0}</b><span>練習</span></div><div><b>${opt.preview.last ? fmtDate(opt.preview.last).slice(0, 10) : "—"}</b><span>上次</span></div></div>`
+      : `<div class="pc-xp"><i style="width:${Math.round(lv.cur / lv.need * 100)}%"></i></div>
       <div class="pc-xpt"><span>XP ${lv.cur} / ${lv.need}</span><span class="pc-streak">${CI.flame}${st.streak} 天</span></div>
-      <div class="pc-stats"><div><b>${st.count}</b><span>練習</span></div><div><b>${st.acc === null ? "—" : st.acc + "%"}</b><span>答對率</span></div><div><b>×${st.combo}</b><span>Combo</span></div></div>
+      <div class="pc-stats"><div><b>${st.count}</b><span>練習</span></div><div><b>${st.acc === null ? "—" : st.acc + "%"}</b><span>答對率</span></div><div><b>×${st.combo}</b><span>Combo</span></div></div>`}
     </div>
   </div>`;
 }
@@ -260,7 +261,7 @@ document.addEventListener("pointermove", e => {
 document.addEventListener("change", e => {
   if (!e.target || e.target.id !== "who") return;
   const nm = e.target.value.trim();
-  setTimeout(() => { if (nm && view === "home" && !cardOf(nm) && !document.querySelector(".scrim,.cm-scrim")) openCardEditor(nm, true); }, 160);
+  setTimeout(() => { if (nm && view === "home" && !cardOf(nm) && !document.querySelector(".scrim,.cm-scrim") && !(typeof whoisBusy !== "undefined" && whoisBusy)) openCardEditor(nm, true); }, 160);
 });
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target && e.target.id === "who") e.target.blur(); });
 

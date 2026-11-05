@@ -728,6 +728,7 @@ function passageHTML(X, i) {
   <h3 class="ptitle" data-ctx>${wrapWords(g.title, m)}</h3>
   ${S.blind || (X.bank && /^toefl/.test(X.bank.id)) ? "" : `<div class="read-bar"><button class="btn sm" data-act="read-all">${reading ? `${I.stop}<span>停止</span>` : `${I.speaker}<span>朗讀全文</span>`}</button>
   <div class="seg sm">${[0.7, 0.9, 1.1].map(r => `<button data-act="rate" data-v="${r}" aria-pressed="${(store.settings.rate || 0.9) === r}">${r === 0.7 ? "慢" : r === 0.9 ? "中" : "快"}</button>`).join("")}</div></div>`}
+  ${g.img ? `<div class="limg" style="margin-bottom:12px"><img src="${esc(g.img)}" alt="題組圖片" onerror="this.parentNode.classList.add('noimg');this.remove()"></div>` : ""}
   <div class="ptext ${g.kind}">${body}</div>
   ${g.gloss ? `<div class="gloss">${g.gloss.map(([e, z]) => `<span><b>${esc(e)}</b> ${esc(z)}</span>`).join("")}</div>` : ""}</div>`;
 }
@@ -1192,7 +1193,7 @@ function reviewItem(att, i) {
   let body = "";
   if (X.group && X.group.kind === "listening") body += `<details class="pfold"><summary><span class="muted">聽力原文：${esc(X.group.title)}</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext dialogue" style="margin-top:8px;font-size:15.5px">${listenGroupScript(X.group).map(l => `<p>${esc(l)}</p>`).join("")}</div></details>`;
   else if (X.group && X.group.kind === "ctest") body += `<div class="ptext" style="font-size:15.5px">${esc(X.group.passage[0].replace(/\{([^}]*)\}/g, "$1"))}</div>`;
-  else if (X.group) body += `<details class="pfold"><summary><span class="muted">題組：${esc(X.group.title)}（展開文章）</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary><div class="ptext ${X.group.kind}" style="margin-top:8px;font-size:15.5px">${insMarks(X.group.passage.map(p => `<p>${esc(p).replace(/\[\[(\d+)\]\]/g, '<span class="cz">$1</span>')}</p>`).join(""), X.group, true)}</div></details>`;
+  else if (X.group) body += `<details class="pfold"><summary><span class="muted">題組：${esc(X.group.title)}（展開文章）</span>${I.chevR.replace("<svg", '<svg width="16" height="16"')}</summary>${X.group.img ? `<div class="limg" style="max-width:520px;margin-top:8px"><img src="${esc(X.group.img)}" alt="" onerror="this.parentNode.remove()"></div>` : ""}<div class="ptext ${X.group.kind}" style="margin-top:8px;font-size:15.5px">${insMarks(X.group.passage.map(p => `<p>${esc(p).replace(/\[\[(\d+)\]\]/g, '<span class="cz">$1</span>')}</p>`).join(""), X.group, true)}</div></details>`;
   body += `<div>${questionReview(q)}</div>`;
   body += `<dl class="kv"><dt>你的答案</dt><dd class="${a && a.correct ? "ans-ok" : "ans-no"}" style="${a && a.correct ? "" : "text-decoration:none"}">${esc(respText(q, a))}${a && a.claim ? "（學生反應：我寫的也對）" : ""}${a && (a.self || a.tmark || rubricOf(q, X.bank)) ? `（${a.tmark ? "老師評分" : a.resp && a.resp.ai ? "AI 評分" : a.self || q.type === "essay" || q.type === "speak" ? "自評" : "得分"} ${ptsOf(q, X.bank, a)} / ${maxPts(q, X.bank)}）` : ""}${a && a.hint ? ` <span class="tag">用了提示</span>` : ""}</dd>
   ${q.mail || (typeof isAiQ === "function" && isAiQ(q)) ? "" : `<dt>正確答案</dt><dd class="ans-ok">${esc(correctText(q))}</dd>`}
@@ -1520,7 +1521,7 @@ document.addEventListener("click", e => {
 });
 document.addEventListener("mouseover", e => { const p = e.target.closest && e.target.closest(".ph"); document.querySelectorAll(".ph.hov").forEach(x => { if (!p || x.dataset.g !== p.dataset.g) x.classList.remove("hov"); }); if (p) document.querySelectorAll(`[data-g="${p.dataset.g}"]`).forEach(x => x.classList.add("hov")); });
 document.addEventListener("input", e => {
-  if (e.target.id === "who") { store.who = e.target.value.trim(); store.histWho = ""; save(); document.querySelectorAll('[data-act="pick-who"]').forEach(c => c.setAttribute("aria-pressed", c.dataset.n === store.who)); return; }
+  if (e.target.id === "who") { store.who = typeof canonName === "function" ? canonName(e.target.value) : e.target.value.trim(); store.histWho = ""; save(); document.querySelectorAll('[data-act="pick-who"]').forEach(c => c.setAttribute("aria-pressed", c.dataset.n === store.who)); return; }
   if (!S || view !== "quiz") return;
   const w = work(S.idx);
   if (e.target.id === "spellin" || e.target.id === "transin") { w.val = e.target.value; save(); }
