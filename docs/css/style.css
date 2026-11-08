@@ -6,6 +6,7 @@
   --ink-2:rgba(11,12,14,.62);
   --ink-3:rgba(11,12,14,.38);
   --glass:rgba(255,255,255,.16);
+  --glass-solid:rgba(252,251,255,.90);   /* 關掉毛玻璃時的替代底色（手機／低階裝置） */
   --glass-hi:rgba(255,255,255,.46);
   --glass-lo:rgba(255,255,255,.12);
   --sheen:.55;
@@ -35,6 +36,7 @@
   --sp-ok:#5cc79c; --sp-warn:#f09a55; --sp-pr:#b293ff; --sp-fl:#7fb0ff; --sp-ct:#f09a55; --sp-gr:#ff7fa3;
   --bg:#08080a; --ink:#f5f5f7; --ink-2:rgba(245,245,247,.66); --ink-3:rgba(245,245,247,.40);
   --glass:rgba(255,255,255,.055); --glass-hi:rgba(255,255,255,.13); --glass-lo:rgba(255,255,255,.035); --sheen:.12;
+  --glass-solid:rgba(23,25,32,.88);
   --rim:rgba(255,255,255,.34); --rim-2:rgba(255,255,255,.08); --rimA:rgba(255,255,255,.55); --rimB:rgba(255,255,255,.28);
   --edge:rgba(255,255,255,.07); --shadow:rgba(0,0,0,.65);
   --accent:#f5f5f7; --accent-ink:#0b0c0e; --accent-soft:rgba(255,255,255,.09);
@@ -45,6 +47,7 @@
   --sp-ok:#5cc79c; --sp-warn:#f09a55; --sp-pr:#b293ff; --sp-fl:#7fb0ff; --sp-ct:#f09a55; --sp-gr:#ff7fa3;
   --bg:#08080a; --ink:#f5f5f7; --ink-2:rgba(245,245,247,.66); --ink-3:rgba(245,245,247,.40);
   --glass:rgba(255,255,255,.055); --glass-hi:rgba(255,255,255,.13); --glass-lo:rgba(255,255,255,.035); --sheen:.12;
+  --glass-solid:rgba(23,25,32,.88);
   --rim:rgba(255,255,255,.34); --rim-2:rgba(255,255,255,.08); --rimA:rgba(255,255,255,.55); --rimB:rgba(255,255,255,.28);
   --edge:rgba(255,255,255,.07); --shadow:rgba(0,0,0,.65);
   --accent:#f5f5f7; --accent-ink:#0b0c0e; --accent-soft:rgba(255,255,255,.09);
@@ -590,15 +593,14 @@ details.script summary{cursor:pointer;font-weight:650;color:var(--ink-2)}
 .aurora{background:#000}
 .aurora i{display:none}
 .bg-photo{position:absolute;inset:-6%;background:url("../img/bg-2560.jpg") center/cover no-repeat;will-change:transform;
-  animation:bgFlow 48s ease-in-out infinite alternate;transform-origin:50% 45%}
+  animation:bgFlow 28s ease-in-out 1 both;transform-origin:50% 45%}
 @media (max-width:900px){.bg-photo{background-image:url("../img/bg-1440.jpg")}}
-@keyframes bgFlow{
-  0%{transform:translate3d(calc(var(--px,0) * 1px),calc(var(--py,0) * 1px),0) scale(1.04) rotate(0deg)}
-  50%{transform:translate3d(calc(-1.5% + var(--px,0) * 1px),calc(1% + var(--py,0) * 1px),0) scale(1.1) rotate(.6deg)}
-  100%{transform:translate3d(calc(1.5% + var(--px,0) * 1px),calc(-1.2% + var(--py,0) * 1px),0) scale(1.07) rotate(-.4deg)}}
-.bg-sheen{position:absolute;inset:-20%;pointer-events:none;mix-blend-mode:screen;opacity:.55;
-  background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.10) 46%,rgba(190,215,255,.16) 50%,rgba(255,255,255,.08) 54%,transparent 62%);
-  animation:sheen 14s ease-in-out infinite}
+@keyframes bgFlow{   /* 只平移、不旋轉也不改縮放：純合成層，GPU 便宜很多；跑完一輪就停，畫面才會真正閒下來 */
+  0%{transform:translate3d(calc(-1.2% + var(--px,0) * 1px),calc(.8% + var(--py,0) * 1px),0) scale(1.07)}
+  100%{transform:translate3d(calc(1.2% + var(--px,0) * 1px),calc(-.9% + var(--py,0) * 1px),0) scale(1.07)}}
+.bg-sheen{position:absolute;inset:-20%;pointer-events:none;opacity:.5;
+  background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.07) 46%,rgba(198,220,255,.12) 50%,rgba(255,255,255,.055) 54%,transparent 62%);
+  animation:sheen 14s ease-in-out 2 both}
 @keyframes sheen{0%{transform:translateX(-45%)}55%,100%{transform:translateX(45%)}}
 .aurora::after{opacity:.035}
 /* 淺色模式：把黑底銀線反相成白底銀線 */
@@ -611,11 +613,11 @@ details.script summary{cursor:pointer;font-weight:650;color:var(--ink-2)}
 :root[data-theme="light"] .aurora{background:#f3f0fa}
 :root[data-theme="light"] .bg-photo{background-image:url("../img/bg-light-2560.jpg")}
 @media (max-width:900px){:root[data-theme="light"] .bg-photo{background-image:url("../img/bg-light-1440.jpg")}}
-:root[data-theme="light"] .bg-sheen{mix-blend-mode:soft-light;opacity:.8}
+:root[data-theme="light"] .bg-sheen{opacity:.55;background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.5) 46%,rgba(255,255,255,.68) 50%,rgba(255,255,255,.42) 54%,transparent 62%)}
 :root[data-theme="light"] .aurora::before{background:radial-gradient(120% 90% at 50% 18%,rgba(255,255,255,.42),rgba(255,255,255,.12) 60%,rgba(255,255,255,.3))}
 /* 切換主題時柔和過渡 */
 .theme-anim,.theme-anim *{transition:background-color .6s ease,color .6s ease,box-shadow .6s ease!important}
-.theme-anim .bg-photo{animation-play-state:running}
+
 .theme-btn svg{transition:transform .6s var(--spring)}
 .theme-btn:active svg{transform:rotate(-40deg) scale(.9)}
 /* 標題與署名 */
@@ -1073,3 +1075,39 @@ html.intro-on body{overflow:hidden}
 @media (max-width:520px){.sp-dials.four .sp-dial{flex-direction:row;text-align:left;gap:10px;padding:10px}.sp-dials.four .sp-dial b{font-size:13.5px}}
 .sp-better>div:last-child,.sp-sec>.ptext{max-width:78ch}   /* 電腦版：英文段落不要拉太寬，比較好讀 */
 .ai-essay{max-width:80ch}   /* 電腦版：學生原文不要拉太寬 */
+
+/* ===== 省電降級（2026-11-08）：手機、平板和低階裝置關掉大面積毛玻璃與背景動畫 =====
+   原因：背景只要在動，底下每一塊 backdrop-filter 每一格都要重算模糊（量到 14 塊、覆蓋 158% 畫面）。
+   桌機維持原本的玻璃質感；手機改成半透明純色，外觀接近但不用每格重算。
+   要整個關掉這段：把下面整個區塊刪掉即可。 */
+@media (max-width:900px), (hover:none) and (pointer:coarse) {
+  .bg-photo, .bg-sheen { animation: none !important; }
+  .bg-sheen { display: none; }
+  .glass, .pend-item, .pend-row, .rv, .tabbar, .scrim, .cm-scrim, .pc-place, .pc-info, .wpop {
+    -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  }
+  .glass { background:
+    linear-gradient(180deg, rgba(255,255,255,calc(var(--sheen) * .55)) 0%, transparent 34%),
+    linear-gradient(135deg, var(--glass-hi) 0%, var(--glass) 42%, var(--glass-lo) 100%),
+    var(--glass-solid); }
+  .pend-item, .pend-row, .rv, .wpop { background: var(--glass-solid); }
+  .tabbar { background: var(--glass-solid); }
+  .scrim { background: rgba(10,14,28,.52); }
+  .cm-scrim { background: rgba(6,8,14,.82); }
+  .pc-place { background: rgba(10,12,20,.52); }
+  .pc-info { background: linear-gradient(160deg, rgba(255,255,255,.15), rgba(255,255,255,.03)), rgba(14,16,26,.72); }
+}
+/* 低階裝置（記憶體或核心數少）不分螢幕大小都降級；html 的 low-perf 由 app.js 加上 */
+html.low-perf .bg-photo, html.low-perf .bg-sheen { animation: none !important; }
+html.low-perf .bg-sheen { display: none; }
+html.low-perf .glass, html.low-perf .pend-item, html.low-perf .pend-row, html.low-perf .rv,
+html.low-perf .tabbar, html.low-perf .scrim, html.low-perf .cm-scrim, html.low-perf .pc-place,
+html.low-perf .pc-info, html.low-perf .wpop {
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+}
+html.low-perf .glass { background:
+  linear-gradient(180deg, rgba(255,255,255,calc(var(--sheen) * .55)) 0%, transparent 34%),
+  linear-gradient(135deg, var(--glass-hi) 0%, var(--glass) 42%, var(--glass-lo) 100%),
+  var(--glass-solid); }
+html.low-perf .pend-item, html.low-perf .pend-row, html.low-perf .rv, html.low-perf .wpop,
+html.low-perf .tabbar { background: var(--glass-solid); }

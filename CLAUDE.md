@@ -257,6 +257,12 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
   出現在首頁（選了托福或英檢、有輸入名字時，可按「練這部分」直接選好題型）、紀錄頁（選了某位學生時）、老師總覽的個人詳細。
 - **網站名稱與分享預覽**：名稱 Apex English；分享預覽圖是 `docs/og-v2.png`（換圖時改新檔名，避免 LINE/FB 快取舊圖）（1200×630，用 Chrome headless 從 HTML 截圖產生），index.html 有 og:／twitter: 標籤。
   新題目裡沒收錄的字要加到 `dict*.js`（格式 `word|詞性|中文`）。
+- **效能（2026-11-08，詳細改動與還原方式在本機 `效能改動紀錄.md`，已 gitignore）**：網站原本耗電、風扇轉，原因是背景動畫永不停止，
+  底下 14 塊 `backdrop-filter` 覆蓋 158% 畫面、每格都要重算模糊（120fps 不間斷）。已做：背景動畫只留平移、28 秒後停止；光澤層拿掉 `mix-blend-mode`、掃兩趟就停；
+  手機／平板／低階裝置（`html.low-perf`）自動關掉毛玻璃與背景動畫，改用 `--glass-solid` 半透明底色（桌機外觀不變）。
+  **以後加動畫前先想**：全螢幕的無限循環動畫 ＋ 毛玻璃＝耗電元凶；要動就只動 transform／opacity，而且盡量有結束時間。
+- **瀏覽器上一頁／下一頁**（app.js 的 `pushView`／`popstate`）：切換分頁會寫進歷史、不改網址；作答中按上一頁會先跳「要離開嗎？」不會離站。
+  開站時先 `replaceState` 一筆首頁，否則第一次切換會變成取代、第一次按上一頁還是會離站。
 - **改完之後**：`node tools/build_tts_jobs.mjs && .venv/bin/python tools/gen_audio.py`，再 `git add -A && git commit && git push`
 - 單選題的選項順序會在載入時自動平衡，新增題目請加在每份題庫的最後面，已存在的題目不要改 id 或移動位置（舊紀錄靠 id 對應）。
 - **不要用瀏覽器即時語音念題目**（Allen 覺得聲音很怪）：tts.js 有 MP3 的句子只播 MP3（失敗重試一次就跳過），MP3 清單還沒載入時先等；只有沒有 MP3 的字（托福 dict7／dict8 單字）才用瀏覽器語音。新增題目後一定要跑 `build_tts_jobs.mjs`＋`gen_audio.py`，而且要等語音產生完再測試。

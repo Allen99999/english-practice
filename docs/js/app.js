@@ -489,7 +489,30 @@ function sheet(html) { closeSheet(); const s = document.createElement("div"); s.
 function closeSheet() { const s = $("#scrim"); if (s) s.remove(); }
 function closePop() { const p = $("#wpop"); if (p) p.remove(); }
 
+/* ===== 瀏覽器上一頁／下一頁（2026-11-08）=====
+   以前完全沒處理，按上一頁會直接離開網站。現在每次換畫面都寫進歷史：
+   分頁之間互跳、解析回紀錄、作答中按上一頁會先問要不要存檔（不會直接離站）。
+   popping = 正在處理 popstate，這時不要再往歷史裡塞東西。 */
+let popping = false;
+function pushView(v, arg) {
+  if (popping) return;
+  const st = { apex: 1, v, arg: arg ?? null };
+  if (!history.state || !history.state.apex) history.replaceState(st, "");
+  else if (history.state.v !== v || (history.state.arg ?? null) !== (arg ?? null)) history.pushState(st, "");
+}
+/* 開站時先把「首頁」寫進歷史，第一次切換才會是「新增」而不是「取代」（不然第一次按上一頁還是會離站） */
+if (!history.state || !history.state.apex) history.replaceState({ apex: 1, v: "home", arg: null }, "");
+addEventListener("popstate", e => {
+  const st = e.state && e.state.apex ? e.state : { v: "home", arg: null };
+  if (view === "quiz" && st.v !== "quiz") {   // 作答中：先問，暫時留在考卷上
+    history.pushState({ apex: 1, v: "quiz", arg: null }, "");
+    const b = document.querySelector('[data-act="exit"]'); if (b) b.click();
+    return;
+  }
+  popping = true; try { go(st.v, st.arg); } finally { popping = false; }
+});
 function go(v, arg) {
+  pushView(v, arg);
   view = v; viewArg = arg ?? null; closePop(); closeSheet(); animNext = true; stopReading();
   if (fx.ctx) { fx.parts = []; fx.ctx.clearRect(0, 0, innerWidth, innerHeight); }
   document.querySelectorAll(".combo-burst,.ring,.edge-glow").forEach(e => e.remove());
@@ -1561,6 +1584,9 @@ if (window.claude && window.claude.hot) {
 // 等後面的模組（toefl、aigrade、card…）都載入完再畫第一個畫面
 const boot = () => window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", boot, { once: true }) : boot();
+/* 低階裝置（記憶體 ≤ 4GB 或核心數 ≤ 4）：加 low-perf，CSS 會關掉毛玻璃與背景動畫（2026-11-08） */
+if ((navigator.deviceMemory && navigator.deviceMemory <= 4) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4)) document.documentElement.classList.add("low-perf");
+
 /* 背景視差：滑鼠移動或手機傾斜時，背景跟著微微移動 */
 (() => {
   const el = document.querySelector(".bg-photo"); if (!el || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
