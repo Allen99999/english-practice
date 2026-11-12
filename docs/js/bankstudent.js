@@ -3,15 +3,17 @@
    每份考卷是一個 hidden＋fixed 的題庫（student 標記是誰的），整回照順序作答、做完才公布分數與對錯（blind）。
    選項順序照紙本考卷（fixedOrder），不自動平衡。新考卷：寫一個 studentPaper(...)，再把 id 加到該學生的清單 */
 /* Ayden 用綜合卷 c1～c3（文法為主、發音為輔）；純文法卷 g1～g3 和純發音卷 m1～m3 的程式保留但不列在清單上 */
-const STUDENT_ZONE = { Ayden: ["ayden-c1", "ayden-c2", "ayden-c3"], Yuri: ["yuri-m1", "yuri-m2", "yuri-m3", "yuri-m4", "yuri-m5"], Jovi: ["jovi-m1", "jovi-m2", "jovi-a1"], Wei: [] };
+const STUDENT_ZONE = { Ayden: ["ayden-c1", "ayden-c2", "ayden-c3"], Yuri: ["yuri-m1", "yuri-m2", "yuri-m3", "yuri-m4", "yuri-m5"], Jovi: ["jovi-m1", "jovi-m2", "jovi-a1", "jovi-b1"], Wei: [] };
 const zoneName = who => Object.keys(STUDENT_ZONE).find(n => n.toLowerCase() === String(who || "").trim().toLowerCase()) || null;
 /* full：拼字題不給頭尾提示字母，要寫出完整的字 */
 const SPF = (id, tag, stem, ans, exp) => ({ id, type: "spell", full: true, label: "填寫單字", tag, stem, ans, hint: "", exp });
-const TF = (id, tag, sent, ok, exp) => M(id, tag, sent, ["T（對）", "F（錯）"], ok ? 0 : 1, "", exp);
+/* 是非題：T 一定排在 F 前面，所以就算整份有 balance 也不讓它打亂（tfFixed） */
+const TF = (id, tag, sent, ok, exp) => Object.assign(M(id, tag, sent, ["T（對）", "F（錯）"], ok ? 0 : 1, "", exp), { tfFixed: true });
 /* 單字表（老師給的生字表，只有生字本身、不含例句）：用 | 分隔，同一個字的其他寫法用 = 連起來。
    考卷設 vocab: "A"＝這份考的單字表：考試中點到這些字不顯示中文（其他字照常顯示）；單字練習的干擾選項也從這裡挑 */
 const WORDLISTS = {
-  A: "a|afternoon|A.M. = a.m. = AM|again|ability|against|able|age|about|ago|above|agree|abroad|agreement|absence|ahead|absent|aid|accept|AIDS|accident|aim|according|air|achieve|aircraft|across|airline|act|airplane = plane|action|airport|active|alarm|activity|album|actor|alike|actress|alive|actually|all|add|allow|addition|almond|address|almost|admire|alone|admit|along|adopt|aloud|adult|alphabet|advance|already|advantage|also|advice|although|advise|altogether|affair|always|affect|am|afraid|ambulance|after|America|American|aren't|among|argue|amount|argument|an|arm|ancient|armchair|and|army|angel|around|anger|arrange|angry|arrangement|animal|arrest|ankle|arrive|another|arrow|answer|art|ant|article|any|artist|anybody|as|anyhow|Asia|anyone|Asian|anyplace|ask|anything|asleep|anytime|assistant|anyway|assume|anywhere|at|apartment|attack|ape|attend|apologize|attention|appear|audience|appearance|August = Aug.|appetite|aunt = auntie = aunty|apple|Australia|apply|Australian|appreciate|autumn|April|available|apron|avoid|are|aware|area|away"   // A 範圍（a – away）144 字，課本 p.12–24
+  A: "a|afternoon|A.M. = a.m. = AM|again|ability|against|able|age|about|ago|above|agree|abroad|agreement|absence|ahead|absent|aid|accept|AIDS|accident|aim|according|air|achieve|aircraft|across|airline|act|airplane = plane|action|airport|active|alarm|activity|album|actor|alike|actress|alive|actually|all|add|allow|addition|almond|address|almost|admire|alone|admit|along|adopt|aloud|adult|alphabet|advance|already|advantage|also|advice|although|advise|altogether|affair|always|affect|am|afraid|ambulance|after|America|American|aren't|among|argue|amount|argument|an|arm|ancient|armchair|and|army|angel|around|anger|arrange|angry|arrangement|animal|arrest|ankle|arrive|another|arrow|answer|art|ant|article|any|artist|anybody|as|anyhow|Asia|anyone|Asian|anyplace|ask|anything|asleep|anytime|assistant|anyway|assume|anywhere|at|apartment|attack|ape|attend|apologize|attention|appear|audience|appearance|August = Aug.|appetite|aunt = auntie = aunty|apple|Australia|apply|Australian|appreciate|autumn|April|available|apron|avoid|are|aware|area|away",   // A 範圍（a – away）144 字，課本 p.12–24
+  B: "baby|babysitter|back|backward|backwards|bad|badminton|bag|bake|bakery|balcony|ball|balloon|bamboo|banana|band|bank|banker|bar|barbecue = Bar-B-Q|barber|bark|base|baseball|basement|basic|basis|basket|basketball|bat|bath|bathe|bathroom|battle|be|beach|bead|bean|bear|beard|beat|beautiful|beauty|because|become|bed|bedroom|bee|beef|beep|beer|beetle|before|beg|begin|beginner|beginning|behave|behind|belief|believable|believe|bell|belong|below|belt|bench|bend|beside|besides|best|bet|better|between|beyond|bicycle = bike|big|bill|bind|biology|bird|birth|birthday|bit|bite|bitter|black|blackboard|blame|blank|blanket|blind|block|blood|bloody|blouse|blow|blue|board|boat|body|boil|bomb|bone|bony|book|bookcase|boring|born|borrow|boss|both|bother|bottle|bottom|bow|bowl|bowling|box|boy|brain|branch|brand|brave|bread|break|breakfast|brick|bridge|brief|bright|bring|Britain|British|broad|broadcast|brother|brown|brunch|brush|bucket = pail|buffet|bug|build|building|bun|bundle|burger|burn|burst|bus|business|businessman|busy|but|butter|butterfly|button|buy|by"   // B 範圍（baby – by）160 字，課本 p.25–40
 };
 const wordListOf = name => (WORDLISTS[name] || "").split("|").flatMap(x => x.split(" = ")).map(w => w.trim()).filter(Boolean);
 /* 聽力題（學生專區用，不需要圖）：script 是要念的句子，opts 是文字選項。plabel = 畫面上的作答說明 */
@@ -27,7 +29,7 @@ const RX = (id, tag, zh, tiles, extra, exp) => Object.assign(R(id, tag, zh, tile
 const DW = (id, tag, word, sentence, exp, plabel) => ({ id, type: "spell", full: true, dictation: true, dictSent: sentence, plabel, label: "聽寫", tag, stem: "___", ans: word, hint: "", exp });
 /* balance: true ＝ 這份不是照紙本抄的，讓 app.js 的選項平衡把正解平均分到 A/B/C（不要手動排，很容易全部集中在 A） */
 function studentPaper(b) {
-  b.items.forEach(it => (it.type === "group" ? it.qs : [it]).forEach(q => { if (b.balance) delete q.fixedOrder; else q.fixedOrder = true; }));
+  b.items.forEach(it => (it.type === "group" ? it.qs : [it]).forEach(q => { if (b.balance && !q.tfFixed) delete q.fixedOrder; else q.fixedOrder = true; }));
   const bank = Object.assign({ grade: 99, fixed: true, hidden: true, blind: Object.keys(b.tags), exams: [{ name: "整回", tags: Object.keys(b.tags) }], timeLimits: [[Object.keys(b.tags), b.minutes]] }, b);
   BANKS.push(bank);
   return bank;
@@ -92,6 +94,66 @@ studentPaper({
     B("q42",42,["along","also","aloud","alone"],0,"","walk along the river 沿著河邊散步。"),
     B("q43",43,["address","advice","accident","advise"],1,"","some good advice 一些好建議：advice 是名詞（不可數）；advise 是動詞「建議」。"),
     B("q44",44,["apologize","appear","apply","appreciate"],3,"","appreciate her help 感激她的幫忙。")
+  ])
+  ]
+});
+
+/* ---- Jovi：B 範圍（baby – by）單字考・基礎（共 40 題、20 分鐘） ----
+   課本 p.25–40（Track 0145–0304）共 160 字。不是照紙本抄的，所以加 balance 讓正解平均分到 A～D。 */
+studentPaper({
+  id: "jovi-b1", student: "Jovi", minutes: 20, vocab: "B", balance: true,
+  title: "B 範圍單字考・基礎",
+  range: "Vocabulary Quiz B 範圍（baby – by）・基礎 ★☆",
+  added: "2026-11-12",
+  note: "",
+  tags: {
+    s1: "一、中翻英選擇", s2: "二、英翻中選擇", s3: "三、配對", s4: "四、拼字", s5: "五、字母重組",
+    s6: "六、情境選擇", s7: "七、詞形變化", s8: "八、是非題", s9: "九、句子填空", s10: "十、短文克漏字"
+  },
+  items: [
+  M("q1","s1","地下室",["basement","bathroom","bedroom","bookcase"],0,"","basement 地下室；bathroom 浴室、bedroom 臥室、bookcase 書架。"),
+  M("q2","s1","羽毛球",["basketball","badminton","baseball","bowling"],1,"","badminton 羽毛球；basketball 籃球、baseball 棒球、bowling 保齡球。"),
+  M("q3","s1","蝴蝶",["beetle","bee","butterfly","bug"],2,"","butterfly 蝴蝶；beetle 甲蟲、bee 蜜蜂、bug 蟲子。"),
+  M("q4","s1","早午餐",["breakfast","brunch","buffet","burger"],1,"","brunch 早午餐（breakfast ＋ lunch）；breakfast 早餐、buffet 自助餐、burger 漢堡。"),
+  M("q5","s1","理髮師",["banker","barber","businessman","beginner"],1,"","barber 理髮師；banker 銀行家、businessman 生意人、beginner 初學者。"),
+  M("q6","s2","borrow",["買","借（入）","帶來","燃燒"],1,"","borrow 借（入）；買 buy、帶來 bring、燃燒 burn。"),
+  M("q7","s2","bitter",["苦的","瞎的","勇敢的","無聊的"],0,"","bitter 苦的；瞎的 blind、勇敢的 brave、無聊的 boring。"),
+  M("q8","s2","bend",["綁","使彎曲","吹","爆炸"],1,"","bend 使彎曲；綁 bind、吹 blow、爆炸 burst。"),
+  M("q9","s2","besides",["在……之間","除……之外；此外","在……後面","在……旁邊"],1,"","besides 除……之外；此外。beside（沒有 s）才是「在……旁邊」。"),
+  M("q10","s3","brick",["磚塊","毛毯","水桶","鈕扣","刷子"],0,"","brick 磚塊。"),
+  M("q11","s3","blanket",["磚塊","毛毯","水桶","鈕扣","刷子"],1,"","blanket 毛毯。"),
+  M("q12","s3","bucket",["磚塊","毛毯","水桶","鈕扣","刷子"],2,"","bucket 水桶（也可以說 pail）。"),
+  M("q13","s3","button",["磚塊","毛毯","水桶","鈕扣","刷子"],3,"","button 鈕扣；按鈕。"),
+  M("q14","s3","brush",["磚塊","毛毯","水桶","鈕扣","刷子"],4,"","brush 刷子；刷。"),
+  SPF("q15","s4","生物學（n.）　b i _ l o _ y　→ ___","biology","biology 生物學（bio- 生命＋-logy 學問）。"),
+  SPF("q16","s4","氣球（n.）　b a _ l o _ n　→ ___","balloon","balloon 氣球：兩個 l、兩個 o。"),
+  SPF("q17","s4","自助餐（n.）　b u _ f _ t　→ ___","buffet","buffet 自助餐：兩個 f，唸作 [buˋfe]。"),
+  SPF("q18","s4","黑板（n.）　b l a _ k b o _ r d　→ ___","blackboard","blackboard 黑板（black 黑＋board 板子）。"),
+  SPF("q19","s5","橋　g / d / i / b / r / e　→ ___","bridge","bridge 橋。"),
+  SPF("q20","s5","瓶子　t / o / l / e / b / t　→ ___","bottle","bottle 瓶子：中間兩個 t。"),
+  SPF("q21","s5","竹子　m / o / a / b / b / o　→ ___","bamboo","bamboo 竹子：結尾兩個 o。"),
+  M("q22","s6","The dog keeps ___ at the mailman.",["barking","beating","bending","blowing"],0,"","bark（狗）吠叫：那隻狗一直對郵差叫。"),
+  M("q23","s6","I ___ a new bike last week.",["bought","brought","built","burned"],0,"","buy 的過去式是 bought：我上週買了一輛新腳踏車。"),
+  M("q24","s6","Please ___ your homework to school tomorrow.",["build","bring","burn","bite"],1,"","bring 帶來：明天記得把作業帶來學校。"),
+  M("q25","s6","My father ___ me for being late again.",["believed","blamed","behaved","belonged"],1,"","blame sb. for… 因為…責怪某人：我爸爸因為我又遲到而責怪我。"),
+  M("q26","s6","___ you don't have a ticket, you can't go in.",["Before","Because","Besides","Between"],1,"","because 因為（後面接句子）：因為你沒有票，所以不能進去。"),
+  M("q27","s6","This smartphone ___ to my sister.",["becomes","behaves","belongs","begins"],2,"","belong to… 屬於…：這支手機是我姊姊的。"),
+  SPF("q28","s7","She ___ (become) a teacher two years ago.","became","two years ago 是過去式：become → became（不規則變化）。"),
+  SPF("q29","s7","My brother is a ___ (begin). He just started learning the piano.","beginner","剛開始學的人＝初學者：begin ＋ -ner → beginner。"),
+  SPF("q30","s7","Peter is my ___ (good) friend.","best","good 的最高級是 best（good – better – best）。"),
+  SPF("q31","s7","She sings ___ (beautiful).","beautifully","修飾動詞 sings 要用副詞：beautiful → beautifully（字尾 -ful 加 -ly）。"),
+  TF("q32","s8","A barber cuts people's hair.",true,"對：barber 理髮師，工作就是幫人剪頭髮。"),
+  TF("q33","s8","Breakfast is the meal we eat at night.",false,"錯：breakfast 是早餐，早上吃的；晚上吃的是 dinner。"),
+  TF("q34","s8","A bakery is a place where you can buy bread.",true,"對：bakery 麵包店，可以買到 bread 麵包。"),
+  TF("q35","s8","If something is boring, it is very exciting.",false,"錯：boring 是無聊的，和 exciting 刺激的意思相反。"),
+  { id: "q36", type: "scramble", label: "句子填空", tag: "s9", zh: "我每天騎腳踏車上學。", frame: "I go to school _ _ every day.", tiles: ["by", "bicycle"], extra: [], ans: "by bicycle", hint: "", exp: "by ＋ 交通工具（中間不加 a／the）：I go to school by bicycle every day." },
+  { id: "q37", type: "scramble", label: "句子填空", tag: "s9", zh: "早餐是一天中最重要的一餐。", frame: "_ is the most important _ of the day.", tiles: ["Breakfast", "meal"], extra: [], ans: "Breakfast meal", hint: "", exp: "Breakfast is the most important meal of the day. 句首字母要大寫。" },
+  G("q38g","s10","cloze","My Sister's Party",[
+    "Last Saturday was my sister's [[38]]. My mom baked a big cake, and we had a party in the yard. After dinner, we watched the stars and saw some [[39]] flying around the light. We didn't go to [[40]] until midnight."
+  ],null,[
+    B("q38",38,["birthday","birth","bird","bit"],0,"","my sister's birthday 我姊姊的生日；birth 是「出生」。"),
+    B("q39",39,["buns","bugs","buttons","bowls"],1,"","bugs 蟲子（會飛，繞著燈）；buns 小圓麵包、buttons 鈕扣、bowls 碗。"),
+    B("q40",40,["bench","bank","bed","bath"],2,"","go to bed 上床睡覺：我們到半夜才去睡。")
   ])
   ]
 });
