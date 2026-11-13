@@ -3,7 +3,7 @@
    每份考卷是一個 hidden＋fixed 的題庫（student 標記是誰的），整回照順序作答、做完才公布分數與對錯（blind）。
    選項順序照紙本考卷（fixedOrder），不自動平衡。新考卷：寫一個 studentPaper(...)，再把 id 加到該學生的清單 */
 /* Ayden 用綜合卷 c1～c3（文法為主、發音為輔）；純文法卷 g1～g3 和純發音卷 m1～m3 的程式保留但不列在清單上 */
-const STUDENT_ZONE = { Ayden: ["ayden-c1", "ayden-c2", "ayden-c3"], Yuri: ["yuri-m1", "yuri-m2", "yuri-m3", "yuri-m4", "yuri-m5"], Jovi: ["jovi-m1", "jovi-m2", "jovi-a1", "jovi-b1"], Wei: [] };
+const STUDENT_ZONE = { Ayden: ["ayden-c1", "ayden-c2", "ayden-c3", "ayden-s1"], Yuri: ["yuri-m1", "yuri-m2", "yuri-m3", "yuri-m4", "yuri-m5"], Jovi: ["jovi-m1", "jovi-m2", "jovi-a1", "jovi-b1"], Wei: [] };
 const zoneName = who => Object.keys(STUDENT_ZONE).find(n => n.toLowerCase() === String(who || "").trim().toLowerCase()) || null;
 /* full：拼字題不給頭尾提示字母，要寫出完整的字 */
 const SPF = (id, tag, stem, ans, exp) => ({ id, type: "spell", full: true, label: "填寫單字", tag, stem, ans, hint: "", exp });
@@ -27,7 +27,11 @@ const ORD = (id, tag, stem, items, ans, exp) => Object.assign(O(id, stem, items,
 const RX = (id, tag, zh, tiles, extra, exp) => Object.assign(R(id, tag, zh, tiles, "", exp), { extra, scrLabel: `把字卡排成正確的句子（有 ${extra.length} 張字卡用不到）` });
 /* 聽寫拼字：播「單字 → 例句 → 單字」，學生把單字拼出來（一律可以重聽） */
 const DW = (id, tag, word, sentence, exp, plabel) => ({ id, type: "spell", full: true, dictation: true, dictSent: sentence, plabel, label: "聽寫", tag, stem: "___", ans: word, hint: "", exp });
-/* balance: true ＝ 這份不是照紙本抄的，讓 app.js 的選項平衡把正解平均分到 A/B/C（不要手動排，很容易全部集中在 A） */
+/* 聽音補字母：和 DW 一樣有播放鍵（dictation），但首尾字母會給，學生只要補中間 2～3 個字母（不設 full）。
+   挖幾格由單字長度決定（長度 − 2），所以只適合 4～5 個字母的字 */
+const DH = (id, tag, word, zhPrompt, exp) => ({ id, type: "spell", dictation: true, plabel: "聽單字，把中間的字母補起來（可以重聽）", label: "聽音補字母", tag, stem: "___", zhPrompt, ans: word, hint: "", exp });
+/* balance: true ＝ 這份不是照紙本抄的，讓 app.js 的選項平衡把正解平均分到 A/B/C（不要手動排，很容易全部集中在 A）
+   hints: true ＝ 正式考模式也保留「提示」鍵（這份把句子的中文翻譯放在 hint 裡，按了才看得到） */
 function studentPaper(b) {
   b.items.forEach(it => (it.type === "group" ? it.qs : [it]).forEach(q => { if (b.balance && !q.tfFixed) delete q.fixedOrder; else q.fixedOrder = true; }));
   const bank = Object.assign({ grade: 99, fixed: true, hidden: true, blind: Object.keys(b.tags), exams: [{ name: "整回", tags: Object.keys(b.tags) }], timeLimits: [[Object.keys(b.tags), b.minutes]] }, b);
@@ -1150,5 +1154,74 @@ studentPaper({
     Q("p39","The ball is yours now. 裡的 yours 是什麼詞？",["所有格代名詞","所有格形容詞","受格代名詞"],0,"","yours 後面沒有接名詞。"),
     Q("p40","Benjamin and his brother play basketball. 裡的 play 為什麼不加 s？",["主詞是兩個人，是複數","basketball 是複數","play 永遠不加 s"],0,"","主詞 Benjamin and his brother 是複數，動詞用原形。")
   ]),
+  ]
+});
+
+
+/* ===== Ayden：WEEKLY SPELLING TEST 複習卷（水與地形的長音 u 單字 34 字） =====
+   原卷：G3 Green 兩次 weekly spelling test（照片在 Allen 那邊，不進 repo）。Ayden 沒辦法空手拼出整個單字，
+   所以全部用引導式題型：聽單字選拼法、看中文選英文、聽音補字母（首尾給、中間挖 2～3 格）、字母重組（字母全給但打亂）、句子選字（中文翻譯放在提示裡）。
+   34 個單字每一個都至少當過一次答案。 */
+studentPaper({
+  id: "ayden-s1", student: "Ayden", minutes: 35, relisten: true, balance: true, hints: true,
+  title: "水的單字 拼字複習・基礎",
+  range: "Weekly Spelling Test 複習（水與地形）・基礎 ★☆",
+  added: "2026-11-13",
+  note: "",
+  tags: {
+    p1: "一、聽單字選拼法", p2: "二、看中文選英文", p3: "三、聽音補字母", p4: "四、字母重組", p5: "五、句子選字"
+  },
+  items: [
+  /* ---------- 一、聽單字選拼法（聽一個單字，選出正確的拼法） ---------- */
+  SL("q1","p1","tube","聽一次單字，選出正確的拼法。",["tube","tubb","toob"],0,"tube 管子：子音＋u＋子音＋不發音的 e，u 要唸長音 /ju/。"),
+  SL("q2","p1","rule","聽一次單字，選出正確的拼法。",["rule","rool","ruel"],0,"rule 規則：u + l + e，不是 oo。"),
+  SL("q3","p1","tune","聽一次單字，選出正確的拼法。",["tune","toon","tewn"],0,"tune 旋律：t-u-n-e，結尾的 e 不發音但不能少。"),
+  SL("q4","p1","rude","聽一次單字，選出正確的拼法。",["rude","rood","rued"],0,"rude 沒禮貌的：r-u-d-e。"),
+  SL("q5","p1","wave","聽一次單字，選出正確的拼法。",["wave","wav","waiv"],0,"wave 波浪：a-v-e，結尾的 e 讓 a 唸長音 /e/。"),
+  SL("q6","p1","mute","聽一次單字，選出正確的拼法。",["mute","moot","muet"],0,"mute 靜音的：m-u-t-e。"),
+  SL("q7","p1","fume","聽一次單字，選出正確的拼法。",["fume","fewm","foom"],0,"fume 煙霧；廢氣：f-u-m-e。"),
+  SL("q8","p1","dune","聽一次單字，選出正確的拼法。",["dune","doon","dewn"],0,"dune 沙丘：d-u-n-e，不是 doon。"),
+  SL("q9","p1","crude","聽一次單字，選出正確的拼法。",["crude","crood","crued"],0,"crude 原油的；粗糙的：c-r-u-d-e。"),
+  SL("q10","p1","fluke","聽一次單字，選出正確的拼法。",["fluke","flook","fluck"],0,"fluke 僥倖；意外的好運：f-l-u-k-e，結尾的 e 不能少。"),
+  SL("q11","p1","volume","聽一次單字，選出正確的拼法。",["volume","volumn","valume"],0,"volume 音量；體積：vol-ume，中間是 o 不是 a。"),
+  SL("q12","p1","stream","聽一次單字，選出正確的拼法。",["stream","streem","strem"],0,"stream 河流：ea 一起唸長音 /i/。"),
+  /* ---------- 二、看中文選英文 ---------- */
+  M("q13","p2","小溪",["creek","dune","fume","mute"],0,"","creek 小溪；dune 沙丘、fume 煙霧、mute 靜音的。"),
+  M("q14","p2","逃走；逃脫",["escape","research","surface","intact"],0,"","escape 逃走；research 研究、surface 表面、intact 完整無缺的。"),
+  M("q15","p2","研究",["research","escape","surface","cascade"],0,"","research 研究（re-search 再找一次）。"),
+  M("q16","p2","表面",["surface","altitude","volume","incline"],0,"","surface 表面（sur- 在上面＋face 面）。"),
+  M("q17","p2","海拔；高度",["altitude","shoreline","pipeline","cascade"],0,"","altitude 海拔、高度。"),
+  M("q18","p2","海岸線",["shoreline","pipeline","uphill","strait"],0,"","shoreline 海岸線（shore 岸＋line 線）。"),
+  M("q19","p2","輸送管線",["pipeline","shoreline","incline","sluice"],0,"","pipeline 輸送管線（pipe 管子＋line 線）。"),
+  M("q20","p2","像瀑布一樣落下",["cascade","condense","evaporate","dilate"],0,"","cascade 像瀑布般落下；小瀑布。"),
+  M("q21","p2","大洪水",["deluge","dune","sluice","plume"],0,"","deluge 大洪水。"),
+  M("q22","p2","海峽",["strait","stream","creek","sluice"],0,"","strait 海峽（兩塊陸地中間的窄水道）。"),
+  /* ---------- 三、聽音補字母（有播放鍵，首尾字母已給，中間挖 2～3 格） ---------- */
+  DH("q23","p3","plume","煙柱；羽毛","plume 煙柱；羽毛：是 p 開頭，不要跟 flume 搞混。"),
+  DH("q24","p3","flume","水道；渠道","flume 水道；渠道：是 f 開頭。"),
+  DH("q25","p3","chute","滑梯；斜道","chute 滑梯、斜道：ch 開頭卻唸 /ʃ/（像 sh 的聲音）。"),
+  DH("q26","p3","suite","套房","suite 套房：ui 一起唸 /wi/，聽起來像 sweet。"),
+  DH("q27","p3","crude","原油的；粗糙的","crude：c-r-u-d-e。"),
+  DH("q28","p3","creek","小溪","creek 小溪：中間兩個 e。"),
+  DH("q29","p3","tube","管子","tube：t-u-b-e。"),
+  DH("q30","p3","tune","旋律；曲調","tune：t-u-n-e。"),
+  DH("q31","p3","dune","沙丘","dune：d-u-n-e。"),
+  DH("q32","p3","mute","靜音的","mute：m-u-t-e。"),
+  /* ---------- 四、字母重組（字母全部給，但順序是打亂的） ---------- */
+  SPF("q33","p4","水閘；水道　c / l / i / s / u / e　→ ___","sluice","sluice 水閘、水道：s-l-u-i-c-e，ui 一起唸長音 /u/。"),
+  SPF("q34","p4","污染　u / l / p / t / o / l / e　→ ___","pollute","pollute 污染：po-llute，中間兩個 l。"),
+  SPF("q35","p4","斜坡；傾斜　l / n / i / e / c / n / i　→ ___","incline","incline 斜坡、傾斜：in-cline，兩個 i、兩個 n。"),
+  SPF("q36","p4","使擴張；放大　t / a / d / e / l / i　→ ___","dilate","dilate 使擴張：di-late。"),
+  SPF("q37","p4","上坡的　h / l / u / i / p / l　→ ___","uphill","uphill 上坡的：up 上＋hill 山，所以有兩個 l。"),
+  SPF("q38","p4","完整無缺的　c / t / i / a / n / t　→ ___","intact","intact 完整無缺的：in-tact，結尾是 ct。"),
+  /* ---------- 五、句子選字（按「提示」可以看中文翻譯） ---------- */
+  M("q39","p5","Hot water will ___ into steam.",["evaporate","condense","escape","dilate"],0,"熱水會蒸發變成水蒸氣。","evaporate 蒸發：水變成水蒸氣。"),
+  M("q40","p5","Water vapor will ___ into drops on the cold glass.",["condense","evaporate","pollute","dilate"],0,"水蒸氣會在冰冷的玻璃上凝結成小水滴。","condense 凝結：水蒸氣變回水，和 evaporate 相反。"),
+  M("q41","p5","Please don't be ___ to your friends.",["rude","rule","mute","wave"],0,"請不要對你的朋友沒禮貌。","rude 沒禮貌的；rule 是「規則」，只差一個字母。"),
+  M("q42","p5","The toothpaste comes out of the ___.",["tube","dune","creek","chute"],0,"牙膏從軟管裡擠出來。","tube 管子（牙膏那種軟管）。"),
+  M("q43","p5","We walked ___ to the top of the hill.",["uphill","escape","intact","surface"],0,"我們走上坡路到山頂。","walk uphill 走上坡。"),
+  M("q44","p5","The box was still ___ after it fell.",["intact","uphill","mute","rude"],0,"盒子掉下來之後還是完好無缺。","intact 完整無缺的。"),
+  M("q45","p5","Factories must not ___ the river.",["pollute","dilate","research","escape"],0,"工廠不可以污染河流。","pollute 污染。"),
+  M("q46","p5","The ___ of the lake was very calm.",["surface","altitude","incline","strait"],0,"湖面非常平靜。","surface 表面；湖的表面＝湖面。")
   ]
 });

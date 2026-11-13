@@ -697,9 +697,10 @@ function qTotal() { return S.qs.length + (S.adaptive || []).filter(p => !p.done)
 function ctSpan(i) { const X = getQ(i); if (!X || !X.group || (X.group.kind !== "ctest" && X.group.kind !== "readaloud")) return [i, i]; const idxs = groupIdx(X.group); return [Math.min(...idxs), Math.max(...idxs)]; }
 function qbarHTML() {
   const bare = S.blind || (S.mock && getQ(S.idx).q.type === "speak");   // 正式考模式、英檢口說模擬卷：不顯示提示、生字
+  const hintOK = !bare || !!(getQ(S.idx).bank || {}).hints;             // hints 的考卷（學生專區）正式考模式也留著提示鍵
   const last = ctSpan(S.idx)[1] === S.qs.length - 1 && !(typeof adaptPending === "function" && adaptPending());
   return `<button class="nav" data-act="prev" ${S.idx === 0 ? "disabled" : ""} aria-label="上一題">${I.chevL}<span>上一題</span></button>
-  ${bare ? "" : `<button class="tb ${showHint ? "on" : ""}" data-act="hint">${I.bulb}提示</button>`}
+  ${hintOK ? `<button class="tb ${showHint ? "on" : ""}" data-act="hint">${I.bulb}提示</button>` : ""}
   <button class="tb" data-act="grid">${I.grid}題號</button>
   ${bare ? "" : `<button class="tb ${wordMode ? "on" : ""}" data-act="wordmode">${I.aa}生字</button>`}
   <button class="nav next" data-act="${last ? "finish" : "next"}"><span>${last ? "交卷" : "下一題"}</span>${last ? I.flag : I.chevR}</button>`;
