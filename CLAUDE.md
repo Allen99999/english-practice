@@ -263,6 +263,9 @@ gh api -X POST "repos/<帳號>/english-practice/pages" -f "source[branch]=main" 
   **以後加動畫前先想**：全螢幕的無限循環動畫 ＋ 毛玻璃＝耗電元凶；要動就只動 transform／opacity，而且盡量有結束時間。
 - **瀏覽器上一頁／下一頁**（app.js 的 `pushView`／`popstate`）：切換分頁會寫進歷史、不改網址；作答中按上一頁會先跳「要離開嗎？」不會離站。
   開站時先 `replaceState` 一筆首頁，否則第一次切換會變成取代、第一次按上一頁還是會離站。
+- **交卷保底（2026-11-26）**：Jovi 寫了 10 分鐘的作文沒按「送出批改」就按交卷，文字整個消失、拿 0 分（草稿只存在 `S.work[i].val`，`finish()` 沒寫進 `ans`，交卷後暫存就被刪掉）。
+  現在 `askFinish()` 會先用 `draftIdx()` 擋下「寫了字但沒送出」的題目（列出第幾題、幾個字，給「回去送出」按鈕）；學生硬要交卷時 `saveDrafts()` 會把草稿存進 `ans`——
+  作文存文字、0 分、`unsent: true`（會進老師的待批改，解析頁顯示「這篇沒有送出批改」），翻譯／改寫／拼字照常判分（打對就給分）。
 - **改完之後**：`node tools/build_tts_jobs.mjs && .venv/bin/python tools/gen_audio.py`，再 `git add -A && git commit && git push`
 - 單選題的選項順序會在載入時自動平衡，新增題目請加在每份題庫的最後面，已存在的題目不要改 id 或移動位置（舊紀錄靠 id 對應）。
 - **不要用瀏覽器即時語音念題目**（Allen 覺得聲音很怪）：tts.js 有 MP3 的句子只播 MP3（失敗重試一次就跳過），MP3 清單還沒載入時先等；只有沒有 MP3 的字（托福 dict7／dict8 單字）才用瀏覽器語音。新增題目後一定要跑 `build_tts_jobs.mjs`＋`gen_audio.py`，而且要等語音產生完再測試。

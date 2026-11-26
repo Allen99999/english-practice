@@ -910,6 +910,9 @@ function feedbackHTML(X, a) {
   const q = X.q;
   if (q.type === "essay" && typeof isAiQ === "function" && isAiQ(q) && a.resp && a.resp.ai) return "";   // AI 批改結果在題目卡裡
   if (q.type === "speak") return "";   // 英檢口說：狀態在題目卡裡（geptspeak.js）
+  if (a.unsent && q.type === "essay") return `<div class="feedback no"><span class="fb-ic">${I.x}</span><div style="min-width:0">
+    <b>這篇沒有送出批改，所以是 0 分</b><p>你寫的內容已經幫你保留下來（${wcount(a.resp && a.resp.text)} 字），老師看得到，會另外幫你批改。</p>
+    <p class="muted">下次寫完一定要先按「送出批改」，再按交卷。</p></div></div>`;
   if (q.type === "speak" || q.type === "essay") { const p = ptsOf(q, X.bank, a), m = maxPts(q, X.bank);
     return `<div class="feedback ${a.correct ? "ok" : "no"}"><span class="fb-ic">${a.correct ? I.check : I.x}</span><div style="min-width:0"><b>自評 ${p} / ${m} 分</b><p>${esc(levelDesc(q, X.bank, p))}</p><p>${esc(q.exp || "")}</p></div></div>`; }
   const cn = (q.type === "trans" || q.type === "rewrite") && !a.correct ? caseNote(q, a.resp) : "";
@@ -990,8 +993,39 @@ function prepWork(i) {
 }
 
 /* ---------- 交卷 ---------- */
+/* 寫了字但還沒送出的題目（作文、翻譯、改寫、拼字）。
+   2026-11-26：Jovi 寫了 10 分鐘的作文沒按「送出批改」就交卷，文字整個消失、拿 0 分。
+   草稿本來就有即時存在 S.work[i].val，但 finish() 沒有寫進 ans，而交卷後暫存會被刪掉。 */
+function draftIdx() {
+  return S.qs.map((_, i) => i).filter(i => {
+    if (S.ans[i]) return false;
+    const X = getQ(i); if (!X) return false;
+    const t = X.q.type; if (!["essay", "trans", "rewrite", "spell"].includes(t)) return false;
+    return wcount(((S.work[i] || {}).val) || "") >= 1;
+  });
+}
+/* 交卷時把草稿存起來：客觀題照常判分，作文存文字、0 分並進「待批改」讓老師補給分 */
+function saveDrafts() {
+  draftIdx().forEach(i => {
+    const X = getQ(i), q = X.q, txt = String((S.work[i] || {}).val || "").trim();
+    const max = maxPts(q, X.bank);
+    if (q.type === "essay") S.ans[i] = { resp: { text: txt }, correct: false, hint: false, t: Math.round(S.elapsed), unsent: true, max, pts: 0 };
+    else { const correct = grade(q, txt); const a = { resp: txt, correct, hint: !!(S.work[i] || {}).hint, t: Math.round(S.elapsed), unsent: true, max };
+      a.pts = ptsOf(q, X.bank, a); S.ans[i] = a; }
+  });
+}
 function askFinish() {
   if (typeof adaptPending === "function" && adaptPending()) { gotoQ(S.qs.length); return; }
+  const dr = draftIdx();
+  if (dr.length) {   // 先擋這個：有寫字但沒送出，直接交卷會拿 0 分
+    const list = dr.map(i => { const q = getQ(i).q; return `<li>第 ${i + 1} 題（${esc(q.label || TYPE_LABEL[getQ(i).ftype] || "")}）：已經寫了 <b>${wcount((S.work[i] || {}).val)}</b> 字，<b style="color:var(--bad)">還沒送出</b></li>`; }).join("");
+    sheet(`<h3>有 ${dr.length} 題寫了內容但還沒送出</h3>
+    <ul class="wl-steps" style="margin:0 0 4px">${list}</ul>
+    <p class="muted" style="font-size:13.5px;margin:10px 0 0">直接交卷的話，這些題目會以 <b>0 分</b>計算（你寫的內容會幫你保留下來，交給老師批改）。建議先回去按「送出批改」。</p>
+    <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn primary" data-act="goto-draft" data-i="${dr[0]}">回去送出（第 ${dr[0] + 1} 題）</button></div>
+    <div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn" data-act="close-sheet">繼續作答</button><button class="btn danger" data-act="finish-now">還是交卷</button></div>`);
+    return;
+  }
   const left = S.qs.length - Object.keys(S.ans).length;
   if (!left) return finish();
   sheet(`<h3>還有 ${left} 題沒作答</h3><p class="muted" style="margin:0 0 16px">沒作答的題目會算錯。要現在交卷嗎？</p>
@@ -1022,6 +1056,7 @@ function addMissedWords(sess) {
 }
 let justFinished = null;   // 剛交卷的那份：結果頁才顯示經驗值、任務、解鎖（card.js）
 function finish() {
+  saveDrafts();   // 保底：沒送出的草稿也要存進紀錄，不然文字會消失（2026-11-26）
   const P = attPoints(S), total = P.t, ok = P.s;   // 依官方配分：客觀題 1 分、單句寫作 2 分、作文與口說 5 分
   const att = {
     id: S.id, optv: S.optv, who: S.who || "未署名", kind: S.kind, title: S.title, banks: S.banks, date: Date.now(), duration: Math.round(S.elapsed),
@@ -1468,6 +1503,7 @@ document.addEventListener("click", e => {
     case "save-exit": S.saved = Date.now(); save(true); S = null; go("home"); toast("已存檔"); break;
     case "finish": closeSheet(); askFinish(); break;
     case "finish-now": closeSheet(); finish(); break;
+    case "goto-draft": closeSheet(); gotoQ(+d.i); break;
     case "submit": submitCurrent(); break;
     case "essay-submit": { const w2 = work(S.idx); w2.val = $("#essayin").value; if (wcount(w2.val) < 5) { toast("先寫幾句再看範文"); break; } w2.submitted = true; save(); rerenderKeep(); break; }
     case "essay-rate": { const w2 = work(S.idx); commit({ text: w2.val, level: +d.v }); break; }
