@@ -932,7 +932,10 @@ function commit(resp, el) {
   const i = S.idx, X = getQ(i), q = X.q;
   if (S.ans[i] && !S.blind) return;
   const correct = grade(q, resp);
-  if (S.blind) { S.ans[i] = { resp, correct, hint: false, t: Math.round(S.elapsed) }; S.ans[i].max = maxPts(q, X.bank); S.ans[i].pts = ptsOf(q, X.bank, S.ans[i]); S.tipSeen = true; save(); rerenderKeep(); return; }
+  if (S.blind) { S.ans[i] = { resp, correct, hint: false, t: Math.round(S.elapsed) }; S.ans[i].max = maxPts(q, X.bank); S.ans[i].pts = ptsOf(q, X.bank, S.ans[i]); S.tipSeen = true; save(); rerenderKeep();
+    // 選擇題選完自動跳下一題（最後一題留著讓學生自己按交卷；補字母整段一頁的不跳）
+    if (isMC(q) && ctSpan(i)[1] + 1 < S.qs.length) setTimeout(() => { if (S && view === "quiz" && S.idx === i) gotoQ(i + 1); }, 420);
+    return; }
   S.ans[i] = { resp, correct, hint: !!(S.work[i] && S.work[i].hint), t: Math.round(S.elapsed) };
   S.ans[i].max = maxPts(q, X.bank); S.ans[i].pts = ptsOf(q, X.bank, S.ans[i]); S.ans[i].sys = correct;
   if (q.type === "match") S.ans[i].perm = work(i).perm;
@@ -978,7 +981,24 @@ function rerenderKeep() {
   document.querySelectorAll("#app details").forEach((d, k) => { const key = keyOf(d, k); if (key in keep) d.open = keep[key]; });
   scrollTo(0, sy);
 }
+/* 「做完才公布答案」的卷子（S.blind）：離開一題時自動存檔，不用每題按確認。
+   2026-11-26 Allen：反正最後才公布分數，填空寫完直接按下一題就好。作文不在此列（要按「送出批改」才會送 AI）。 */
+function autoSave(i) {
+  if (!S || !S.blind) return;
+  const X = getQ(i); if (!X) return;
+  const q = X.q, w = S.work[i] || {};
+  let resp;
+  if (["trans", "rewrite", "spell", "cword"].includes(q.type)) { const t = String(w.val || "").trim(); if (t) resp = t; }
+  else if (q.type === "error") { const f = String(w.fix || "").trim(); if (w.tok !== undefined && w.tok !== null && f) resp = { tok: w.tok, fix: f }; }
+  else if (q.type === "scramble") { if ((w.seq || []).length === q.tiles.length && !w.seq.includes(null)) resp = w.seq; }
+  else if (q.type === "match") { const arr = q.left.map((_, k) => (w.pairs || {})[k]); if (arr.every(v => v !== undefined && v !== null)) resp = arr; }
+  if (resp === undefined) return;
+  const cur = S.ans[i]; if (cur && JSON.stringify(cur.resp) === JSON.stringify(resp)) return;   // 沒改就不用重存
+  const a = { resp, correct: grade(q, resp), hint: !!w.hint, t: Math.round(S.elapsed), auto: true, max: maxPts(q, X.bank) };
+  a.pts = ptsOf(q, X.bank, a); S.ans[i] = a; save();
+}
 function gotoQ(n) {
+  autoSave(S.idx);
   if (n === S.idx + 1) n = ctSpan(S.idx)[1] + 1;        // 補字母整段算一頁：下一題跳過這一段
   else if (n === S.idx - 1 && n >= 0) n = ctSpan(n)[0]; // 上一題回到那一段的開頭
   if (typeof adaptAdvance === "function" && n > S.idx) adaptAdvance(n);
@@ -1015,6 +1035,7 @@ function saveDrafts() {
   });
 }
 function askFinish() {
+  autoSave(S.idx);   // 最後一題寫完直接按交卷也要存
   if (typeof adaptPending === "function" && adaptPending()) { gotoQ(S.qs.length); return; }
   const dr = draftIdx();
   if (dr.length) {   // 先擋這個：有寫字但沒送出，直接交卷會拿 0 分
@@ -1056,7 +1077,7 @@ function addMissedWords(sess) {
 }
 let justFinished = null;   // 剛交卷的那份：結果頁才顯示經驗值、任務、解鎖（card.js）
 function finish() {
-  saveDrafts();   // 保底：沒送出的草稿也要存進紀錄，不然文字會消失（2026-11-26）
+  autoSave(S.idx); saveDrafts();   // 保底：沒送出的草稿也要存進紀錄，不然文字會消失（2026-11-26）
   const P = attPoints(S), total = P.t, ok = P.s;   // 依官方配分：客觀題 1 分、單句寫作 2 分、作文與口說 5 分
   const att = {
     id: S.id, optv: S.optv, who: S.who || "未署名", kind: S.kind, title: S.title, banks: S.banks, date: Date.now(), duration: Math.round(S.elapsed),
